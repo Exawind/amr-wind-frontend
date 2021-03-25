@@ -1,0 +1,3 @@
+[submodule "tkyamlgui"]
+	path = tkyamlgui
+	url = git@github.com:lawrenceccheung/tkyamlgui.git
