@@ -1,11 +1,12 @@
 tabs:
   - Simulation
+  - Domain
   - ABL
-  - Tab 2
+  - Junk
 
 frames:
   - name:  frame_Mesh
-    tab:   Simulation
+    tab:   Domain
     row:   0
     title: Domain and Mesh
   - name:  frame_ABLforcing
@@ -26,41 +27,41 @@ frames:
     title: Boussinesq forces
 
 inputwidgets:
-  - name: prob_lo
-    label: "Domain corner 1"
-    frame:  frame_Mesh
-    inputtype: [float, float, float] 
+  - name:       prob_lo
+    label:      "Domain corner 1"
+    frame:      frame_Mesh
+    inputtype:  [float, float, float] 
     defaultval: [0.0, 0.0, 0.0]
     outputdef:
       AMR-Wind: geometry.prob_lo
 
-  - name: prob_hi
-    label: "Domain corner 2"
-    frame:  frame_Mesh
-    inputtype: [float, float, float] 
+  - name:       prob_hi
+    label:      "Domain corner 2"
+    frame:      frame_Mesh
+    inputtype:  [float, float, float] 
     defaultval: [1000.0, 1000.0, 1000.0]
     outputdef:
       AMR-Wind: geometry.prob_hi
 
-  - name: n_cell
-    label: "Mesh size"
-    frame:  frame_Mesh
-    inputtype: [int, int, int] 
+  - name:       n_cell
+    label:      "Mesh size"
+    frame:      frame_Mesh
+    inputtype:  [int, int, int] 
     defaultval: [48, 48, 48]
     outputdef:
       AMR-Wind: amr.n_cell
 
-  - name:   ABLForcing
-    label:  add ABL Forcing
-    frame:  frame_ABLforcing
-    inputtype: bool
+  - name:       ABLForcing
+    label:      add ABL Forcing
+    frame:      frame_ABLforcing
+    inputtype:  bool
     defaultval: 1
     ctrlframe:  frame_ABL
 
-  - name:   CoriolisForcing
-    label:  add Coriolis forces
-    frame:  frame_ABLforcing
-    inputtype: bool
+  - name:       CoriolisForcing
+    label:      add Coriolis forces
+    frame:      frame_ABLforcing
+    inputtype:  bool
     defaultval: 1
     ctrlframe:  frame_Coriolis
 
@@ -130,7 +131,7 @@ inputwidgets:
 
   - name: input_3
     label: "list of options"
-    tab:  Tab 2
+    tab:  Junk
     inputtype: str
     optionlist: ['optionA', 'optionB']
     defaultval: 'optionA'
@@ -138,10 +139,16 @@ inputwidgets:
   - name: label1
     label: "This is some label"
     labelonly: True
-    tab:  Tab 2
+    tab:  Junk
 
   - name: label2
     label: "Some more helpful advice"
     labelonly: True
-    tab:  Tab 2
+    tab:  Junk
 
+buttons:
+  - name: exitbutton
+    text: Exit
+    tab:  Junk
+    row:  9
+    command: self.quit
