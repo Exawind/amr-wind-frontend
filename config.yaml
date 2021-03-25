@@ -4,25 +4,25 @@ tabs:
   - Tab 2
 
 frames:
-  - name: frame_Mesh
-    tab:  Simulation
-    row:  0
+  - name:  frame_Mesh
+    tab:   Simulation
+    row:   0
     title: Domain and Mesh
-  - name: frame_ABLforcing
-    tab:  Simulation
-    row:  1
+  - name:  frame_ABLforcing
+    tab:   ABL
+    row:   1
     title: ABL forcing
-  - name: frame_ABL
-    tab:  Simulation
-    row:  2
+  - name:  frame_ABL
+    tab:   ABL
+    row:   2
     title: ABL physics
-  - name: frame_Coriolis
-    tab:  Simulation
-    row:  3
+  - name:  frame_Coriolis
+    tab:   ABL
+    row:   3
     title: Coriolis forces
-  - name: frame_Boussinesq
-    tab:  Simulation
-    row:  4
+  - name:  frame_Boussinesq
+    tab:   ABL
+    row:   4
     title: Boussinesq forces
 
 inputwidgets:
