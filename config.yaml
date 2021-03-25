@@ -1,0 +1,147 @@
+tabs:
+  - Simulation
+  - ABL
+  - Tab 2
+
+frames:
+  - name: frame_Mesh
+    tab:  Simulation
+    row:  0
+    title: Domain and Mesh
+  - name: frame_ABLforcing
+    tab:  Simulation
+    row:  1
+    title: ABL forcing
+  - name: frame_ABL
+    tab:  Simulation
+    row:  2
+    title: ABL physics
+  - name: frame_Coriolis
+    tab:  Simulation
+    row:  3
+    title: Coriolis forces
+  - name: frame_Boussinesq
+    tab:  Simulation
+    row:  4
+    title: Boussinesq forces
+
+inputwidgets:
+  - name: prob_lo
+    label: "Domain corner 1"
+    frame:  frame_Mesh
+    inputtype: [float, float, float] 
+    defaultval: [0.0, 0.0, 0.0]
+    outputdef:
+      AMR-Wind: geometry.prob_lo
+
+  - name: prob_hi
+    label: "Domain corner 2"
+    frame:  frame_Mesh
+    inputtype: [float, float, float] 
+    defaultval: [1000.0, 1000.0, 1000.0]
+    outputdef:
+      AMR-Wind: geometry.prob_hi
+
+  - name: n_cell
+    label: "Mesh size"
+    frame:  frame_Mesh
+    inputtype: [int, int, int] 
+    defaultval: [48, 48, 48]
+    outputdef:
+      AMR-Wind: amr.n_cell
+
+  - name:   ABLForcing
+    label:  add ABL Forcing
+    frame:  frame_ABLforcing
+    inputtype: bool
+    defaultval: 1
+    ctrlframe:  frame_ABL
+
+  - name:   CoriolisForcing
+    label:  add Coriolis forces
+    frame:  frame_ABLforcing
+    inputtype: bool
+    defaultval: 1
+    ctrlframe:  frame_Coriolis
+
+  - name:       BoussinesqForcing
+    label:      add Boussinesq forcing
+    frame:      frame_ABLforcing
+    inputtype:  bool
+    defaultval: 1
+    ctrlframe:  frame_Boussinesq
+
+  - name:       ABL_velocity
+    label:      Wind speed
+    frame:      frame_ABL
+    inputtype:  [float, float, float] 
+    defaultval: [10.0, 0.0, 0.0]
+    outputdef:
+      AMR-Wind: incflo.velocity
+
+  - name:       forcing_height
+    label:      Forcing height
+    frame:      frame_ABL
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: ABLForcing.abl_forcing_height
+
+
+  - name:       latitude
+    label:      Latitude
+    frame:      frame_Coriolis
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: CoriolisForcing.latitude
+
+  - name:       rotational_time_period
+    label:      Rotation period
+    frame:      frame_Coriolis
+    inputtype:  float
+    defaultval: 86164.0900027328
+    outputdef:
+      AMR-Wind: CoriolisForcing.rotational_time_period
+
+  - name:       north_vector
+    label:      North direction
+    frame:      frame_Coriolis
+    inputtype:  [float, float, float] 
+    defaultval: [0.0, 1.0, 0.0]
+    outputdef:
+      AMR-Wind: CoriolisForcing.north_vector
+
+  - name:       east_vector
+    label:      East direction
+    frame:      frame_Coriolis
+    inputtype:  [float, float, float] 
+    defaultval: [1.0, 0.0, 0.0]
+    outputdef:
+      AMR-Wind: CoriolisForcing.east_vector
+
+  - name:       boussinesq_reference_temperature
+    label:      Reference Temperature
+    frame:      frame_Boussinesq
+    inputtype:  float
+    defaultval: 300.0
+    outputdef:
+      AMR-Wind: BoussinesqBuoyancy.reference_temperature 
+
+  - name: input_3
+    label: "list of options"
+    tab:  Tab 2
+    inputtype: str
+    optionlist: ['optionA', 'optionB']
+    defaultval: 'optionA'
+
+  - name: label1
+    label: "This is some label"
+    labelonly: True
+    tab:  Tab 2
+
+  - name: label2
+    label: "Some more helpful advice"
+    labelonly: True
+    tab:  Tab 2
+
