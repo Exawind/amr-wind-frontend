@@ -24,6 +24,12 @@ class MyApp(tkyg.App, object):
 
         self.formatgridrows()
 
+    def getDictFromInputs(self, tag):
+        """
+        Create a dict based on tag in outputdefs
+        """
+        return
+
     def plotDomain(self):
         # Clear and resize figure
         canvaswidget=self.figcanvas.get_tk_widget()

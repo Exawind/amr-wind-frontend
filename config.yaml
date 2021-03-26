@@ -2,6 +2,7 @@ tabs:
   - Simulation
   - Domain
   - ABL
+  - IO
   - Junk
 
 frames:
@@ -9,10 +10,30 @@ frames:
     tab:   Simulation
     row:   0
     title: Time control
+
+  # ==== Domain frames ==== 
   - name:  frame_Mesh
     tab:   Domain
-    row:   0
+    #row:   0
     title: Domain and Mesh
+    
+  - name:  frame_BC
+    tab:   Domain
+    title: Boundary conditions
+
+  - name:  frame_xBC
+    tab:   Domain
+    title: X Boundary conditions
+
+  - name:  frame_yBC
+    tab:   Domain
+    title: Y Boundary conditions
+
+  - name:  frame_zBC
+    tab:   Domain
+    title: Z Boundary conditions
+
+  # ==== ABL frames ==== 
   - name:  frame_ABLforcing
     tab:   ABL
     row:   1
@@ -29,6 +50,9 @@ frames:
     tab:   ABL
     row:   4
     title: Boussinesq forces
+
+predefinedlists:
+  bctypes: &bctypes ['no_slip', 'slip_wall', 'wall_model' ]
 
 inputwidgets:
   # ========== Simulation inputs ==============================
@@ -89,13 +113,96 @@ inputwidgets:
     outputdef:
       AMR-Wind: amr.n_cell
 
+  - name:       is_periodicx
+    label:      "Periodic in X"
+    frame:      frame_BC
+    inputtype:  bool
+    defaultval: 1
+
+  - name:       is_periodicy
+    label:      "Periodic in Y"
+    frame:      frame_BC
+    inputtype:  bool
+    defaultval: 1
+
+  - name:       is_periodicz
+    label:      "Periodic in Z"
+    frame:      frame_BC
+    inputtype:  bool
+    defaultval: 0
+
+  - name:       isperiodic
+    label:    
+    frame:      frame_BC
+    inputtype:  mergedboollist
+    mergedboollist:
+      - ['is_periodicx', '1', '0']
+      - ['is_periodicy', '1', '0']      
+      - ['is_periodicz', '1', '0']
+    outputdef:
+      AMR-Wind: geometry.is_periodic
+
   - name:       plot_chooseview
     label:      "Choose plot view"
     tab:        Domain
-    row:        4
+    row:        6
     inputtype:  str
     optionlist: ['XY', 'XZ', 'YZ']
     defaultval: 'XY'
+
+  - name:       xlo_type
+    label:      "Lower X velocity BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: xlo.type
+
+  - name:       xhi_type
+    label:      "Upper X velocity BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: xhi.type
+
+  - name:       ylo_type
+    label:      "Lower Y velocity BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: ylo.type
+
+  - name:       yhi_type
+    label:      "Upper Y velocity BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: yhi.type
+
+  - name:       zlo_type
+    label:      "Lower Z velocity BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: zlo.type
+
+  - name:       zhi_type
+    label:      "Upper Z velocity BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: 'no_slip'
+    outputdef:
+      AMR-Wind: zhi.type
 
   # ============================================================
   # ========== ABL forcing selection ==========================
@@ -119,6 +226,18 @@ inputwidgets:
     inputtype:  bool
     defaultval: 1
     ctrlframe:  frame_Boussinesq
+
+  - name:       ICNS_source_terms
+    label:    
+    frame:      frame_ABLforcing
+    inputtype:  mergedboollist
+    mergedboollist:
+      - ['ABLForcing',        'ABLForcing',          ' ']
+      - ['BoussinesqForcing', 'BoussinesqBuoyancy ', ' ']    
+      - ['CoriolisForcing',   'CoriolisForcing',     ' ']
+
+    outputdef:
+      AMR-Wind: ICS.source_terms
 
   # ========== ABL specification ==============================
   - name:       ABL_velocity
@@ -205,7 +324,7 @@ buttons:
 
   - name: plotdomain
     text: Plot Domain
-    row:  4
+    row:  6
     col:  2
     tab:  Domain
     command: self.plotDomain
@@ -214,3 +333,8 @@ buttons:
     text: Plot Domain
     tab:  ABL
     command: self.plotDomain
+
+  - name: pullvars
+    text: pull vars
+    tab:  Junk
+    command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
