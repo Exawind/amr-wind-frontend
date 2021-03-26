@@ -5,6 +5,10 @@ tabs:
   - Junk
 
 frames:
+  - name:  frame_time
+    tab:   Simulation
+    row:   0
+    title: Time control
   - name:  frame_Mesh
     tab:   Domain
     row:   0
@@ -27,6 +31,40 @@ frames:
     title: Boussinesq forces
 
 inputwidgets:
+  # ========== Simulation inputs ==============================
+  - name:       stop_time
+    label:      Max time
+    frame:      frame_time
+    inputtype:  float
+    defaultval: 100.0
+    outputdef:
+      AMR-Wind: time.stop_time
+
+  - name:       max_step
+    label:      Max steps
+    frame:      frame_time
+    inputtype:  int
+    defaultval: -1
+    outputdef:
+      AMR-Wind: time.max_step
+
+  - name:       fixed_dt
+    label:      dt
+    frame:      frame_time
+    inputtype:  float
+    defaultval: 0.25
+    outputdef:
+      AMR-Wind: time.fixed_dt
+
+  - name:       cfl
+    label:      cfl
+    frame:      frame_time
+    inputtype:  float
+    defaultval: 0.95
+    outputdef:
+      AMR-Wind: time.cfl
+
+  # ========== Mesh and Domain inputs =========================
   - name:       prob_lo
     label:      "Domain corner 1"
     frame:      frame_Mesh
@@ -51,6 +89,16 @@ inputwidgets:
     outputdef:
       AMR-Wind: amr.n_cell
 
+  - name:       plot_chooseview
+    label:      "Choose plot view"
+    tab:        Domain
+    row:        4
+    inputtype:  str
+    optionlist: ['XY', 'XZ', 'YZ']
+    defaultval: 'XY'
+
+  # ============================================================
+  # ========== ABL forcing selection ==========================
   - name:       ABLForcing
     label:      add ABL Forcing
     frame:      frame_ABLforcing
@@ -72,8 +120,9 @@ inputwidgets:
     defaultval: 1
     ctrlframe:  frame_Boussinesq
 
+  # ========== ABL specification ==============================
   - name:       ABL_velocity
-    label:      Wind speed
+    label:      Wind vector
     frame:      frame_ABL
     inputtype:  [float, float, float] 
     defaultval: [10.0, 0.0, 0.0]
@@ -129,6 +178,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: BoussinesqBuoyancy.reference_temperature 
 
+  # =========== Junk stuff here ========================
   - name: input_3
     label: "list of options"
     tab:  Junk
@@ -152,3 +202,15 @@ buttons:
     tab:  Junk
     row:  9
     command: self.quit
+
+  - name: plotdomain
+    text: Plot Domain
+    row:  4
+    col:  2
+    tab:  Domain
+    command: self.plotDomain
+
+  - name: plotdomain
+    text: Plot Domain
+    tab:  ABL
+    command: self.plotDomain
