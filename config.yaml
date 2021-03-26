@@ -339,7 +339,8 @@ buttons:
     tab:  Junk
     command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
 
-  - name: getdict
-    text: pull dict
+  - name: writeInput
+    text: write input file
     tab:  Junk
-    command: "partial(self.getDictFromInputs, \"AMR-Wind\")"
+    command: self.writeAMRWindInput
+    #command: "partial(self.getDictFromInputs, \"AMR-Wind\")"

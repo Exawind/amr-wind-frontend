@@ -41,8 +41,23 @@ class MyApp(tkyg.App, object):
             if tag in var.outputdef:
                 outputkey = var.outputdef[tag]
                 output[outputkey] = self.getInputVal(var)
-                print(outputkey+' = '+repr(output[outputkey]))
+                #print(outputkey+' = '+repr(output[outputkey]))
         return output
+
+    def writeAMRWindInput(self):
+        """
+        Do more sophisticated output control later
+        """
+        inputdict = self.getDictFromInputs('AMR-Wind')
+        for key, val in inputdict.items():
+            outputkey = key
+            # convert val to string
+            if isinstance(val, list):
+                outputstr=' '.join([str(x) for x in val])
+            else:
+                outputstr=str(val)
+            print("%-25s = %s"%(outputkey, outputstr))
+        return
 
     def plotDomain(self):
         # Clear and resize figure
