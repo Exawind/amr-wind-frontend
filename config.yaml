@@ -52,7 +52,7 @@ frames:
     title: Boussinesq forces
 
 predefinedlists:
-  bctypes: &bctypes ['no_slip', 'slip_wall', 'wall_model' ]
+  bctypes: &bctypes [no_slip, slip_wall, wall_model ]
 
 inputwidgets:
   # ========== Simulation inputs ==============================
@@ -155,7 +155,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: xlo.type
 
@@ -164,7 +164,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: xhi.type
 
@@ -173,7 +173,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: ylo.type
 
@@ -182,7 +182,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: yhi.type
 
@@ -191,7 +191,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: zlo.type
 
@@ -200,7 +200,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: 'no_slip'
+    defaultval: no_slip
     outputdef:
       AMR-Wind: zhi.type
 
@@ -338,3 +338,8 @@ buttons:
     text: pull vars
     tab:  Junk
     command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
+
+  - name: getdict
+    text: pull dict
+    tab:  Junk
+    command: "partial(self.getDictFromInputs, \"AMR-Wind\")"

@@ -11,6 +11,7 @@ else:
     import tkinter as Tk
 
 import numpy as np
+from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
 from matplotlib.patches     import Rectangle
 
@@ -18,17 +19,30 @@ class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
         super(MyApp, self).__init__(*args, **kwargs)
         self.fig.clf()
-        #t   = np.arange(0, 3, .01)
-        #self.fig.add_subplot(111).plot(t, t**2)
         self.fig.text(0.35,0.5,'Welcome to\nAMR-Wind')
 
         self.formatgridrows()
+        return
 
+    def getInputVal(self, inp):
+        if inp.labelonly is True: return None
+        if inp.inputtype is tkyg.moretypes.mergedboollist:
+            val = tkyg.getMergedBoollist(inp, self.inputvars)
+        else:
+            val = inp.getval()
+        return val
+    
     def getDictFromInputs(self, tag):
         """
         Create a dict based on tag in outputdefs
         """
-        return
+        output = OrderedDict()
+        for key, var in self.inputvars.items():
+            if tag in var.outputdef:
+                outputkey = var.outputdef[tag]
+                output[outputkey] = self.getInputVal(var)
+                print(outputkey+' = '+repr(output[outputkey]))
+        return output
 
     def plotDomain(self):
         # Clear and resize figure
