@@ -1,4 +1,4 @@
-# AMR-Wind input create
+# AMR-Wind input file creator
 
 Creates and validates an AMR-Wind input file.  
 
