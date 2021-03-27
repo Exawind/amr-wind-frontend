@@ -2,6 +2,7 @@ tabs:
   - Simulation
   - Domain
   - ABL
+  - Refinement
   - IO
   - Junk
 
@@ -52,7 +53,9 @@ frames:
     title: Boussinesq forces
 
 predefinedlists:
-  bctypes: &bctypes [no_slip, slip_wall, wall_model ]
+  # Check amr-wind/incflo_enums.H
+  bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient,]
+#[no_slip, slip_wall, wall_model ]
 
 inputwidgets:
   # ========== Simulation inputs ==============================
@@ -88,6 +91,17 @@ inputwidgets:
     outputdef:
       AMR-Wind: time.cfl
 
+  - name:       physics
+    label:      Simulation type
+    tab:        Simulation
+    inputtype:  listbox
+    optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex]
+    defaultval: ABL
+    listboxopt:
+      selectmode: multiple
+    outputdef:
+      AMR-Wind: incflo.physics
+
   # ========== Mesh and Domain inputs =========================
   - name:       prob_lo
     label:      "Domain corner 1"
@@ -118,18 +132,27 @@ inputwidgets:
     frame:      frame_BC
     inputtype:  bool
     defaultval: 1
+    ctrlelem:
+      - frame:      frame_xBC
+        activewhen: ['', 0]
 
   - name:       is_periodicy
     label:      "Periodic in Y"
     frame:      frame_BC
     inputtype:  bool
     defaultval: 1
+    ctrlelem:
+      - frame:      frame_yBC
+        activewhen: ['', 0]
 
   - name:       is_periodicz
     label:      "Periodic in Z"
     frame:      frame_BC
     inputtype:  bool
     defaultval: 0
+    ctrlelem:
+      - frame:      frame_zBC
+        activewhen: ['', 0]
 
   - name:       isperiodic
     label:    
@@ -155,7 +178,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: xlo.type
 
@@ -164,7 +187,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: xhi.type
 
@@ -173,7 +196,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: ylo.type
 
@@ -182,7 +205,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: yhi.type
 
@@ -191,7 +214,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zlo.type
 
@@ -200,7 +223,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: no_slip
+    defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zhi.type
 
@@ -211,21 +234,24 @@ inputwidgets:
     frame:      frame_ABLforcing
     inputtype:  bool
     defaultval: 1
-    ctrlframe:  frame_ABL
+    ctrlelem:  
+      - frame:   frame_ABL
 
   - name:       CoriolisForcing
     label:      add Coriolis forces
     frame:      frame_ABLforcing
     inputtype:  bool
     defaultval: 1
-    ctrlframe:  frame_Coriolis
+    ctrlelem:  
+      - frame:  frame_Coriolis
 
   - name:       BoussinesqForcing
     label:      add Boussinesq forcing
     frame:      frame_ABLforcing
     inputtype:  bool
     defaultval: 1
-    ctrlframe:  frame_Boussinesq
+    ctrlelem:  
+      - frame:  frame_Boussinesq
 
   - name:       ICNS_source_terms
     label:    
