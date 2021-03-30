@@ -39,18 +39,25 @@ frames:
     tab:   ABL
     row:   1
     title: ABL forcing
-  - name:  frame_ABL
+  - name:  frame_ABLphysics
     tab:   ABL
-    row:   2
     title: ABL physics
+  - name:  frame_ABLprop
+    tab:   ABL
+    title: ABL properties
   - name:  frame_Coriolis
     tab:   ABL
-    row:   3
     title: Coriolis forces
   - name:  frame_Boussinesq
     tab:   ABL
-    row:   4
     title: Boussinesq forces
+  - name:  frame_ABLTprof
+    tab:   ABL
+    title: ABL temperature profiles
+  - name:  frame_ABLpeturb
+    tab:   ABL
+    title: ABL perturbations
+    
 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
@@ -235,7 +242,7 @@ inputwidgets:
     inputtype:  bool
     defaultval: 1
     ctrlelem:  
-      - frame:   frame_ABL
+      - frame:   frame_ABLphysics
 
   - name:       CoriolisForcing
     label:      add Coriolis forces
@@ -268,20 +275,56 @@ inputwidgets:
   # ========== ABL specification ==============================
   - name:       ABL_velocity
     label:      Wind vector
-    frame:      frame_ABL
+    frame:      frame_ABLphysics
     inputtype:  [float, float, float] 
     defaultval: [10.0, 0.0, 0.0]
     outputdef:
       AMR-Wind: incflo.velocity
 
+  - name:       useWSDir
+    label:      Use speed & dir instead
+    frame:      frame_ABLphysics
+    inputtype:  bool
+    defaultval: 0
+    ctrlelem:
+      - input:  ABL_windspeed
+      - input:  ABL_winddir
+      - input:  ABL_velocity
+        activewhen: ['', 0]
+
+  - name:       ABL_windspeed
+    label:      Wind speed
+    frame:      frame_ABLphysics
+    inputtype:  float    
+
+  - name:       ABL_winddir
+    label:      Wind direction
+    frame:      frame_ABLphysics
+    inputtype:  float
+
   - name:       forcing_height
     label:      Forcing height
-    frame:      frame_ABL
+    frame:      frame_ABLphysics
     inputtype:  float
     defaultval: 0.0
     outputdef:
       AMR-Wind: ABLForcing.abl_forcing_height
 
+  - name:       kappa
+    label:      kappa
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 0.41
+    outputdef:
+      AMR-Wind: ABL.kappa
+
+  - name:       ABL_normal_direction
+    label:      ABL normal direction
+    frame:      frame_ABLprop
+    inputtype:  int
+    defaultval: 2
+    outputdef:
+      AMR-Wind: ABL.normal_direction
 
   - name:       latitude
     label:      Latitude
@@ -322,6 +365,103 @@ inputwidgets:
     defaultval: 300.0
     outputdef:
       AMR-Wind: BoussinesqBuoyancy.reference_temperature 
+
+  - name:       temperature_heights
+    label:      Temp profile z
+    frame:      frame_ABLTprof
+    inputtype:  str
+    defaultval: 0.0 650.0 750.0 1000.0
+    outputdef:
+      AMR-Wind: ABL.temperature_heights
+
+  - name:       temperature_values
+    label:      Temp profile val
+    frame:      frame_ABLTprof
+    inputtype:  str
+    defaultval: 300.0 300.0 308.0 308.75 
+    outputdef:
+      AMR-Wind: ABL.temperature_values
+
+  - name:       perturb_velocity
+    label:      Apply vel perturbations
+    frame:      frame_ABLpeturb
+    inputtype:  bool
+    defaultval: 0
+    outputdef:
+      AMR-Wind: ABL.perturb_velocity
+    ctrlelem:
+      - input:  perturb_ref_height
+      - input:  Uperiods
+      - input:  Vperiods
+      - input:  deltaU
+      - input:  deltaV
+
+  - name:       perturb_ref_height
+    label:      Ref z for vel perturb
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 50.0
+    outputdef:
+      AMR-Wind: ABL.perturb_ref_height
+
+  - name:       Uperiods
+    label:      Num of periods in x
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 4.0
+    outputdef:
+      AMR-Wind: ABL.Uperiods
+
+  - name:       Vperiods
+    label:      Num of periods in y
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 4.0
+    outputdef:
+      AMR-Wind: ABL.Vperiods
+
+  - name:       deltaU
+    label:      Amp. of U fluct.
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 1.0
+    outputdef:
+      AMR-Wind: ABL.deltaU
+
+  - name:       deltaV
+    label:      Amp. of V fluct.
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 1.0
+    outputdef:
+      AMR-Wind: ABL.deltaV
+
+  - name:       perturb_temperature
+    label:      Apply T perturbations
+    frame:      frame_ABLpeturb
+    inputtype:  bool
+    defaultval: 0
+    outputdef:
+      AMR-Wind: ABL.perturb_temperature
+    ctrlelem:
+      - input:  theta_amplitude
+      - input:  cutoff_height
+
+  - name:       theta_amplitude
+    label:      Amp. of T fluct.
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 0.8
+    outputdef:
+      AMR-Wind: ABL.theta_amplitude
+
+  - name:       cutoff_height
+    label:      Max T perturb height
+    frame:      frame_ABLpeturb
+    inputtype:  float
+    defaultval: 100.0
+    outputdef:
+      AMR-Wind: ABL.cutoff_height
 
   # =========== Junk stuff here ========================
   - name: input_3

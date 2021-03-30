@@ -53,7 +53,7 @@ class MyApp(tkyg.App, object):
                 outputstr=' '.join([str(x) for x in val])
             else:
                 outputstr=str(val)
-            print("%-25s = %s"%(outputkey, outputstr))
+            print("%-40s = %s"%(outputkey, outputstr))
         return
 
     def plotDomain(self):

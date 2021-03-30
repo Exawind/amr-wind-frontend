@@ -8,6 +8,7 @@ Built using the [TK yaml library](https://github.com/lawrenceccheung/tkyamlgui)
 Clone the repo via
 ```bash
 $ git clone git@github.com:lawrenceccheung/amrwind-input.git
+$ cd amrwind-input
 $ git submodule init
 $ git submodule update --recursive
 ```
