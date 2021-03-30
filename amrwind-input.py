@@ -26,10 +26,7 @@ class MyApp(tkyg.App, object):
 
     def getInputVal(self, inp):
         if inp.labelonly is True: return None
-        if inp.inputtype is tkyg.moretypes.mergedboollist:
-            val = tkyg.getMergedBoollist(inp, self.inputvars)
-        else:
-            val = inp.getval()
+        val = inp.getval()
         return val
     
     def getDictFromInputs(self, tag):
