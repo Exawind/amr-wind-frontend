@@ -244,6 +244,23 @@ inputwidgets:
     outputdef:
       AMR-Wind: xlo.type
 
+  - name:       xlo_temperature_type
+    label:      "Lower X temp BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: wall_model
+    outputdef:
+      AMR-Wind: xlo.temperature_type
+
+  - name:       xlo_temperature
+    label:      "Lower Y temperature"
+    frame:      frame_xBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: xlo.temperature
+
   - name:       xhi_type
     label:      "Upper X velocity BC"
     frame:      frame_xBC
@@ -252,6 +269,23 @@ inputwidgets:
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: xhi.type
+
+  - name:       xhi_temperature_type
+    label:      "Upper X temp BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: fixed_gradient
+    outputdef:
+      AMR-Wind: xhi.temperature_type
+
+  - name:       xhi_temperature
+    label:      "Upper X temperature"
+    frame:      frame_xBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: xhi.temperature
 
   - name:       ylo_type
     label:      "Lower Y velocity BC"
@@ -262,6 +296,23 @@ inputwidgets:
     outputdef:
       AMR-Wind: ylo.type
 
+  - name:       ylo_temperature_type
+    label:      "Lower Y temp BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: wall_model
+    outputdef:
+      AMR-Wind: ylo.temperature_type
+
+  - name:       ylo_temperature
+    label:      "Lower Y temperature"
+    frame:      frame_yBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: ylo.temperature
+
   - name:       yhi_type
     label:      "Upper Y velocity BC"
     frame:      frame_yBC
@@ -270,6 +321,23 @@ inputwidgets:
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: yhi.type
+
+  - name:       yhi_temperature_type
+    label:      "Upper Y temp BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: fixed_gradient
+    outputdef:
+      AMR-Wind: yhi.temperature_type
+
+  - name:       yhi_temperature
+    label:      "Upper Y temperature"
+    frame:      frame_yBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: yhi.temperature
 
   - name:       zlo_type
     label:      "Lower Z velocity BC"
@@ -421,6 +489,14 @@ inputwidgets:
     defaultval: 0.0005
     outputdef:
       AMR-Wind: ABL.surface_roughness_z0
+
+  - name:       reference_temperature
+    label:      ABL ref temp
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 300.0
+    outputdef:
+      AMR-Wind: ABL.reference_temperature
 
   - name:       surface_temp_rate
     label:      surf temp rate 
