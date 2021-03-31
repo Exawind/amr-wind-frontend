@@ -62,7 +62,13 @@ frames:
   - name:  frame_ABLpeturb
     tab:   ABL
     title: ABL perturbations
-    
+
+  # ==== IO frames ==== 
+  - name:  frame_IOsampling
+    tab:   IO
+    row:   2
+    title: Sampling probes
+
 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
@@ -642,6 +648,38 @@ inputwidgets:
     defaultval: 100.0
     outputdef:
       AMR-Wind: ABL.cutoff_height
+  # =========== Sampling stuff here ====================
+  - name:       plot_label
+    label:      Plotting inputs
+    tab:        IO
+    row:        0
+    labelonly:  True
+
+  - name:       plot_interval
+    label:      Plot interval
+    tab:        IO
+    row:        1
+    inputtype:  int
+    defaultval: 1000
+    outputdef:
+      AMR-Wind: time.plot_interval
+
+  - name:       sampling_output_frequency
+    label:      Output freq
+    frame:      frame_IOsampling
+    inputtype:  int
+    defaultval: 100
+    outputdef:
+      AMR-Wind: sampling.output_frequency
+
+  - name:       sampling_fields
+    label:      Variables
+    frame:      frame_IOsampling
+    inputtype:  listbox
+    optionlist: [velocity, temperature]
+    defaultval: velocity
+    listboxopt:
+      selectmode: multiple
 
   # =========== Junk stuff here ========================
   - name: input_3
@@ -690,3 +728,106 @@ buttons:
     tab:  Junk
     command: self.writeAMRWindInput
     #command: "partial(self.getDictFromInputs, \"AMR-Wind\")"
+
+
+popupwindow:
+  # === Sampling window ===
+  sampling:
+    title:        Sampling probe     # optional
+    datakeyname:  sampling_name      # optional
+    loadonstart:  False              # optional
+    inputwidgets:
+    - name:       sampling_label
+      label:      Sampling probe input
+      labelonly:  True
+    - name:       sampling_name
+      label:      Name 
+      inputtype:  str
+      defaultval: newsample
+    - name:       sampling_type
+      label:      Type 
+      inputtype:  listbox
+      optionlist: [ProbeSampler, LineSampler, PlaneSampler]
+      defaultval: LineSampler
+      listboxopt:
+        width:    12
+      ctrlelem:
+        - input:  sampling_pf_filename
+          activewhen: ['ProbeSampler', 1]
+        - input:  sampling_l_numpoints
+          activewhen: ['LineSampler', 1]
+        - input:  sampling_l_start
+          activewhen: ['LineSampler', 1]
+        - input:  sampling_l_end
+          activewhen: ['LineSampler', 1]
+        - input:  sampling_p_numpoints
+          activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_origin
+          activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_axis1
+          activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_axis2
+          activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_normal
+          activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_offsets
+          activewhen: ['PlaneSampler', 1]
+    # -- sample line ---
+    - name:       sampling_pf_label
+      label:      Probe file specifications
+      labelonly:  True
+    - name:       sampling_pf_filename
+      label:      Filename
+      inputtype:  filename
+      defaultval: 
+    # -- sample line ---
+    - name:       sampling_l_label
+      label:      Line probe specifications
+      labelonly:  True
+    - name:       sampling_l_numpoints
+      label:      Line num points
+      inputtype:  int
+      defaultval: 2
+    - name:       sampling_l_start
+      label:      Line start
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+    - name:       sampling_l_end
+      label:      Line end
+      inputtype:  [float, float, float]
+      defaultval: [1, 1, 1]
+    # -- sample plane --
+    - name:       sampling_p_label
+      label:      Plane probe specifications
+      labelonly:  True
+    - name:       sampling_p_numpoints
+      label:      Plane num points
+      inputtype:  [int, int]
+      defaultval: [2, 2]
+    - name:       sampling_p_origin
+      label:      Plane origin
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+    - name:       sampling_p_axis1
+      label:      Plane axis1
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+    - name:       sampling_p_axis2
+      label:      Plane axis2
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+    - name:       sampling_p_normal
+      label:      Plane normal
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+    - name:       sampling_p_offsets
+      label:      Plane offsets
+      inputtype:  str
+      defaultval: 0
+
+listboxpopupwindows:
+  - name:       listboxsampling
+    label:      "Probes:"
+    frame:      frame_IOsampling  
+    #row:        0                   # optional
+    popupinput: sampling
