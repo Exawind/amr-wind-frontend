@@ -7,8 +7,10 @@ from functools import partial
 import tkyamlgui as tkyg
 if sys.version_info[0] < 3:
     import Tkinter as Tk
+    import tkFileDialog as filedialog
 else:
     import tkinter as Tk
+    from tkinter import filedialog as filedialog
 
 import numpy as np
 from collections            import OrderedDict 
@@ -54,6 +56,65 @@ class MyApp(tkyg.App, object):
             else:
                 outputstr=str(val)
             print("%-40s = %s"%(outputkey, outputstr))
+        return
+
+    @classmethod
+    def AMRWindInputToDict(cls, filename):
+        returndict = OrderedDict()
+        with open(filename) as f:
+            for line in f:
+                line = line.partition('#')[0]
+                line = line.rstrip()
+                if len(line)>0:
+                    line = line.split('=')
+                    key  = line[0].strip()
+                    data = line[1].strip()
+                    returndict[key] = data
+        return returndict
+
+    def loadAMRWindInput(self, filename, printunused=False):
+        amrdict=self.AMRWindInputToDict(filename)
+        extradict=self.setinputfromdict('AMR-Wind', amrdict)
+        if printunused:
+            print("# -- Unused variables: -- ")
+            for key, data in extradict.items():
+                print("%-40s= %s"%(key, data))
+        return extradict
+
+    def loadAMRWindInputGUI(self):
+        filename  = filedialog.askopenfilename(initialdir = "./",
+                                              title = "Select AMR-Wind file")
+        if len(filename)>0:
+            extradict = self.loadAMRWindInput(filename, printunused=True)
+        return
+
+    def menubar(self, root):
+        """ 
+        Adds a menu bar to root
+        See https://www.tutorialspoint.com/python/tk_menu.htm
+        """
+        menubar  = Tk.Menu(root)
+
+        # File menu
+        filemenu = Tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Import AMR-Wind file", 
+                             command=self.loadAMRWindInputGUI)
+        filemenu.add_command(label="Save", 
+                             command=partial(tkyg.donothing, root))
+
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=root.quit)
+        menubar.add_cascade(label="File", menu=filemenu)
+
+        # Help menu
+        helpmenu = Tk.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="Help Index", 
+                             command=partial(tkyg.donothing, root))
+        helpmenu.add_command(label="About...", 
+                             command=partial(tkyg.donothing, root))
+        menubar.add_cascade(label="Help", menu=helpmenu)
+        
+        root.config(menu=menubar)
         return
 
     def plotDomain(self):
@@ -133,4 +194,5 @@ class MyApp(tkyg.App, object):
 if __name__ == "__main__":
     title='AMR-Wind input creator'
     mainapp=MyApp(configyaml='config.yaml', title=title)
+    #mainapp.loadAMRWindInput('abl.inp', printunused=True)
     mainapp.mainloop()
