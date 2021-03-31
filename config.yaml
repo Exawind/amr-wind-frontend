@@ -12,6 +12,11 @@ frames:
     row:   0
     title: Time control
 
+  - name:  frame_incflo
+    tab:   Simulation
+    row:   2
+    title: Fluid and transport properties
+
   # ==== Domain frames ==== 
   - name:  frame_Mesh
     tab:   Domain
@@ -61,7 +66,7 @@ frames:
 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
-  bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient,]
+  bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
 #[no_slip, slip_wall, wall_model ]
 
 inputwidgets:
@@ -101,6 +106,7 @@ inputwidgets:
   - name:       physics
     label:      Simulation type
     tab:        Simulation
+    row:        1
     inputtype:  listbox
     optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex]
     defaultval: ABL
@@ -108,6 +114,47 @@ inputwidgets:
       selectmode: multiple
     outputdef:
       AMR-Wind: incflo.physics
+
+  # ---------- incflo fluid properties ------------------------
+  - name:       gravity
+    label:      gravity
+    frame:      frame_incflo
+    inputtype:  [float, float, float]
+    defaultval: [0.0, 0.0, -9.81]
+    outputdef:
+      AMR-Wind: incflo.gravity
+
+  - name:       density
+    label:      density
+    frame:      frame_incflo
+    inputtype:  float
+    defaultval: 1.00
+    outputdef:
+      AMR-Wind: incflo.density
+
+  - name:       viscosity
+    label:      viscosity
+    frame:      frame_incflo
+    inputtype:  float
+    defaultval: 1.872e-5
+    outputdef:
+      AMR-Wind: transport.viscosity
+
+  - name:       laminar_prandtl
+    label:      Laminar prandtl
+    frame:      frame_incflo
+    inputtype:  float
+    defaultval: 0.7
+    outputdef:
+      AMR-Wind: transport.laminar_prandtl
+
+  - name:       turbulent_prandtl
+    label:      Turb. prandtl
+    frame:      frame_incflo
+    inputtype:  float
+    defaultval: 0.3333
+    outputdef:
+      AMR-Wind: transport.turbulent_prandtl
 
   # ========== Mesh and Domain inputs =========================
   - name:       prob_lo
@@ -133,6 +180,14 @@ inputwidgets:
     defaultval: [48, 48, 48]
     outputdef:
       AMR-Wind: amr.n_cell
+
+  - name:       max_level
+    label:      "Max level"
+    frame:      frame_Mesh
+    inputtype:  int
+    defaultval: 0
+    outputdef:
+      AMR-Wind: amr.max_level
 
   - name:       is_periodicx
     label:      "Periodic in X"
@@ -225,6 +280,23 @@ inputwidgets:
     outputdef:
       AMR-Wind: zlo.type
 
+  - name:       zlo_temperature_type
+    label:      "Lower Z temp BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: wall_model
+    outputdef:
+      AMR-Wind: zlo.temperature_type
+
+  - name:       zlo_temperature
+    label:      "Lower Z temperature"
+    frame:      frame_zBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: zlo.temperature
+
   - name:       zhi_type
     label:      "Upper Z velocity BC"
     frame:      frame_zBC
@@ -233,6 +305,23 @@ inputwidgets:
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zhi.type
+
+  - name:       zhi_temperature_type
+    label:      "Upper Z temp BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: fixed_gradient
+    outputdef:
+      AMR-Wind: zhi.temperature_type
+
+  - name:       zhi_temperature
+    label:      "Upper Z temperature"
+    frame:      frame_zBC
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: zhi.temperature
 
   # ============================================================
   # ========== ABL forcing selection ==========================
@@ -265,12 +354,11 @@ inputwidgets:
     frame:      frame_ABLforcing
     inputtype:  mergedboollist
     mergedboollist:
-      - ['ABLForcing',        'ABLForcing',          ' ']
-      - ['BoussinesqForcing', 'BoussinesqBuoyancy ', ' ']    
-      - ['CoriolisForcing',   'CoriolisForcing',     ' ']
-
+      - ['ABLForcing',        'ABLForcing',          '']
+      - ['BoussinesqForcing', 'BoussinesqBuoyancy',  '']    
+      - ['CoriolisForcing',   'CoriolisForcing',     '']
     outputdef:
-      AMR-Wind: ICS.source_terms
+      AMR-Wind: ICNS.source_terms
 
   # ========== ABL specification ==============================
   - name:       ABL_velocity
@@ -325,6 +413,22 @@ inputwidgets:
     defaultval: 2
     outputdef:
       AMR-Wind: ABL.normal_direction
+
+  - name:       z0
+    label:      z0 roughness
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 0.0005
+    outputdef:
+      AMR-Wind: ABL.surface_roughness_z0
+
+  - name:       surface_temp_rate
+    label:      surf temp rate 
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 0.0
+    outputdef:
+      AMR-Wind: ABL.surface_temp_rate
 
   - name:       latitude
     label:      Latitude
