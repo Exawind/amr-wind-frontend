@@ -10,19 +10,23 @@ frames:
   # ==== Simulation frames ==== 
   - name:  frame_time
     tab:   Simulation
-    row:   0
+    row:   2
     title: Time control
+  - name:  frame_restart
+    tab:   Simulation
+    row:   3
+    title: Restart parameters
   - name:  frame_godunov
     tab:   Simulation
-    row:   2
+    row:   4
     title: Godunov parameters
   - name:  frame_incflo
     tab:   Simulation
-    row:   3
+    row:   5
     title: Fluid and transport properties
   - name:  frame_turbulence
     tab:   Simulation
-    row:   4
+    row:   6
     title: Turbulence parameters
 
   # ==== Domain frames ==== 
@@ -121,7 +125,7 @@ inputwidgets:
 
   - name:       checkpoint_interval
     label:      checkpoint interval
-    frame:      frame_time
+    frame:      frame_restart
     inputtype:  int
     defaultval: 10000
     outputdef:
@@ -138,6 +142,22 @@ inputwidgets:
       selectmode: multiple
     outputdef:
       AMR-Wind: incflo.physics
+  # ---------- Restart parameters -----------------------------
+  - name:       check_file
+    label:      Check file
+    frame:      frame_restart
+    inputtype:  str
+    defaultval: chk
+    outputdef:
+      AMR-Wind: io.check_file
+      
+  - name:       restart_file
+    label:      Restart file
+    frame:      frame_restart
+    inputtype:  filename
+    defaultval: 
+    outputdef:
+      AMR-Wind: io.restart_file
 
   # ---------- Godunov parameters -----------------------------
   - name:       use_godunov
@@ -816,7 +836,7 @@ buttons:
   - name: writeInput
     text: write input file
     tab:  Junk
-    command: self.writeAMRWindInput
+    command: "partial(self.writeAMRWindInput, 'test.inp', verbose=True)"
     #command: "partial(self.getDictFromInputs, \"AMR-Wind\")"
 
 
@@ -841,6 +861,8 @@ popupwindow:
       defaultval: LineSampler
       listboxopt:
         width:    12
+      outputdef:
+        AMR-Wind: type
       ctrlelem:
         - input:  sampling_pf_probe_location_file
           activewhen: ['ProbeSampler', 1]
@@ -869,7 +891,9 @@ popupwindow:
     - name:       sampling_pf_probe_location_file
       label:      Filename
       inputtype:  filename
-      defaultval: 
+      defaultval:
+      outputdef:
+        AMR-Wind: probe_location_file
     # -- sample line ---
     - name:       sampling_l_label
       label:      Line probe specifications
@@ -878,14 +902,20 @@ popupwindow:
       label:      Line num points
       inputtype:  int
       defaultval: 2
+      outputdef:
+        AMR-Wind: num_points
     - name:       sampling_l_start
       label:      Line start
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      outputdef:
+        AMR-Wind: start
     - name:       sampling_l_end
       label:      Line end
       inputtype:  [float, float, float]
       defaultval: [1, 1, 1]
+      outputdef:
+        AMR-Wind: end      
     # -- sample plane --
     - name:       sampling_p_label
       label:      Plane probe specifications
@@ -894,27 +924,39 @@ popupwindow:
       label:      Plane num points
       inputtype:  [int, int]
       defaultval: [2, 2]
+      outputdef:
+        AMR-Wind: num_points
     - name:       sampling_p_origin
       label:      Plane origin
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      outputdef:
+        AMR-Wind: origin
     - name:       sampling_p_axis1
       label:      Plane axis1
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      outputdef:
+        AMR-Wind: axis1
     - name:       sampling_p_axis2
       label:      Plane axis2
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      outputdef:
+        AMR-Wind: axis2    
     - name:       sampling_p_normal
       label:      Plane normal
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      outputdef:
+        AMR-Wind: normal
     - name:       sampling_p_offsets
       label:      Plane offsets
       inputtype:  str
       defaultval: 0
-
+      outputdef:
+        AMR-Wind: offsets
+        
 listboxpopupwindows:
   - name:       listboxsampling
     label:      "Probes:"

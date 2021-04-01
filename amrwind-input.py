@@ -26,22 +26,40 @@ class MyApp(tkyg.App, object):
 
         self.formatgridrows()
         return
+
     
-    def writeAMRWindInput(self):
+    def writeAMRWindInput(self, filename, verbose=False):
         """
         Do more sophisticated output control later
         """
+        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'/'+n+'.'+d2['AMR-Wind']
+
         inputdict = self.getDictFromInputs('AMR-Wind')
-        for key, val in inputdict.items():
+        sampledict= self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
+        # Construct the output dict
+        outputdict=inputdict.copy()
+        outputdict.update(sampledict)
+
+        if len(filename)>0:  f=open(filename, "w")
+        for key, val in outputdict.items():
             outputkey = key
             # convert val to string
             if isinstance(val, list):
                 outputstr=' '.join([str(x) for x in val])
             else:
                 outputstr=str(val)
-            print("%-40s = %s"%(outputkey, outputstr))
-        sampledict=self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind')
-        print(sampledict)
+            writestr = "%-40s = %s"%(outputkey, outputstr)
+            if verbose: print(writestr)
+            if len(filename)>0: f.write(writestr+"\n")
+        if len(filename)>0:     f.close()
+        #print(sampledict)
+        return
+
+    def writeAMRWindInputGUI(self):
+        filename  = filedialog.asksaveasfilename(initialdir = "./",
+                                                 title = "Save AMR-Wind file")
+        if len(filename)>0:
+            self.writeAMRWindInput(filename)
         return
 
     @classmethod
@@ -154,8 +172,8 @@ class MyApp(tkyg.App, object):
         filemenu = Tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Import AMR-Wind file", 
                              command=self.loadAMRWindInputGUI)
-        filemenu.add_command(label="Save", 
-                             command=partial(tkyg.donothing, root))
+        filemenu.add_command(label="Save AMR-Wind file", 
+                             command=self.writeAMRWindInputGUI)
 
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
@@ -255,6 +273,7 @@ if __name__ == "__main__":
     args   = parser.parse_args()
     inputfile = args.inputfile
     mainapp=MyApp(configyaml='config.yaml', title=title)
+
     if inputfile is not None:
         mainapp.loadAMRWindInput(inputfile, printunused=True)
     mainapp.mainloop()
