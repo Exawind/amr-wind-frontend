@@ -7,15 +7,23 @@ tabs:
   - Junk
 
 frames:
+  # ==== Simulation frames ==== 
   - name:  frame_time
     tab:   Simulation
     row:   0
     title: Time control
-
-  - name:  frame_incflo
+  - name:  frame_godunov
     tab:   Simulation
     row:   2
+    title: Godunov parameters
+  - name:  frame_incflo
+    tab:   Simulation
+    row:   3
     title: Fluid and transport properties
+  - name:  frame_turbulence
+    tab:   Simulation
+    row:   4
+    title: Turbulence parameters
 
   # ==== Domain frames ==== 
   - name:  frame_Mesh
@@ -62,18 +70,20 @@ frames:
   - name:  frame_ABLpeturb
     tab:   ABL
     title: ABL perturbations
+  - name:  frame_ABLoutput
+    tab:   ABL
+    title: ABL output parameters
 
   # ==== IO frames ==== 
   - name:  frame_IOsampling
     tab:   IO
-    row:   2
+    row:   3
     title: Sampling probes
 
 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
-#[no_slip, slip_wall, wall_model ]
 
 inputwidgets:
   # ========== Simulation inputs ==============================
@@ -109,6 +119,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: time.cfl
 
+  - name:       checkpoint_interval
+    label:      checkpoint interval
+    frame:      frame_time
+    inputtype:  int
+    defaultval: 10000
+    outputdef:
+      AMR-Wind: time.checkpoint_interval
+
   - name:       physics
     label:      Simulation type
     tab:        Simulation
@@ -120,6 +138,44 @@ inputwidgets:
       selectmode: multiple
     outputdef:
       AMR-Wind: incflo.physics
+
+  # ---------- Godunov parameters -----------------------------
+  - name:       use_godunov
+    label:      Use godunov
+    frame:      frame_godunov
+    inputtype:  bool
+    defaultval: 1
+    ctrlelem:
+      - input:  godunov_type
+    outputdef:
+      AMR-Wind: incflo.use_godunov
+
+  - name:       godunov_type
+    label:      Godunov type
+    frame:      frame_godunov
+    inputtype:  str
+    optionlist: [ppm, ppm_nolim, wenoz]
+    defaultval: ppm
+    outputdef:
+      AMR-Wind: incflo.godunov_type
+
+  # ---------- Turbulence parameters --------------------------
+  - name:       turbulence_model
+    label:      Turbulence model
+    frame:      frame_turbulence
+    inputtype:  str
+    optionlist: [Laminar, OneEqKsgsM84]
+    defaultval: OneEqKsgsM84
+    outputdef:
+      AMR-Wind: turbulence.model
+
+  - name:       TKE_source_terms
+    label:      TKE source terms
+    frame:      frame_turbulence
+    inputtype:  listbox
+    optionlist: [KsgsM84Src]
+    outputdef:
+      AMR-Wind: TKE.source_terms
 
   # ---------- incflo fluid properties ------------------------
   - name:       gravity
@@ -433,6 +489,23 @@ inputwidgets:
       - ['CoriolisForcing',   'CoriolisForcing',     '']
     outputdef:
       AMR-Wind: ICNS.source_terms
+  # ========== ABL output parameters ==========================
+  - name:       ABL_stats_output_frequency
+    label:      Output frequency
+    frame:      frame_ABLoutput
+    inputtype:  int
+    defaultval: 2
+    outputdef:
+      AMR-Wind: ABL.stats_output_frequency
+
+  - name:       ABL_stats_output_format
+    label:      Output format
+    frame:      frame_ABLoutput
+    inputtype:  str
+    optionlist: [netcdf]
+    defaultval: netcdf
+    outputdef:
+      AMR-Wind: ABL.stats_output_format
 
   # ========== ABL specification ==============================
   - name:       ABL_velocity
@@ -664,6 +737,21 @@ inputwidgets:
     outputdef:
       AMR-Wind: time.plot_interval
 
+  - name:       post_processing
+    label:      Post processing
+    tab:        IO
+    row:        2
+    inputtype:  listbox
+    optionlist: [sampling]
+#    defaultval: sampling
+    listboxopt:
+      selectmode: multiple
+    outputdef:
+      AMR-Wind: incflo.post_processing
+    ctrlelem:
+      - frame:  frame_IOsampling
+        activewhen: ['sampling', 1]
+
   - name:       sampling_output_frequency
     label:      Output freq
     frame:      frame_IOsampling
@@ -680,6 +768,8 @@ inputwidgets:
     defaultval: velocity
     listboxopt:
       selectmode: multiple
+    outputdef:
+      AMR-Wind: sampling.fields
 
   # =========== Junk stuff here ========================
   - name: input_3

@@ -16,6 +16,7 @@ import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
 from matplotlib.patches     import Rectangle
+import argparse
 
 class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
@@ -79,6 +80,11 @@ class MyApp(tkyg.App, object):
             print("# -- Unused variables: -- ")
             for key, data in extradict.items():
                 print("%-40s= %s"%(key, data))
+
+        # link any widgets necessary
+        for key,  inputvar in self.inputvars.items():
+            if self.inputvars[key].ctrlelem is not None:
+                self.inputvars[key].onoffctrlelem(None)
         return extradict
 
     def loadAMRWindInputGUI(self):
@@ -193,6 +199,13 @@ class MyApp(tkyg.App, object):
 
 if __name__ == "__main__":
     title='AMR-Wind input creator'
+
+    # Check the command line arguments
+    parser = argparse.ArgumentParser(description=title)
+    parser.add_argument('inputfile', nargs='?')
+    args   = parser.parse_args()
+    inputfile = args.inputfile
     mainapp=MyApp(configyaml='config.yaml', title=title)
-    #mainapp.loadAMRWindInput('abl.inp', printunused=True)
+    if inputfile is not None:
+        mainapp.loadAMRWindInput(inputfile, printunused=True)
     mainapp.mainloop()
