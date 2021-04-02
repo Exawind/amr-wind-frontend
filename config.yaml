@@ -921,3 +921,7 @@ listboxpopupwindows:
     frame:      frame_IOsampling  
     #row:        0                   # optional
     popupinput: sampling
+    outputprefix:                    # optional
+      AMR-Wind:   sampling       
+    outputlist:                      # optional
+      AMR-Wind:   labels

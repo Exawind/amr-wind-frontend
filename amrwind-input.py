@@ -26,24 +26,7 @@ class MyApp(tkyg.App, object):
 
         self.formatgridrows()
         return
-
-    def getInputVal(self, inp):
-        if inp.labelonly is True: return None
-        val = inp.getval()
-        return val
     
-    def getDictFromInputs(self, tag):
-        """
-        Create a dict based on tag in outputdefs
-        """
-        output = OrderedDict()
-        for key, var in self.inputvars.items():
-            if tag in var.outputdef:
-                outputkey = var.outputdef[tag]
-                output[outputkey] = self.getInputVal(var)
-                #print(outputkey+' = '+repr(output[outputkey]))
-        return output
-
     def writeAMRWindInput(self):
         """
         Do more sophisticated output control later
@@ -57,6 +40,8 @@ class MyApp(tkyg.App, object):
             else:
                 outputstr=str(val)
             print("%-40s = %s"%(outputkey, outputstr))
+        sampledict=self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind')
+        print(sampledict)
         return
 
     @classmethod
