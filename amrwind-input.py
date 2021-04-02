@@ -179,6 +179,14 @@ class MyApp(tkyg.App, object):
         filemenu.add_command(label="Exit", command=root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
+        # Plot menu
+        plotmenu = Tk.Menu(menubar, tearoff=0)
+        plotmenu.add_command(label="Plot domain", 
+                             command=partial(self.launchpopupwin, 
+                                             'plotdomain', savebutton=False))
+        menubar.add_cascade(label="Plot", menu=plotmenu)
+
+
         # Help menu
         helpmenu = Tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Help Index", 
@@ -202,7 +210,8 @@ class MyApp(tkyg.App, object):
         # Get the variables
         corner1  = self.inputvars['prob_lo'].getval()
         corner2  = self.inputvars['prob_hi'].getval()
-        xychoice = self.inputvars['plot_chooseview'].getval()
+        #xychoice = self.inputvars['plot_chooseview'].getval()
+        xychoice = self.popup_storteddata['plotdomain']['plot_chooseview']
         if xychoice == 'XY':
             ix,iy = 0,1
             xstr, ystr='x','y'
@@ -232,28 +241,29 @@ class MyApp(tkyg.App, object):
         ax.set_xlim([Cx-Lx*0.55, Cx+Lx*0.55])
         ax.set_ylim([Cy-Ly*0.55, Cy+Ly*0.55])
 
-        # Plot the wind vector
-        arrowlength = 0.1*np.linalg.norm([Lx, Ly])
-        plotwindvec = np.array(windvec)
-        plotwindvec = plotwindvec/np.linalg.norm(plotwindvec)*arrowlength
-        windcenter = [Cx, Cy, windh]
-        if np.linalg.norm([plotwindvec[ix], plotwindvec[iy]])>0.0:
-            ax.arrow(windcenter[ix], windcenter[iy], 
-                     plotwindvec[ix], plotwindvec[iy], 
-                     width=0.05*arrowlength)
+        if self.popup_storteddata['plotdomain']['plot_windnortharrows']:
+            # Plot the wind vector
+            arrowlength = 0.1*np.linalg.norm([Lx, Ly])
+            plotwindvec = np.array(windvec)
+            plotwindvec = plotwindvec/np.linalg.norm(plotwindvec)*arrowlength
+            windcenter = [Cx, Cy, windh]
+            if np.linalg.norm([plotwindvec[ix], plotwindvec[iy]])>0.0:
+                ax.arrow(windcenter[ix], windcenter[iy], 
+                         plotwindvec[ix], plotwindvec[iy], 
+                         width=0.05*arrowlength)
         
-        # Plot the north arrow
-        northlength = 0.1*np.linalg.norm([Lx, Ly])
-        plotnorthvec  = np.array(northdir)
-        plotnorthvec  = plotnorthvec/np.linalg.norm(plotnorthvec)*northlength
-        compasscenter = [Cx-0.4*Lx, Cy+0.35*Ly, windh]
+            # Plot the north arrow
+            northlength = 0.1*np.linalg.norm([Lx, Ly])
+            plotnorthvec  = np.array(northdir)
+            plotnorthvec  = plotnorthvec/np.linalg.norm(plotnorthvec)*northlength
+            compasscenter = [Cx-0.4*Lx, Cy+0.35*Ly, windh]
         
-        if np.linalg.norm([plotnorthvec[ix], plotnorthvec[iy]])>0.0:
-            ax.arrow(compasscenter[ix], compasscenter[iy], 
-                     plotnorthvec[ix], plotnorthvec[iy], 
-                     color='r', head_width=0.1*northlength, linewidth=0.5)
-            ax.text(compasscenter[ix], compasscenter[iy], 
-                    'N', color='r', ha='right', va='top')
+            if np.linalg.norm([plotnorthvec[ix], plotnorthvec[iy]])>0.0:
+                ax.arrow(compasscenter[ix], compasscenter[iy], 
+                         plotnorthvec[ix], plotnorthvec[iy], 
+                         color='r', head_width=0.1*northlength, linewidth=0.5)
+                ax.text(compasscenter[ix], compasscenter[iy], 
+                        'N', color='r', ha='right', va='top')
         
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)

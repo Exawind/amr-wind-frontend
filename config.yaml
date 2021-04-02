@@ -79,9 +79,13 @@ frames:
     title: ABL output parameters
 
   # ==== IO frames ==== 
+  - name:  frame_IOplotting
+    tab:   IO
+    row:   1
+    title: Plot outputs
   - name:  frame_IOsampling
     tab:   IO
-    row:   3
+    row:   4
     title: Sampling probes
 
 
@@ -143,6 +147,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: incflo.physics
   # ---------- Restart parameters -----------------------------
+  - name:       verbose
+    label:      Verbosity
+    frame:      frame_IOplotting
+    inputtype:  int
+    defaultval: 0
+    outputdef:
+      AMR-Wind: incflo.verbose
+
   - name:       check_file
     label:      Check file
     frame:      frame_restart
@@ -750,17 +762,32 @@ inputwidgets:
 
   - name:       plot_interval
     label:      Plot interval
-    tab:        IO
-    row:        1
+    frame:      frame_IOplotting
     inputtype:  int
     defaultval: 1000
     outputdef:
       AMR-Wind: time.plot_interval
 
+  - name:       plot_file
+    label:      Plot file
+    frame:      frame_IOplotting
+    inputtype:  str
+    defaultval: plt
+    outputdef:
+      AMR-Wind: io.plot_file
+
+  - name:       KE_int
+    label:      ouput KE interval
+    frame:      frame_IOplotting
+    inputtype:  int
+    defaultval: -1
+    outputdef:
+      AMR-Wind: io.KE_int
+
   - name:       post_processing
     label:      Post processing
     tab:        IO
-    row:        2
+    row:        3
     inputtype:  listbox
     optionlist: [sampling]
 #    defaultval: sampling
@@ -823,10 +850,10 @@ buttons:
     tab:  Domain
     command: self.plotDomain
 
-  - name: plotdomain
-    text: Plot Domain
-    tab:  ABL
-    command: self.plotDomain
+  # - name: plotdomain
+  #   text: Plot Domain
+  #   tab:  ABL
+  #   command: "partial(self.launchpopupwin, 'plotdomain', savebutton=False)" 
 
   - name: pullvars
     text: pull vars
@@ -834,13 +861,39 @@ buttons:
     command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
 
   - name: writeInput
-    text: write input file
+    text: dump input file
     tab:  Junk
-    command: "partial(self.writeAMRWindInput, 'test.inp', verbose=True)"
-    #command: "partial(self.getDictFromInputs, \"AMR-Wind\")"
+    command: "partial(self.writeAMRWindInput, '', verbose=True)"
 
 
 popupwindow:
+  # === Plot domain window ===
+  plotdomain:
+    title:        Plot domain     # optional
+    loadonstart:  True            # optional
+    inputwidgets:
+      - name:       plot_chooseview
+        label:      "Choose plot view"
+        inputtype:  str
+        optionlist: ['XY', 'XZ', 'YZ']
+        defaultval: 'XY'
+      - name:       plot_sampleprobes
+        label:      Plot sample probes
+        inputtype:  bool
+        defaultval: True
+      - name:       plot_refinement
+        label:      Plot refinement regions
+        inputtype:  bool
+        defaultval: True
+      - name:       plot_windnortharrows
+        label:      Plot wind & N arrows
+        inputtype:  bool
+        defaultval: True
+    buttons:
+      - name: plot
+        text: plotdomain
+        command: "partial(self.savethenexec, 'self.master.plotDomain()')"
+
   # === Sampling window ===
   sampling:
     title:        Sampling probe     # optional
