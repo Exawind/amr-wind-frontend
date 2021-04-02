@@ -842,15 +842,15 @@ popupwindow:
       listboxopt:
         width:    12
       ctrlelem:
-        - input:  sampling_pf_filename
+        - input:  sampling_pf_probe_location_file
           activewhen: ['ProbeSampler', 1]
-        - input:  sampling_l_numpoints
+        - input:  sampling_l_num_points
           activewhen: ['LineSampler', 1]
         - input:  sampling_l_start
           activewhen: ['LineSampler', 1]
         - input:  sampling_l_end
           activewhen: ['LineSampler', 1]
-        - input:  sampling_p_numpoints
+        - input:  sampling_p_num_points
           activewhen: ['PlaneSampler', 1]
         - input:  sampling_p_origin
           activewhen: ['PlaneSampler', 1]
@@ -866,7 +866,7 @@ popupwindow:
     - name:       sampling_pf_label
       label:      Probe file specifications
       labelonly:  True
-    - name:       sampling_pf_filename
+    - name:       sampling_pf_probe_location_file
       label:      Filename
       inputtype:  filename
       defaultval: 
@@ -874,7 +874,7 @@ popupwindow:
     - name:       sampling_l_label
       label:      Line probe specifications
       labelonly:  True
-    - name:       sampling_l_numpoints
+    - name:       sampling_l_num_points
       label:      Line num points
       inputtype:  int
       defaultval: 2
@@ -890,7 +890,7 @@ popupwindow:
     - name:       sampling_p_label
       label:      Plane probe specifications
       labelonly:  True
-    - name:       sampling_p_numpoints
+    - name:       sampling_p_num_points
       label:      Plane num points
       inputtype:  [int, int]
       defaultval: [2, 2]

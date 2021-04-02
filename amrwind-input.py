@@ -73,9 +73,73 @@ class MyApp(tkyg.App, object):
                     returndict[key] = data
         return returndict
 
+    @classmethod
+    def AMRWindExtractSampleDict(cls, inputdict, template, sep=["/","."]):
+        """
+        From input dict, extract all of the sampling probe parameters
+        """
+        pre='sampling'
+        dictkeypre= 'sampling_'
+        samplingdict = OrderedDict()
+        if pre+'.labels' not in inputdict: return samplingdict, inputdict
+        extradict = inputdict.copy()
+
+        # Create the markers for probe/plane/line sampler
+        lmap = {}
+        lmap['probesampler'] = 'pf_'
+        lmap['linesampler']  = 'l_'
+        lmap['planesampler'] = 'p_'
+
+        # Get the sampling labels
+        allkeys = [key for key, item in inputdict.items()]
+        samplingkeys = [key for key in allkeys if key.lower().startswith(pre)]
+        samplingnames = inputdict[pre+'.labels'].strip().split()
+        extradict.pop(pre+'.labels')
+
+        getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
+        matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
+        #print(getinputtype(template['inputwidgets'], 'sampling_p_offsets')[0])
+
+        for name in samplingnames:
+            probedict=OrderedDict()
+            # Process all keys for name
+            prefix    = pre+sep[0]+name+sep[1]
+            probekeys = [k for k in samplingkeys if k.startswith(prefix) ]
+            # First process the type
+            probetype = tkyg.getdictval(inputdict, prefix+'type', None)
+            l = lmap[probetype.lower()]
+            if probetype is None: 
+                print("ERROR: %s is not found!"%prefix+'type')
+                continue
+            probedict[dictkeypre+'name']  = name
+            probedict[dictkeypre+'type']  = probetype
+            # Remove them from the list & dict
+            probekeys.remove(prefix+'type')
+            extradict.pop(prefix+'type')
+
+            # Go through the rest of the keys
+            for key in probekeys:
+                suffix = key[len(prefix):]
+                probedictkey = dictkeypre+l+suffix
+                inputtype=getinputtype(template['inputwidgets'], probedictkey)[0]
+                data = matchlisttype(inputdict[key], inputtype)
+                probedict[probedictkey] = data
+                extradict.pop(key)
+            samplingdict[name] = probedict.copy()
+
+        #print(samplingdict)
+        return samplingdict, extradict
+
     def loadAMRWindInput(self, filename, printunused=False):
         amrdict=self.AMRWindInputToDict(filename)
         extradict=self.setinputfromdict('AMR-Wind', amrdict)
+
+        # Input the sampling probes
+        samplingdict, extradict = \
+            self.AMRWindExtractSampleDict(extradict, 
+            self.yamldict['popupwindow']['sampling'])
+        self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict)
+
         if printunused:
             print("# -- Unused variables: -- ")
             for key, data in extradict.items():
