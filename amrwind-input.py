@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import sys
-sys.path.insert(1, './tkyamlgui')
+import sys, os
+# import the tkyamlgui library
+scriptpath=os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(1, scriptpath+'/tkyamlgui')
+
 import numpy as np
 from functools import partial
 import tkyamlgui as tkyg
@@ -311,7 +314,7 @@ if __name__ == "__main__":
     parser.add_argument('inputfile', nargs='?')
     args   = parser.parse_args()
     inputfile = args.inputfile
-    mainapp=MyApp(configyaml='config.yaml', title=title)
+    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
 
     if inputfile is not None:
         mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
