@@ -188,7 +188,7 @@ inputwidgets:
     label:      Godunov type
     frame:      frame_godunov
     inputtype:  str
-    optionlist: [ppm, ppm_nolim, wenoz]
+    optionlist: [ppm, ppm_nolim, weno]
     defaultval: ppm
     outputdef:
       AMR-Wind: incflo.godunov_type
@@ -197,11 +197,16 @@ inputwidgets:
   - name:       turbulence_model
     label:      Turbulence model
     frame:      frame_turbulence
-    inputtype:  str
-    optionlist: [Laminar, OneEqKsgsM84]
-    defaultval: OneEqKsgsM84
+    inputtype:  listbox
+    optionlist: [Laminar, OneEqKsgsM84, Smagorinsky]
+    defaultval: 
     outputdef:
       AMR-Wind: turbulence.model
+    ctrlelem:
+      - input:  TKE_source_terms
+        activewhen: ['OneEqKsgsM84', 1]
+      - input:  SmagorinskyCs
+        activewhen: ['Smagorinsky', 1]
 
   - name:       TKE_source_terms
     label:      TKE source terms
@@ -210,6 +215,14 @@ inputwidgets:
     optionlist: [KsgsM84Src]
     outputdef:
       AMR-Wind: TKE.source_terms
+
+  - name:       SmagorinskyCs
+    label:      Smagorinsky Cs
+    frame:      frame_turbulence
+    inputtype:  float
+    defaultval: 0.135
+    outputdef:
+      AMR-Wind: Smagorinsky_coeffs.Cs
 
   # ---------- incflo fluid properties ------------------------
   - name:       gravity
@@ -466,7 +479,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    #defaultval: wall_model
+    defaultval: slip_wall
     outputdef:
       AMR-Wind: zlo.tke_type
 
@@ -796,13 +809,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: io.plot_file
 
-#  - name:       KE_int
-#    label:      ouput KE interval
-#    frame:      frame_IOplotting
-#    inputtype:  int
-#    defaultval: -1
-#    outputdef:
-#      AMR-Wind: io.KE_int
+  - name:       KE_int
+    label:      ouput KE interval
+    frame:      frame_IOplotting
+    inputtype:  int
+    defaultval: -1
+    outputdef:
+      AMR-Wind: io.KE_int
 
   - name:       post_processing
     label:      Post processing

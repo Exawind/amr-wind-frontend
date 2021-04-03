@@ -68,9 +68,10 @@ class MyApp(tkyg.App, object):
                 outputstr=' '.join([str(self.ifbool(x)) for x in val])
             else:
                 outputstr=str(self.ifbool(val))
-            if len(outputstr)>0: writestr = "%-40s = %s"%(outputkey, outputstr)
-            if verbose: print(writestr)
-            if len(filename)>0: f.write(writestr+"\n")
+            if len(outputstr)>0:
+                writestr = "%-40s = %s"%(outputkey, outputstr)
+                if verbose: print(writestr)
+                if len(filename)>0: f.write(writestr+"\n")
         if len(filename)>0:     f.close()
         #print(sampledict)
         return
