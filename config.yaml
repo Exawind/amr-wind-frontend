@@ -34,19 +34,15 @@ frames:
     tab:   Domain
     #row:   0
     title: Domain and Mesh
-    
   - name:  frame_BC
     tab:   Domain
     title: Boundary conditions
-
   - name:  frame_xBC
     tab:   Domain
     title: X Boundary conditions
-
   - name:  frame_yBC
     tab:   Domain
     title: Y Boundary conditions
-
   - name:  frame_zBC
     tab:   Domain
     title: Z Boundary conditions
@@ -87,6 +83,12 @@ frames:
     tab:   IO
     row:   4
     title: Sampling probes
+
+  # ==== Refinement frames ==== 
+  - name:  frame_refinement
+    tab:   Refinement
+    row:   1
+    title: Nested refinement parameters
 
 
 predefinedlists:
@@ -276,8 +278,8 @@ inputwidgets:
       AMR-Wind: amr.n_cell
 
   - name:       max_level
-    label:      "Max level"
-    frame:      frame_Mesh
+    label:      Max refinement level
+    frame:      frame_refinement #frame_Mesh
     inputtype:  int
     defaultval: 0
     outputdef:
@@ -321,13 +323,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: geometry.is_periodic
 
-  - name:       plot_chooseview
-    label:      "Choose plot view"
-    tab:        Domain
-    row:        6
-    inputtype:  str
-    optionlist: ['XY', 'XZ', 'YZ']
-    defaultval: 'XY'
+  # - name:       plot_chooseview
+  #   label:      "Choose plot view"
+  #   tab:        Domain
+  #   row:        6
+  #   inputtype:  str
+  #   optionlist: ['XY', 'XZ', 'YZ']
+  #   defaultval: 'XY'
 
   - name:       xlo_type
     label:      "Lower X velocity BC"
@@ -459,6 +461,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: zlo.temperature
 
+  - name:       zlo_tke_type
+    label:      "Lower Z TKE BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    #defaultval: wall_model
+    outputdef:
+      AMR-Wind: zlo.tke_type
+
   - name:       zhi_type
     label:      "Upper Z velocity BC"
     frame:      frame_zBC
@@ -484,6 +495,15 @@ inputwidgets:
     defaultval: 0.0
     outputdef:
       AMR-Wind: zhi.temperature
+
+  - name:       zhi_tke_type
+    label:      "Upper Z TKE BC"
+    frame:      frame_zBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: slip_wall
+    outputdef:
+      AMR-Wind: zhi.tke_type
 
   # ============================================================
   # ========== ABL forcing selection ==========================
@@ -776,13 +796,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: io.plot_file
 
-  - name:       KE_int
-    label:      ouput KE interval
-    frame:      frame_IOplotting
-    inputtype:  int
-    defaultval: -1
-    outputdef:
-      AMR-Wind: io.KE_int
+#  - name:       KE_int
+#    label:      ouput KE interval
+#    frame:      frame_IOplotting
+#    inputtype:  int
+#    defaultval: -1
+#    outputdef:
+#      AMR-Wind: io.KE_int
 
   - name:       post_processing
     label:      Post processing
@@ -843,17 +863,22 @@ buttons:
     row:  9
     command: self.quit
 
-  - name: plotdomain
-    text: Plot Domain
-    row:  6
-    col:  2
-    tab:  Domain
-    command: self.plotDomain
+  # - name: plotdomain
+  #   text: Plot Domain
+  #   row:  6
+  #   col:  2
+  #   tab:  Domain
+  #   command: self.plotDomain
 
   # - name: plotdomain
   #   text: Plot Domain
   #   tab:  ABL
   #   command: "partial(self.launchpopupwin, 'plotdomain', savebutton=False)" 
+
+  - name: reloadconfig
+    text: reload yaml
+    tab:  Junk
+    command: "self.reloadconfig"
 
   - name: pullvars
     text: pull vars
@@ -891,7 +916,7 @@ popupwindow:
         defaultval: True
     buttons:
       - name: plot
-        text: plotdomain
+        text: Plot Domain
         command: "partial(self.savethenexec, 'self.master.plotDomain()')"
 
   # === Sampling window ===
@@ -1009,14 +1034,94 @@ popupwindow:
       defaultval: 0
       outputdef:
         AMR-Wind: offsets
+  # === Tagging window ===
+  tagging:
+    title:        Refinement windows # optional
+    datakeyname:  tagging_name       # optional
+    loadonstart:  False              # optional
+    inputwidgets:
+    - name:       tagging_label
+      label:      Refinement window specification
+      labelonly:  True
+    - name:       tagging_name
+      label:      Name 
+      inputtype:  str
+      defaultval: newrefinement
+    - name:       tagging_type
+      label:      Type 
+      inputtype:  listbox
+      optionlist: [CartBoxRefinement, FieldRefinement, GeometryRefinement, QCriterionRefinement, VorticityRefinement]
+      defaultval: CartBoxRefinement
+      listboxopt:
+        width:    20
+      outputdef:
+        AMR-Wind: type
+      ctrlelem:
+        - input: tagging_static_refinement_def
+          activewhen: ['CartBoxRefinement', 1]
+        - input: tagging_field_name
+          activewhen: ['FieldRefinement', 1]
+        - input: tagging_field_error
+          activewhen: ['FieldRefinement', 1]
+        - input: tagging_grad_error
+          activewhen: ['FieldRefinement', 1]
+        - input: tagging_qc_nondim
+          activewhen: ['QCriterionRefinement', 1]
+        - input: tagging_qc_values
+          activewhen: ['QCriterionRefinement', 1]
+      # TO-DO: finish ctrlelem
+    - name:       tagging_static_refinement_def
+      label:      CartBox filename
+      inputtype:  filename
+      defaultval:
+      outputdef:
+        AMR-Wind: static_refinement_def
+    - name:       tagging_field_name
+      label:      Field name
+      inputtype:  str
+      defaultval:
+      outputdef:
+        AMR-Wind: field_name
+    - name:       tagging_field_error
+      label:      Field error
+      inputtype:  str
+      defaultval:
+      outputdef:
+        AMR-Wind: field_error
+    - name:       tagging_grad_error
+      label:      Gradient error
+      inputtype:  str
+      defaultval:
+      outputdef:
+        AMR-Wind: grad_error
+    - name:       tagging_qc_nondim
+      label:      Nondim Q criteria
+      inputtype:  bool
+      defaultval: True
+      outputdef:
+        AMR-Wind: nondim
+    - name:       tagging_qc_values
+      label:      Q criteria values
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: values
+        
         
 listboxpopupwindows:
   - name:       listboxsampling
     label:      "Probes:"
     frame:      frame_IOsampling  
     #row:        0                   # optional
-    popupinput: sampling
+    popupinput: sampling             # required
     outputprefix:                    # optional
-      AMR-Wind:   sampling       
+      AMR-Wind: sampling       
     outputlist:                      # optional
-      AMR-Wind:   labels
+      AMR-Wind: labels
+
+  - name:       listboxtagging
+    label:      "Refinement zones:"
+    frame:      frame_refinement
+    popupinput: tagging
+    outputlist:                      # optional
+      AMR-Wind: labels

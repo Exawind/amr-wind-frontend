@@ -23,32 +23,52 @@ class MyApp(tkyg.App, object):
         super(MyApp, self).__init__(*args, **kwargs)
         self.fig.clf()
         self.fig.text(0.35,0.5,'Welcome to\nAMR-Wind')
-
         self.formatgridrows()
+        self.extradictparams = OrderedDict()
         return
 
-    
-    def writeAMRWindInput(self, filename, verbose=False):
+    def reloadconfig(self):
+        with open('config.yaml') as fp:
+            if tkyg.useruemel: Loader=tkyg.yaml.load
+            else:              Loader=tkyg.yaml.safe_load
+            self.yamldict = Loader(fp)
+        #print('Reloaded config')
+        for listboxdict in self.yamldict['listboxpopupwindows']:
+            frame  = self.tabframeselector(listboxdict)
+            name   = listboxdict['name']
+            popupdict = self.yamldict['popupwindow'][listboxdict['popupinput']]
+            self.listboxpopupwindict[name] = tkyg.listboxpopupwindows(frame, listboxdict, popupdict)
+        return
+
+    @classmethod
+    def ifbool(cls, x):
+        if not isinstance(x, bool): return x
+        return 'true' if x else 'false'
+
+    def writeAMRWindInput(self, filename, verbose=False, 
+                          outputextraparams=True):
         """
         Do more sophisticated output control later
         """
-        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'/'+n+'.'+d2['AMR-Wind']
+        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'/'+n+'.'+d2.outputdef['AMR-Wind']
 
         inputdict = self.getDictFromInputs('AMR-Wind')
         sampledict= self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
         # Construct the output dict
         outputdict=inputdict.copy()
         outputdict.update(sampledict)
+        if outputextraparams:
+            outputdict.update(self.extradictparams)
 
         if len(filename)>0:  f=open(filename, "w")
         for key, val in outputdict.items():
             outputkey = key
             # convert val to string
             if isinstance(val, list):
-                outputstr=' '.join([str(x) for x in val])
+                outputstr=' '.join([str(self.ifbool(x)) for x in val])
             else:
-                outputstr=str(val)
-            writestr = "%-40s = %s"%(outputkey, outputstr)
+                outputstr=str(self.ifbool(val))
+            if len(outputstr)>0: writestr = "%-40s = %s"%(outputkey, outputstr)
             if verbose: print(writestr)
             if len(filename)>0: f.write(writestr+"\n")
         if len(filename)>0:     f.close()
@@ -158,7 +178,7 @@ class MyApp(tkyg.App, object):
         filename  = filedialog.askopenfilename(initialdir = "./",
                                               title = "Select AMR-Wind file")
         if len(filename)>0:
-            extradict = self.loadAMRWindInput(filename, printunused=True)
+            self.extradictparams = self.loadAMRWindInput(filename, printunused=True)
         return
 
     def menubar(self, root):
@@ -210,8 +230,8 @@ class MyApp(tkyg.App, object):
         # Get the variables
         corner1  = self.inputvars['prob_lo'].getval()
         corner2  = self.inputvars['prob_hi'].getval()
-        #xychoice = self.inputvars['plot_chooseview'].getval()
-        xychoice = self.popup_storteddata['plotdomain']['plot_chooseview']
+        plotparams = self.popup_storteddata['plotdomain']
+        xychoice = plotparams['plot_chooseview']
         if xychoice == 'XY':
             ix,iy = 0,1
             xstr, ystr='x','y'
@@ -241,7 +261,7 @@ class MyApp(tkyg.App, object):
         ax.set_xlim([Cx-Lx*0.55, Cx+Lx*0.55])
         ax.set_ylim([Cy-Ly*0.55, Cy+Ly*0.55])
 
-        if self.popup_storteddata['plotdomain']['plot_windnortharrows']:
+        if plotparams['plot_windnortharrows']:
             # Plot the wind vector
             arrowlength = 0.1*np.linalg.norm([Lx, Ly])
             plotwindvec = np.array(windvec)
@@ -264,6 +284,14 @@ class MyApp(tkyg.App, object):
                          color='r', head_width=0.1*northlength, linewidth=0.5)
                 ax.text(compasscenter[ix], compasscenter[iy], 
                         'N', color='r', ha='right', va='top')
+
+        if plotparams['plot_sampleprobes']:
+            allsamplingdata = self.listboxpopupwindict['listboxsampling']
+            allprobes=allsamplingdata.getitemlist()
+            keystr = lambda n, d1, d2: d2.name
+            for p in allprobes:
+                pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
+                #print(pdict['sampling_type'])
         
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)
@@ -285,5 +313,5 @@ if __name__ == "__main__":
     mainapp=MyApp(configyaml='config.yaml', title=title)
 
     if inputfile is not None:
-        mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
     mainapp.mainloop()
