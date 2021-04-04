@@ -293,9 +293,36 @@ class MyApp(tkyg.App, object):
             allsamplingdata = self.listboxpopupwindict['listboxsampling']
             allprobes=allsamplingdata.getitemlist()
             keystr = lambda n, d1, d2: d2.name
+            ms=2
             for p in allprobes:
                 pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
-                #print(pdict['sampling_type'])
+                if pdict['sampling_type'][0]=='LineSampler':
+                    Npts  = pdict['sampling_l_num_points']
+                    start = np.array(pdict['sampling_l_start'])
+                    end   = np.array(pdict['sampling_l_end'])
+                    dx    = (end-start)/(Npts-1.0)
+                    pts   = []
+                    for i in range(Npts):
+                        pt = start + dx*i
+                        pts.append(pt)
+                    pts = np.array(pts)
+                    ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
+                if pdict['sampling_type'][0]=='PlaneSampler':
+                    Npts   = pdict['sampling_p_num_points']
+                    origin = np.array(pdict['sampling_p_origin'])
+                    axis1  = np.array(pdict['sampling_p_axis1'])
+                    axis2  = np.array(pdict['sampling_p_axis2'])
+                    dx1    = axis1/(Npts[0]-1.0)
+                    dx2    = axis2/(Npts[1]-1.0)
+                    pts    = []
+                    # TODO: add offset
+                    for i in range(Npts[0]):
+                        for j in range(Npts[1]):
+                            pt = origin + i*dx1 + j*dx2
+                            pts.append(pt)
+                    pts = np.array(pts)
+                    ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
+            ax.legend(title="Sampling probes")
         
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)
