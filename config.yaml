@@ -951,10 +951,10 @@ popupwindow:
         inputtype:  str
         optionlist: ['XY', 'XZ', 'YZ']
         defaultval: 'XY'
-      - name:       plot_sampleprobes
-        label:      Plot sample probes
-        inputtype:  bool
-        defaultval: True
+      # - name:       plot_sampleprobebool
+      #   label:      Plot sample probes
+      #   inputtype:  bool
+      #   defaultval: True
       - name:       plot_refinement
         label:      Plot refinement regions
         inputtype:  bool
@@ -963,6 +963,14 @@ popupwindow:
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
+      - name:       plot_sampleprobes
+        label:      Plot sample probes
+        inputtype:  listbox
+        optionlist: "self.parent.listboxpopupwindict['listboxsampling'].getitemlist()"
+        defaultval: 
+        listboxopt:
+          selectmode: multiple
+          
     buttons:
       - name: plot
         text: Plot Domain

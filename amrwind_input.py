@@ -89,17 +89,31 @@ class MyApp(tkyg.App, object):
         return
 
     @classmethod
+    def processline(cls, inputline):
+        line = inputline.partition('#')[0]
+        line = line.rstrip()
+        if len(line)>0:
+            line = line.split('=')
+            key  = line[0].strip()
+            data = line[1].strip()
+            return key, data
+        return None, None
+
+    @classmethod
+    def AMRWindStringToDict(cls, string):
+        returndict = OrderedDict()
+        for line in string.split('\n'):
+            key, data = cls.processline(line)
+            if key is not None: returndict[key] = data
+        return returndict
+            
+    @classmethod
     def AMRWindInputToDict(cls, filename):
         returndict = OrderedDict()
         with open(filename) as f:
             for line in f:
-                line = line.partition('#')[0]
-                line = line.rstrip()
-                if len(line)>0:
-                    line = line.split('=')
-                    key  = line[0].strip()
-                    data = line[1].strip()
-                    returndict[key] = data
+                key, data = cls.processline(line)
+                if key is not None: returndict[key] = data
         return returndict
 
     @classmethod
@@ -159,8 +173,11 @@ class MyApp(tkyg.App, object):
         #print(samplingdict)
         return samplingdict, extradict
 
-    def loadAMRWindInput(self, filename, printunused=False):
-        amrdict=self.AMRWindInputToDict(filename)
+    def loadAMRWindInput(self, filename, string=False, printunused=False):
+        if string:
+            amrdict=self.AMRWindStringToDict(filename)
+        else:
+            amrdict=self.AMRWindInputToDict(filename)
         extradict=self.setinputfromdict('AMR-Wind', amrdict)
 
         # Input the sampling probes
@@ -291,12 +308,13 @@ class MyApp(tkyg.App, object):
                 ax.text(compasscenter[ix], compasscenter[iy], 
                         'N', color='r', ha='right', va='top')
 
-        if plotparams['plot_sampleprobes']:
+        if len(plotparams['plot_sampleprobes'])>0:
+        #if plotparams['plot_sampleprobes']:
             allsamplingdata = self.listboxpopupwindict['listboxsampling']
             allprobes=allsamplingdata.getitemlist()
             keystr = lambda n, d1, d2: d2.name
             ms=2
-            for p in allprobes:
+            for p in plotparams['plot_sampleprobes']:
                 pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
                 if pdict['sampling_type'][0]=='LineSampler':
                     Npts  = pdict['sampling_l_num_points']
