@@ -67,7 +67,9 @@ class MyApp(tkyg.App, object):
         for key, val in outputdict.items():
             outputkey = key
             # convert val to string
-            if isinstance(val, list):
+            if val is None:
+                continue
+            elif isinstance(val, list):
                 outputstr=' '.join([str(self.ifbool(x)) for x in val])
             else:
                 outputstr=str(self.ifbool(val))

@@ -133,7 +133,7 @@ inputwidgets:
     label:      checkpoint interval
     frame:      frame_restart
     inputtype:  int
-    defaultval: 10000
+    defaultval: #10000
     outputdef:
       AMR-Wind: time.checkpoint_interval
 
@@ -370,6 +370,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: xlo.temperature
 
+  - name:       xlo_tke_type
+    label:      "Lower X TKE BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: #None
+    outputdef:
+      AMR-Wind: xlo.tke_type
+
   - name:       xhi_type
     label:      "Upper X velocity BC"
     frame:      frame_xBC
@@ -395,6 +404,15 @@ inputwidgets:
     defaultval: 0.0
     outputdef:
       AMR-Wind: xhi.temperature
+
+  - name:       xhi_tke_type
+    label:      "Upper X TKE BC"
+    frame:      frame_xBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: #None
+    outputdef:
+      AMR-Wind: xhi.tke_type
 
   - name:       ylo_type
     label:      "Lower Y velocity BC"
@@ -422,6 +440,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: ylo.temperature
 
+  - name:       ylo_tke_type
+    label:      "Lower Y TKE BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: #None
+    outputdef:
+      AMR-Wind: ylo.tke_type
+
   - name:       yhi_type
     label:      "Upper Y velocity BC"
     frame:      frame_yBC
@@ -447,6 +474,15 @@ inputwidgets:
     defaultval: 0.0
     outputdef:
       AMR-Wind: yhi.temperature
+
+  - name:       yhi_tke_type
+    label:      "Upper Y TKE BC"
+    frame:      frame_yBC
+    inputtype:  str
+    optionlist: *bctypes
+    defaultval: #None
+    outputdef:
+      AMR-Wind: yhi.tke_type
 
   - name:       zlo_type
     label:      "Lower Z velocity BC"
@@ -514,7 +550,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: slip_wall
+    defaultval: #slip_wall
     outputdef:
       AMR-Wind: zhi.tke_type
 
