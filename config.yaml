@@ -4,6 +4,7 @@ tabs:
   - ABL
   - Refinement
   - IO
+  - Postpro
   - Junk
 
 frames:
@@ -89,6 +90,12 @@ frames:
     tab:   Refinement
     row:   1
     title: Nested refinement parameters
+
+  # ==== Postprocessing frames ==== 
+  - name:  frame_postproABL
+    tab:   Postpro
+    row:   1
+    title: ABL Postprocessing
 
 
 predefinedlists:
@@ -887,6 +894,26 @@ inputwidgets:
     outputdef:
       AMR-Wind: sampling.fields
 
+  # =========== Postprocessing stuff here ====================
+  - name:       ablstats_file
+    label:      ABL Statistics file
+    frame:      frame_postproABL
+    row:        1
+    inputtype:  filename
+
+  - name:       ablstats_avgt
+    label:      Avg times
+    frame:      frame_postproABL
+    row:        4
+    inputtype:  [float, float]
+    defaultval: [0.0, 0.0]
+
+  - name:       ablstats_profileplot
+    label:      ABL Profile Stats
+    frame:      frame_postproABL
+    inputtype:  listbox
+    optionlist: "parent.getABLpostpro_profileslist()"
+  
   # =========== Junk stuff here ========================
   - name: input_3
     label: "list of options"
@@ -939,7 +966,14 @@ buttons:
     tab:  Junk
     command: "partial(self.writeAMRWindInput, '', verbose=True)"
 
+  - name:    loadABLstatsfile
+    text:    Load file
+    frame:   frame_postproABL
+    row:     2
+    col:     2
+    command: "partial(self.writeAMRWindInput, '', verbose=True)"
 
+    
 popupwindow:
   # === Plot domain window ===
   plotdomain:

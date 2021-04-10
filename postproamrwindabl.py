@@ -75,17 +75,6 @@ def matchvarstimes(dic, varnames, avgt):
     if dic['avgt'] != avgt:    return False
     return True
 
-def calculateUhoriz(allvars, avgt, ncdat):
-    requiredvars = ['u', 'v']
-    if not matchvarstimes(allvars, requiredvars, avgt):
-        # Load the data from the ncdat file
-        var = loadProfileData(ncdat, varslist=requiredvars, avgt=avgt)
-    else:
-        var = allvars
-    # compute U horizontal
-    return var['z'], np.sqrt(var['u']**2 + var['v']**2)
-
-
 def calculateShearAlpha(allvars):
     # compute Umag
     u_mag = np.sqrt(allvars['u']**2 + allvars['v']**2)
@@ -116,12 +105,16 @@ def calculateExpr(expr, allvars, avgt, ncdat):
     return var['z'], np.array(vec)
 
 # A dictionary with all of the variables you can plot
-profiles={'velocity': [['u', 'v', 'w'],     'u v w',
-                       '[[u], [v], [w]]'],
-          'Uhoriz':   [['u', 'v'],          'Uhoriz',
-                       'np.sqrt([u]**2 + [v]**2)'],
-          'tke':      [[u"u'u'_r", u"v'v'_r", u"v'v'_r",], 'tke'
-                       '0.5*([uu]**2+[vv]**2+[ww]**2)'],
+statsprofiles={'velocity': [['u', 'v', 'w'],     'u v w',
+                            '[[u], [v], [w]]', False],
+               'temperature': [['theta'],     'T',
+                            '[theta]', False],
+               'Uhoriz':   [['u', 'v'],          'Uhoriz',
+                            'np.sqrt([u]**2 + [v]**2)', False],
+               'TKE':      [[u"u'u'_r", u"v'v'_r", u"v'v'_r",], 'tke'
+                            '0.5*([uu]**2+[vv]**2+[ww]**2)', False],
+               'Alpha':    [['u', 'v'],          'alpha',
+                            'calculateShearAlpha', True],
 }
     
 class CalculatedProfile:

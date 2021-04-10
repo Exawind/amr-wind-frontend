@@ -4,10 +4,13 @@ import sys, os
 # import the tkyamlgui library
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath+'/tkyamlgui')
+sys.path.insert(1, scriptpath)
 
 import numpy as np
 from functools import partial
 import tkyamlgui as tkyg
+import postproamrwindabl as postpro
+
 if sys.version_info[0] < 3:
     import Tkinter as Tk
     import tkFileDialog as filedialog
@@ -353,6 +356,10 @@ class MyApp(tkyg.App, object):
 
         return
 
+    def getABLpostpro_profileslist(self):
+        return [key for key, v in postpro.statsprofiles.items()]
+
+    
 if __name__ == "__main__":
     title='AMR-Wind input creator'
 
