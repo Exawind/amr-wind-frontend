@@ -31,6 +31,7 @@ class MyApp(tkyg.App, object):
         self.fig.text(0.35,0.5,'Welcome to\nAMR-Wind')
         self.formatgridrows()
         self.extradictparams = OrderedDict()
+        self.abl_stats = None
         return
 
     def reloadconfig(self):
@@ -244,14 +245,19 @@ class MyApp(tkyg.App, object):
         root.config(menu=menubar)
         return
 
-    def plotDomain(self):
+    def setupfigax(self, clear=True, subplot=111):
         # Clear and resize figure
         canvaswidget=self.figcanvas.get_tk_widget()
         w,h1 = self.winfo_width(), self.winfo_height()
         canvaswidget.configure(width=w-self.leftframew-10, height=h1-75)
         self.fig.clf()
-        ax=self.fig.add_subplot(111)
-        ax.clear()
+        ax=self.fig.add_subplot(subplot)
+        if clear: ax.clear()
+        return ax
+
+    def plotDomain(self):
+        # Clear and resize figure
+        ax=self.setupfigax()
         
         # Get the variables
         corner1  = self.inputvars['prob_lo'].getval()
@@ -355,21 +361,72 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
 
         return
+        
 
-    def getABLpostpro_profileslist(self):
+    # ---- ABL postprocessing options ----
+    def ABLpostpro_getprofileslist(self):
         return [key for key, v in postpro.statsprofiles.items()]
 
-    
+    def ABLpostpro_loadnetcdffile(self):
+        ablfile        = self.inputvars['ablstats_file'].getval()
+        self.abl_stats = postpro.loadnetcdffile(ablfile)
+        print("Loading %s"%ablfile)
+        mint = min(self.abl_stats['time'])
+        maxt = max(self.abl_stats['time']) 
+        self.inputvars['ablstats_avgt'].setval([mint, maxt])
+        print("Done.")
+        return
+
+    def ABLpostpro_plotprofiles(self):
+        # Get the list of selected quantities
+        selectedvars = self.inputvars['ablstats_profileplot'].getval()
+        avgt         = self.inputvars['ablstats_avgt'].getval()
+        ax=self.setupfigax()
+
+        for var in selectedvars:
+            print(var)
+            # initialize the profile
+            prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
+                                                    self.abl_stats,
+                                                    {}, avgt)
+            z, plotdat = prof.calculate()
+            N = np.shape(plotdat)
+            if len(N)>1:
+                # Break the header labels
+                varlabels = postpro.statsprofiles[var]['header'].split()
+                for i in range(N[1]):
+                    ax.plot(plotdat[:,i], z, label=var+': '+varlabels[i])
+            else:
+                ax.plot(plotdat, z, label=postpro.statsprofiles[var]['header'])
+        # Format the plot
+        ax.set_ylabel('z [m]')
+        ax.legend()
+        # Draw the figure
+        self.figcanvas.draw()
+        return
+
 if __name__ == "__main__":
-    title='AMR-Wind input creator'
+    title='AMR-Wind'
 
     # Check the command line arguments
     parser = argparse.ArgumentParser(description=title)
     parser.add_argument('inputfile', nargs='?')
-    args   = parser.parse_args()
-    inputfile = args.inputfile
-    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
+    parser.add_argument('--ablstatsfile',   
+                        default='',  
+                        help="Load the ABL statistics file [default: None]")
+    args         = parser.parse_args()
+    inputfile    = args.inputfile
+    ablstatsfile = args.ablstatsfile
 
+    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
+    mainapp.notebook.enable_traversal()
+
+    # Load an inputfile
     if inputfile is not None:
         mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+    # Load the abl statsfile
+    if len(ablstatsfile)>0:
+        mainapp.inputvars['ablstats_file'].setval(ablstatsfile)
+        mainapp.ABLpostpro_loadnetcdffile()
+        mainapp.notebook.select(5)
     mainapp.mainloop()

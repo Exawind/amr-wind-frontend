@@ -908,12 +908,21 @@ inputwidgets:
     inputtype:  [float, float]
     defaultval: [0.0, 0.0]
 
+  - name:       ablstats_avgz
+    label:      Avg heights
+    frame:      frame_postproABL
+    inputtype:  str
+    defaultval: 
+
   - name:       ablstats_profileplot
     label:      ABL Profile Stats
     frame:      frame_postproABL
     inputtype:  listbox
-    optionlist: "parent.getABLpostpro_profileslist()"
-  
+    optionlist: "parent.ABLpostpro_getprofileslist()"
+    listboxopt:
+      selectmode: multiple
+      #height:     3
+
   # =========== Junk stuff here ========================
   - name: input_3
     label: "list of options"
@@ -971,7 +980,14 @@ buttons:
     frame:   frame_postproABL
     row:     2
     col:     2
-    command: "partial(self.writeAMRWindInput, '', verbose=True)"
+    command: "self.ABLpostpro_loadnetcdffile"
+
+  - name:    plotABLstatsprofile
+    text:    Plot profiles
+    frame:   frame_postproABL
+    row:     7
+    col:     1
+    command: "self.ABLpostpro_plotprofiles"
 
     
 popupwindow:

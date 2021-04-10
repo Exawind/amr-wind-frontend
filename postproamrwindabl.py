@@ -6,6 +6,7 @@ import numpy as np
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import os.path as path
+from collections            import OrderedDict 
 
 stdvars = ['u',         'v',      'w',        'theta', 
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
@@ -54,6 +55,7 @@ def loadProfileData(d, varslist=stdvars, group='mean_profiles', avgt=[]):
     alldat={}
     #print(d['mean_profiles'].variables)
     t = d.variables['time'][:]
+    alldat['time'] = t
     alldat['avgt'] = avgt
     alldat['z'] = d['mean_profiles'].variables['h'][:]
     for var in varslist:
@@ -105,17 +107,28 @@ def calculateExpr(expr, allvars, avgt, ncdat):
     return var['z'], np.array(vec)
 
 # A dictionary with all of the variables you can plot
-statsprofiles={'velocity': [['u', 'v', 'w'],     'u v w',
-                            '[[u], [v], [w]]', False],
-               'temperature': [['theta'],     'T',
-                            '[theta]', False],
-               'Uhoriz':   [['u', 'v'],          'Uhoriz',
-                            'np.sqrt([u]**2 + [v]**2)', False],
-               'TKE':      [[u"u'u'_r", u"v'v'_r", u"v'v'_r",], 'tke'
-                            '0.5*([uu]**2+[vv]**2+[ww]**2)', False],
-               'Alpha':    [['u', 'v'],          'alpha',
-                            'calculateShearAlpha', True],
-}
+statsprofiles=OrderedDict([
+    ('velocity', {'requiredvars':['u', 'v', 'w'],     
+                  'header':'u v w',
+                  'expr':'[[u], [v], [w]]', 
+                  'funcstring':False}),
+    ('Uhoriz',   {'requiredvars':['u', 'v'],          
+                  'header':'Uhoriz',
+                  'expr':'np.sqrt([u]**2 + [v]**2)', 
+                  'funcstring':False}),
+    ('temperature', {'requiredvars':['theta'],     
+                     'header':'T',
+                     'expr':'[T]', 
+                     'funcstring':False}),
+    ('TKE',      {'requiredvars':[u"u'u'_r", u"v'v'_r", u"v'v'_r",], 
+                  'header':'tke',
+                  'expr':'0.5*([uu]**2+[vv]**2+[ww]**2)', 
+                  'funcstring':False}),
+    ('Alpha',    {'requiredvars':['u', 'v'],          
+                  'header':'alpha',
+                  'expr':'calculateShearAlpha', 
+                  'funcstring':True}),
+])
     
 class CalculatedProfile:
     def __init__(self, requiredvars, expr, ncdat, allvardata, avgt, header='',
@@ -127,6 +140,11 @@ class CalculatedProfile:
         self.avgt         = avgt
         self.vec          = None
         self.funcstring   = funcstring
+
+    @classmethod
+    def fromdict(cls, d, ncdat, allvardata, avgt):
+        return cls(d['requiredvars'], d['expr'], ncdat, allvardata, avgt, 
+                   header=d['header'], funcstring=d['funcstring'])
 
     def calculate(self, allvars=None, avgt=None):
         if allvars is None: allvars = self.allvardata
