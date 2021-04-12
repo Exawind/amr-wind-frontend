@@ -96,6 +96,10 @@ frames:
     tab:   Postpro
     row:   1
     title: ABL Postprocessing
+  - name:  frame_postprosampling
+    tab:   Postpro
+    row:   2
+    title: Plot Sample Planes
 
 
 predefinedlists:
@@ -342,14 +346,6 @@ inputwidgets:
       - ['is_periodicz', '1', '0']
     outputdef:
       AMR-Wind: geometry.is_periodic
-
-  # - name:       plot_chooseview
-  #   label:      "Choose plot view"
-  #   tab:        Domain
-  #   row:        6
-  #   inputtype:  str
-  #   optionlist: ['XY', 'XZ', 'YZ']
-  #   defaultval: 'XY'
 
   - name:       xlo_type
     label:      "Lower X velocity BC"
@@ -895,6 +891,7 @@ inputwidgets:
       AMR-Wind: sampling.fields
 
   # =========== Postprocessing stuff here ====================
+  # ----------- ABL postprocessing -----------------
   - name:       ablstats_file
     label:      ABL Statistics file
     frame:      frame_postproABL
@@ -922,6 +919,20 @@ inputwidgets:
     listboxopt:
       selectmode: multiple
       #height:     3
+
+  - name:       ablstats_reportlabel
+    label:      Print ABL report
+    frame:      frame_postproABL
+    row:        8
+    labelonly:  True
+
+
+  # ----------- ABL postprocessing -----------------
+  - name:       ncsampling_file
+    label:      NetCDF file
+    frame:      frame_postprosampling
+    row:        1
+    inputtype:  filename
 
   # =========== Junk stuff here ========================
   - name: input_3
@@ -988,6 +999,13 @@ buttons:
     row:     7
     col:     1
     command: "self.ABLpostpro_plotprofiles"
+
+  - name:    printABLstatsreport
+    text:    Print report
+    frame:   frame_postproABL
+    row:     8
+    col:     1
+    command: "self.ABLpostpro_printreport"
 
     
 popupwindow:

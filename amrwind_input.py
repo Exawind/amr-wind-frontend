@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys, os, re
 # import the tkyamlgui library
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath+'/tkyamlgui')
@@ -369,6 +369,8 @@ class MyApp(tkyg.App, object):
 
     def ABLpostpro_loadnetcdffile(self):
         ablfile        = self.inputvars['ablstats_file'].getval()
+        if self.abl_stats is not None:
+            self.abl_stats.close()
         self.abl_stats = postpro.loadnetcdffile(ablfile)
         print("Loading %s"%ablfile)
         mint = min(self.abl_stats['time'])
@@ -383,6 +385,7 @@ class MyApp(tkyg.App, object):
         avgt         = self.inputvars['ablstats_avgt'].getval()
         ax=self.setupfigax()
 
+        if len(selectedvars)<1: return
         for var in selectedvars:
             print(var)
             # initialize the profile
@@ -403,6 +406,16 @@ class MyApp(tkyg.App, object):
         ax.legend()
         # Draw the figure
         self.figcanvas.draw()
+        return
+
+    def ABLpostpro_printreport(self):
+        avgt         = self.inputvars['ablstats_avgt'].getval()
+        ablstats_avgz= self.inputvars['ablstats_avgz'].getval()
+        if (ablstats_avgz is None) or (ablstats_avgz=='None') or (ablstats_avgz==''): 
+            print('Error ablstats_avgz=%s is not valid.'%ablstats_avgz)
+            return
+        avgz         = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
+        report = postpro.printReport(self.abl_stats, avgz, avgt, verbose=True)
         return
 
 if __name__ == "__main__":

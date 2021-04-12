@@ -3,10 +3,13 @@
 #
 
 import numpy as np
+import math
+import sys
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import os.path as path
 from collections            import OrderedDict 
+from scipy import interpolate
 
 stdvars = ['u',         'v',      'w',        'theta', 
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
@@ -116,14 +119,31 @@ statsprofiles=OrderedDict([
                   'header':'Uhoriz',
                   'expr':'np.sqrt([u]**2 + [v]**2)', 
                   'funcstring':False}),
-    ('temperature', {'requiredvars':['theta'],     
+    ('WindDir',  {'requiredvars':['u', 'v'],          
+                  'header':'WindDir',
+                  'expr':'270-np.arctan2([v], [u])*180.0/math.pi', 
+                  'funcstring':False}),
+    ('Temperature', {'requiredvars':['theta'],     
                      'header':'T',
                      'expr':'[T]', 
                      'funcstring':False}),
-    ('TKE',      {'requiredvars':[u"u'u'_r", u"v'v'_r", u"v'v'_r",], 
-                  'header':'tke',
+    ('TI_TKE',   {'requiredvars':['u', 'v', u"u'u'_r", u"v'v'_r", u"w'w'_r",], 
+                  'header':'TI_TKE',
+                  'expr':'np.sqrt(([uu]**2+[vv]**2+[ww]**2)/3.0)/np.sqrt([u]**2 + [v]**2)', 
+                  'funcstring':False}),
+    ('TI_horiz', {'requiredvars':['u', 'v', u"u'u'_r", u"v'v'_r"], 
+                  'header':'TI_horiz',
+                  'expr':'np.sqrt([uu]**2+[vv]**2)/np.sqrt([u]**2 + [v]**2)', 
+                  'funcstring':False}),
+    ('TKE',      {'requiredvars':[u"u'u'_r", u"v'v'_r", u"w'w'_r",], 
+                  'header':'TKE',
                   'expr':'0.5*([uu]**2+[vv]**2+[ww]**2)', 
                   'funcstring':False}),
+    ('ReStresses',{'requiredvars':[u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
+                                   u"v'v'_r",  u"v'w'_r", u"w'w'_r",], 
+                   'header':'uu uv uw vv vw ww',
+                   'expr':'[[uu], [uv], [uw], [vv], [vw], [ww]]', 
+                   'funcstring':False}),
     ('Alpha',    {'requiredvars':['u', 'v'],          
                   'header':'alpha',
                   'expr':'calculateShearAlpha', 
@@ -178,3 +198,46 @@ class CalculatedProfile:
         return var['z'], vec
         
         
+def printReport(ncdat, heights, avgt, verbose=True):
+    """
+    Print out a report of the ABL statistics at given heights
+    """
+    profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha']
+    # Build the list of all required variables
+    requiredvars = []
+    for var in profvars:
+        neededvars = statsprofiles[var]['requiredvars']
+        requiredvars = list(set(requiredvars) | set(neededvars))
+    # Load the variables
+    alldata = loadProfileData(ncdat, varslist=requiredvars, avgt=avgt)
+
+    reportvars={}
+    for var in profvars:
+        # Get the quantity at every height
+        prof=CalculatedProfile.fromdict(statsprofiles[var],
+                                        ncdat, alldata, avgt)
+        z, qdat = prof.calculate()
+        interpf = interpolate.interp1d(z, qdat)
+        reportvars[var]=[interpf(z) for z in heights]
+
+    if verbose:
+        # Print the header
+        sys.stdout.write('%9s '%'z')
+        for var in profvars:  sys.stdout.write('%12s '%var)
+        sys.stdout.write('\n')
+        sys.stdout.write('%9s '%'===')
+        for var in profvars:  sys.stdout.write('%12s '%'====')        
+        sys.stdout.write('\n')
+        # write the results
+        for iz, z in enumerate(heights):
+            sys.stdout.write('%9.2f '%z)
+            for var in profvars :
+                sys.stdout.write('%12e '%reportvars[var][iz])
+            sys.stdout.write('\n')            
+    return reportvars
+
+if __name__ == "__main__":
+    ncdat=loadnetcdffile('abl_statistics00000.nc')
+    avgt=[15000, 20000]
+    heights=[60.0, 91.0]
+    printReport(ncdat, heights, avgt, verbose=True)
