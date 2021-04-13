@@ -918,14 +918,24 @@ inputwidgets:
     optionlist: "parent.ABLpostpro_getprofileslist()"
     listboxopt:
       selectmode: multiple
-      #height:     3
+      height:     5
+
+  - name:       ablstats_scalarplot
+    label:      ABL Scalar Stats
+    frame:      frame_postproABL
+    inputtype:  listbox
+    optionlist: "parent.ABLpostpro_getscalarslist()"
+    row:        8
+    listboxopt:
+      selectmode: multiple
+      height:     5
+
 
   - name:       ablstats_reportlabel
     label:      Print ABL report
     frame:      frame_postproABL
-    row:        8
+    row:        10
     labelonly:  True
-
 
   # ----------- ABL postprocessing -----------------
   - name:       ncsampling_file
@@ -1000,10 +1010,17 @@ buttons:
     col:     1
     command: "self.ABLpostpro_plotprofiles"
 
+  - name:    plotABLscalars
+    text:    Plot scalars
+    frame:   frame_postproABL
+    row:     9
+    col:     1
+    command: "self.ABLpostpro_plotscalars"
+
   - name:    printABLstatsreport
     text:    Print report
     frame:   frame_postproABL
-    row:     8
+    row:     10
     col:     1
     command: "self.ABLpostpro_printreport"
 

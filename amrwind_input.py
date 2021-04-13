@@ -367,6 +367,9 @@ class MyApp(tkyg.App, object):
     def ABLpostpro_getprofileslist(self):
         return [key for key, v in postpro.statsprofiles.items()]
 
+    def ABLpostpro_getscalarslist(self):
+        return postpro.scalarvars[1:]
+
     def ABLpostpro_loadnetcdffile(self):
         ablfile        = self.inputvars['ablstats_file'].getval()
         if self.abl_stats is not None:
@@ -387,7 +390,7 @@ class MyApp(tkyg.App, object):
 
         if len(selectedvars)<1: return
         for var in selectedvars:
-            print(var)
+            #print(var)
             # initialize the profile
             prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
                                                     self.abl_stats,
@@ -403,6 +406,24 @@ class MyApp(tkyg.App, object):
                 ax.plot(plotdat, z, label=postpro.statsprofiles[var]['header'])
         # Format the plot
         ax.set_ylabel('z [m]')
+        ax.legend()
+        # Draw the figure
+        self.figcanvas.draw()
+        return
+
+    def ABLpostpro_plotscalars(self):
+        # Get the list of selected quantities
+        selectedvars = self.inputvars['ablstats_scalarplot'].getval()
+        avgt         = self.inputvars['ablstats_avgt'].getval()
+        ax=self.setupfigax()
+        
+        if len(selectedvars)<1: return
+        for var in selectedvars:
+            print(var)
+            t, v = postpro.extractScalarTimeHistory(self.abl_stats, var)
+            ax.plot(t, v, label=var)
+        # Format the plot
+        ax.set_xlabel('t [s]')
         ax.legend()
         # Draw the figure
         self.figcanvas.draw()
