@@ -29,7 +29,10 @@ frames:
     tab:   Simulation
     row:   6
     title: Turbulence parameters
-
+  - name:  frame_tolerances
+    tab:   Simulation
+    row:   7
+    title: Tolerances
   # ==== Domain frames ==== 
   - name:  frame_Mesh
     tab:   Domain
@@ -234,6 +237,62 @@ inputwidgets:
     defaultval: 0.135
     outputdef:
       AMR-Wind: Smagorinsky_coeffs.Cs
+  # ---------- Tolerance parameters --------------------------
+  - name:       nodal_proj.mg_rtol
+    label:      nodal_proj.mg_rtol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: nodal_proj.mg_rtol
+
+  - name:       nodal_proj.mg_atol
+    label:      nodal_proj.mg_atol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: nodal_proj.mg_atol
+
+  - name:       mac_proj.mg_rtol
+    label:      mac_proj.mg_rtol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: mac_proj.mg_rtol
+
+  - name:       mac_proj.mg_atol
+    label:      mac_proj.mg_atol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: mac_proj.mg_atol
+
+  - name:       diffusion.mg_rtol
+    label:      diffusion.mg_rtol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: diffusion.mg_rtol
+
+  - name:       diffusion.mg_atol
+    label:      diffusion.mg_atol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: diffusion.mg_atol
+
+  - name:       temperature_diffusion.mg_rtol
+    label:      temperature_diffusion.mg_rtol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: temperature_diffusion.mg_rtol
+
+  - name:       temperature_diffusion.mg_atol
+    label:      temperature_diffusion.mg_atol
+    frame:      frame_tolerances
+    inputtype:  float
+    outputdef:
+      AMR-Wind: temperature_diffusion.mg_atol
 
   # ---------- incflo fluid properties ------------------------
   - name:       gravity
@@ -969,18 +1028,6 @@ buttons:
     row:  9
     command: self.quit
 
-  # - name: plotdomain
-  #   text: Plot Domain
-  #   row:  6
-  #   col:  2
-  #   tab:  Domain
-  #   command: self.plotDomain
-
-  # - name: plotdomain
-  #   text: Plot Domain
-  #   tab:  ABL
-  #   command: "partial(self.launchpopupwin, 'plotdomain', savebutton=False)" 
-
   - name: reloadconfig
     text: reload yaml
     tab:  Junk
@@ -1009,6 +1056,13 @@ buttons:
     row:     7
     col:     1
     command: "self.ABLpostpro_plotprofiles"
+
+  - name:    plotABLexportprofile
+    text:    Export profiles
+    frame:   frame_postproABL
+    row:     7
+    col:     2
+    command: "self.ABLpostpro_exportprofiles"
 
   - name:    plotABLscalars
     text:    Plot scalars

@@ -32,6 +32,7 @@ class MyApp(tkyg.App, object):
         self.formatgridrows()
         self.extradictparams = OrderedDict()
         self.abl_stats = None
+        self.abl_profiledata = {}
         return
 
     def reloadconfig(self):
@@ -57,7 +58,7 @@ class MyApp(tkyg.App, object):
         """
         Do more sophisticated output control later
         """
-        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'/'+n+'.'+d2.outputdef['AMR-Wind']
+        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
 
         inputdict = self.getDictFromInputs('AMR-Wind')
         sampledict= self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
@@ -121,7 +122,7 @@ class MyApp(tkyg.App, object):
         return returndict
 
     @classmethod
-    def AMRWindExtractSampleDict(cls, inputdict, template, sep=["/","."]):
+    def AMRWindExtractSampleDict(cls, inputdict, template, sep=[".","."]):
         """
         From input dict, extract all of the sampling probe parameters
         """
@@ -370,7 +371,7 @@ class MyApp(tkyg.App, object):
     def ABLpostpro_getscalarslist(self):
         return postpro.scalarvars[1:]
 
-    def ABLpostpro_loadnetcdffile(self):
+    def ABLpostpro_loadnetcdffile(self, updatetimes=False):
         ablfile        = self.inputvars['ablstats_file'].getval()
         if self.abl_stats is not None:
             self.abl_stats.close()
@@ -378,7 +379,8 @@ class MyApp(tkyg.App, object):
         print("Loading %s"%ablfile)
         mint = min(self.abl_stats['time'])
         maxt = max(self.abl_stats['time']) 
-        self.inputvars['ablstats_avgt'].setval([mint, maxt])
+        if updatetimes: self.inputvars['ablstats_avgt'].setval([mint, maxt])
+        print("Time range: %f to %f"%(mint, maxt))
         print("Done.")
         return
 
@@ -394,8 +396,9 @@ class MyApp(tkyg.App, object):
             # initialize the profile
             prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
                                                     self.abl_stats,
-                                                    {}, avgt)
+                                                    self.abl_profiledata, avgt)
             z, plotdat = prof.calculate()
+            self.abl_profiledata = prof.allvardata.copy()
             N = np.shape(plotdat)
             if len(N)>1:
                 # Break the header labels
@@ -427,6 +430,28 @@ class MyApp(tkyg.App, object):
         ax.legend()
         # Draw the figure
         self.figcanvas.draw()
+        return
+
+    def ABLpostpro_exportprofiles(self):
+        # Get the list of selected quantities
+        selectedvars = self.inputvars['ablstats_profileplot'].getval()
+        avgt         = self.inputvars['ablstats_avgt'].getval()
+
+        if len(selectedvars)<1: return
+        filepre  = filedialog.asksaveasfilename(initialdir = "./",
+                                                title="Specify filename prefix")
+
+        for var in selectedvars:
+            prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
+                                                    self.abl_stats,
+                                                    self.abl_profiledata, avgt)
+            filename = filepre+"."+var+".dat"
+            extraheader = "Avg from t=%e to t=%e"%(avgt[0], avgt[1])
+            prof.save(filename,
+                      allvars=self.abl_profiledata, 
+                      avgt=avgt, extraheader=extraheader)
+            print("saved "+filename)
+            self.abl_profiledata = prof.allvardata.copy()
         return
 
     def ABLpostpro_printreport(self):

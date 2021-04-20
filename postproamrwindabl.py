@@ -219,12 +219,16 @@ class CalculatedProfile:
         self.vec = vec
         return var['z'], vec
 
-    def save(self, filename, allvars=None, avgt=None):
+    def save(self, filename, allvars=None, avgt=None, extraheader=''):
         # Calculate the quantity
         z, vec = self.calculate(allvars=allvars, avgt=avgt)
         # Save it to the filename
         savedat = np.vstack((z, vec.transpose())).transpose()
-        np.savetxt(filename, savedat, header="z "+self.header)
+        if len(extraheader)>0:
+            header = extraheader + "\nz "+self.header
+        else:
+            header = "z "+self.header
+        np.savetxt(filename, savedat, header=header)
         return
 
 def extractScalarTimeHistory(ncdat, var):
