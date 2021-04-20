@@ -24,6 +24,30 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches     import Rectangle
 import argparse
 
+def readCartBoxFile(filename):
+    """
+    Read the Cartesian box file
+    """
+    allboxes = []
+    fname    = open(filename, 'r')
+    # read the number of levels
+    Nlevels = int(fname.readline().strip())
+    for i in range(Nlevels):
+        # Read the number of boxes at this level
+        Nboxes = int(fname.readline().strip())
+        levelboxes=[]
+        for b in range(Nboxes):
+            # Read each box
+            boxline  = fname.readline().strip().split()
+            box      = [float(x) for x in boxline]
+            if len(box)!=6:
+                print("Line does not contain 6 floats:")
+                print(" %s"%boxline)
+            levelboxes.append(box)
+        allboxes.append(levelboxes)
+    fname.close()
+    return allboxes
+
 class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
         super(MyApp, self).__init__(*args, **kwargs)
@@ -318,6 +342,8 @@ class MyApp(tkyg.App, object):
                 ax.text(compasscenter[ix], compasscenter[iy], 
                         'N', color='r', ha='right', va='top')
 
+        # Plot the sample probes
+        # ---------------------------
         if len(plotparams['plot_sampleprobes'])>0:
         #if plotparams['plot_sampleprobes']:
             allsamplingdata = self.listboxpopupwindict['listboxsampling']
@@ -353,7 +379,29 @@ class MyApp(tkyg.App, object):
                     pts = np.array(pts)
                     ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
             ax.legend(title="Sampling probes")
-        
+
+        # Plot the refinement boxes
+        # ---------------------------
+        if len(plotparams['plot_refineboxes'])>0:
+            #print(plotparams['plot_refineboxes'])
+            allrefinements = self.listboxpopupwindict['listboxtagging']
+            alltags        = allrefinements.getitemlist()
+            keystr         = lambda n, d1, d2: d2.name
+            for p in plotparams['plot_refineboxes']:
+                pdict = allrefinements.dumpdict('AMR-Wind',
+                                                subset=[p], keyfunc=keystr)
+                print(p)
+                print(pdict)
+                # Plot the Cartesian Box Refinements
+                if pdict['tagging_type'][0]=='CartBoxRefinement':
+                    filename = pdict['tagging_static_refinement_def']
+                    # Load the boxes
+                    allboxes = readCartBoxFile(filename)
+                    #print(boxes)
+                    for boxlevel in allboxes:
+                        print(boxlevel)
+                        
+            
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)
         ax.set_ylabel('%s [m]'%ystr)

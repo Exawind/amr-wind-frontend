@@ -1109,6 +1109,13 @@ popupwindow:
         defaultval: 
         listboxopt:
           selectmode: multiple
+      - name:       plot_refineboxes
+        label:      Plot Refinements
+        inputtype:  listbox
+        optionlist: "self.parent.listboxpopupwindict['listboxtagging'].getitemlist()"
+        defaultval: 
+        listboxopt:
+          selectmode: multiple
           
     buttons:
       - name: plot
@@ -1321,3 +1328,5 @@ listboxpopupwindows:
     popupinput: tagging
     outputlist:                      # optional
       AMR-Wind: labels
+    outputprefix:                    # optional
+      AMR-Wind: tagging
