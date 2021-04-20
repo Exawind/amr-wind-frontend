@@ -473,9 +473,13 @@ if __name__ == "__main__":
     parser.add_argument('--ablstatsfile',   
                         default='',  
                         help="Load the ABL statistics file [default: None]")
+    parser.add_argument('--outputfile',   
+                        default='',  
+                        help="Write the output file [default: None]")
     args         = parser.parse_args()
     inputfile    = args.inputfile
     ablstatsfile = args.ablstatsfile
+    outputfile   = args.outputfile
 
     mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
     mainapp.notebook.enable_traversal()
@@ -483,6 +487,9 @@ if __name__ == "__main__":
     # Load an inputfile
     if inputfile is not None:
         mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+    if len(outputfile)>0:
+        mainapp.writeAMRWindInput(outputfile, outputextraparams=True)
+        
     # Load the abl statsfile
     if len(ablstatsfile)>0:
         mainapp.inputvars['ablstats_file'].setval(ablstatsfile)

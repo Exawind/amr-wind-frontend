@@ -560,7 +560,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: wall_model
+    defaultval: #wall_model
     outputdef:
       AMR-Wind: zlo.temperature_type
 
@@ -568,7 +568,7 @@ inputwidgets:
     label:      "Lower Z temperature"
     frame:      frame_zBC
     inputtype:  float
-    defaultval: 0.0
+    defaultval: #0.0
     outputdef:
       AMR-Wind: zlo.temperature
 
@@ -577,7 +577,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: slip_wall
+    defaultval: #slip_wall
     outputdef:
       AMR-Wind: zlo.tke_type
 
@@ -595,7 +595,7 @@ inputwidgets:
     frame:      frame_zBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: fixed_gradient
+    defaultval: #fixed_gradient
     outputdef:
       AMR-Wind: zhi.temperature_type
 
@@ -603,7 +603,7 @@ inputwidgets:
     label:      "Upper Z temperature"
     frame:      frame_zBC
     inputtype:  float
-    defaultval: 0.0
+    defaultval: #0.0
     outputdef:
       AMR-Wind: zhi.temperature
 
@@ -808,7 +808,7 @@ inputwidgets:
     label:      Apply vel perturbations
     frame:      frame_ABLpeturb
     inputtype:  bool
-    defaultval: 0
+    defaultval: 1
     outputdef:
       AMR-Wind: ABL.perturb_velocity
     ctrlelem:
