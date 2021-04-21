@@ -22,8 +22,11 @@ import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
 from matplotlib.patches     import Rectangle
+import matplotlib.pyplot    as plt
+from matplotlib.lines       import Line2D
 import argparse
 
+# -------------------------------------------------------------
 def readCartBoxFile(filename):
     """
     Read the Cartesian box file
@@ -48,6 +51,21 @@ def readCartBoxFile(filename):
     fname.close()
     return allboxes
 
+def plotRectangle(figax, corner1, corner2, ix, iy, **kwargs):
+    """
+    Plot a rectangle onto figax
+    """
+    x1 = corner1[ix]
+    y1 = corner1[iy]
+    x2 = corner2[ix]
+    y2 = corner2[iy]
+    Lx = x2-x1
+    Ly = y2-y1
+    rect=Rectangle((x1, y1), Lx, Ly, **kwargs)
+    figax.add_patch(rect)
+    return x1, y1, x2, y2
+
+# -------------------------------------------------------------
 class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
         super(MyApp, self).__init__(*args, **kwargs)
@@ -77,18 +95,36 @@ class MyApp(tkyg.App, object):
         if not isinstance(x, bool): return x
         return 'true' if x else 'false'
 
+    def getTaggingKey(self, keyname, listboxdict, datadict):
+        keyheader = 'tagging.'
+        intername = ''
+        #getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
+        if datadict.name.startswith('tagging_geom'):
+            #print(keyname+datadict.outputdef['AMR-Wind']+" needs fixing!")
+            keynamedict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', subset=[keyname])
+            intername=keynamedict[keyname+".shapes"].strip()+"."
+            #print(listboxdict)
+        return keyheader+keyname+"."+intername+datadict.outputdef['AMR-Wind']
+
     def writeAMRWindInput(self, filename, verbose=False, 
                           outputextraparams=True):
         """
         Do more sophisticated output control later
         """
-        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
-
         inputdict = self.getDictFromInputs('AMR-Wind')
+
+        # Get the sampling outputs
+        samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
         sampledict= self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
+        
+        taggingdict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', keyfunc=self.getTaggingKey)
+
         # Construct the output dict
         outputdict=inputdict.copy()
         outputdict.update(sampledict)
+        outputdict.update(taggingdict)
+
+        # Add any extra parameters
         if outputextraparams:
             outputdict.update(self.extradictparams)
 
@@ -102,7 +138,7 @@ class MyApp(tkyg.App, object):
                 outputstr=' '.join([str(self.ifbool(x)) for x in val])
             else:
                 outputstr=str(self.ifbool(val))
-            if len(outputstr)>0:
+            if len(outputstr)>0 and (outputstr != 'None'):
                 writestr = "%-40s = %s"%(outputkey, outputstr)
                 if verbose: print(writestr)
                 if len(filename)>0: f.write(writestr+"\n")
@@ -193,6 +229,7 @@ class MyApp(tkyg.App, object):
             for key in probekeys:
                 suffix = key[len(prefix):]
                 probedictkey = dictkeypre+l+suffix
+                # Check what kind of data it's supposed to provide
                 inputtype=getinputtype(template['inputwidgets'], probedictkey)[0]
                 data = matchlisttype(inputdict[key], inputtype)
                 probedict[probedictkey] = data
@@ -201,6 +238,81 @@ class MyApp(tkyg.App, object):
 
         #print(samplingdict)
         return samplingdict, extradict
+
+    @classmethod
+    def AMRWindExtractTaggingDict(cls, inputdict, template, sep=['.','.','.']):
+        """
+        From input dict, extract all of the sampling probe parameters
+        """
+        pre='tagging'
+        dictkeypre= 'tagging_'
+        taggingdict = OrderedDict()
+        if pre+'.labels' not in inputdict: return taggingdict, inputdict
+        extradict = inputdict.copy()
+        
+        # Get the sampling labels
+        allkeys = [key for key, item in inputdict.items()]
+        taggingkeys = [key for key in allkeys if key.lower().startswith(pre)]
+        taggingnames = inputdict[pre+'.labels'].strip().split()
+        extradict.pop(pre+'.labels')
+
+        # This lambda returns the inputtype corresponding to entry in
+        # dictionary l with name n
+        getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
+        matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
+        for name in taggingnames:
+            itemdict = OrderedDict()
+            # Process all keys for name
+            prefix      = pre+sep[0]+name+sep[1]
+
+            tagkeys = [k for k in taggingkeys if k.startswith(prefix) ]
+            # First process the type
+            tagtype = tkyg.getdictval(inputdict, prefix+'type', None)
+            if tagtype is None: 
+                print("ERROR: %s is not found!"%prefix+'type')
+                continue
+            itemdict[dictkeypre+'name']  = name
+            itemdict[dictkeypre+'type']  = tagtype
+            #print("Found tagging: %s"%name)
+            #print("      type: %s"%tagtype)
+            # Remove them from the list & dict
+            tagkeys.remove(prefix+'type')
+            extradict.pop(prefix+'type')
+
+            readtaggingkeys = True
+            taginsert       = ''
+            if tagtype=='GeometryRefinement':
+                suffix = 'shapes'
+                # Get the shapes
+                tagdictkey = dictkeypre+suffix     
+                key       = prefix+suffix
+                shapedata = inputdict[key]
+                #print("shapedata = %s"%shapedata)
+                extradict.pop(key)
+                itemdict[tagdictkey] = shapedata
+                if (len(shapedata.strip().split())>1):
+                    print(" ERROR: More than one geometric refinement shape ")
+                    print(" ERROR: Can't handle that at the moment")
+                    readtaggingkeys = False
+                else:
+                    prefix  = pre+sep[0]+name+sep[1]+shapedata.strip()+sep[2]
+                    tagkeys = [k for k in taggingkeys if k.startswith(prefix) ]
+                    taginsert = 'geom_'
+
+            if not readtaggingkeys: continue
+
+            # Go through the rest of the keys
+            for key in tagkeys:
+                suffix = key[len(prefix):]
+                tagdictkey = dictkeypre+taginsert+suffix
+                #print(tagdictkey)
+                # Check what kind of data it's supposed to provide
+                inputtype=getinputtype(template['inputwidgets'], tagdictkey)[0]
+                data = matchlisttype(inputdict[key], inputtype)
+                itemdict[tagdictkey] = data
+                extradict.pop(key)
+            taggingdict[name] = itemdict.copy()
+        return taggingdict, extradict
 
     def loadAMRWindInput(self, filename, string=False, printunused=False):
         if string:
@@ -214,8 +326,13 @@ class MyApp(tkyg.App, object):
             self.AMRWindExtractSampleDict(extradict, 
             self.yamldict['popupwindow']['sampling'])
         self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict)
+        # Input the tagging/refinement zones
+        taggingdict, extradict = \
+            self.AMRWindExtractTaggingDict(extradict, 
+            self.yamldict['popupwindow']['tagging'])
+        self.listboxpopupwindict['listboxtagging'].populatefromdict(taggingdict)
 
-        if printunused:
+        if printunused and len(extradict)>0:
             print("# -- Unused variables: -- ")
             for key, data in extradict.items():
                 print("%-40s= %s"%(key, data))
@@ -280,9 +397,9 @@ class MyApp(tkyg.App, object):
         if clear: ax.clear()
         return ax
 
-    def plotDomain(self):
+    def plotDomain(self, ax=None):
         # Clear and resize figure
-        ax=self.setupfigax()
+        if ax is None: ax=self.setupfigax()
         
         # Get the variables
         corner1  = self.inputvars['prob_lo'].getval()
@@ -304,17 +421,13 @@ class MyApp(tkyg.App, object):
         # North direction
         northdir = self.inputvars['north_vector'].getval()
 
-        # Do the actual plot here
-        x1 = corner1[ix]
-        y1 = corner1[iy]
-        x2 = corner2[ix]
-        y2 = corner2[iy]
+        # Do the domain plot here
+        x1, y1, x2, y2  = plotRectangle(ax, corner1, corner2, ix, iy,
+                                        color='gray', alpha=0.25)
         Lx = x2-x1
         Ly = y2-y1
         Cx = 0.5*(x1+x2)
         Cy = 0.5*(y1+y2)
-        rect=Rectangle((x1, y1), Lx, Ly, color='gray', alpha=0.25)
-        ax.add_patch(rect)
         ax.set_xlim([Cx-Lx*0.55, Cx+Lx*0.55])
         ax.set_ylim([Cy-Ly*0.55, Cy+Ly*0.55])
 
@@ -344,7 +457,8 @@ class MyApp(tkyg.App, object):
 
         # Plot the sample probes
         # ---------------------------
-        if len(plotparams['plot_sampleprobes'])>0:
+        if ((plotparams['plot_sampleprobes'] is not None) 
+            and (len(plotparams['plot_sampleprobes'])>0)):
         #if plotparams['plot_sampleprobes']:
             allsamplingdata = self.listboxpopupwindict['listboxsampling']
             allprobes=allsamplingdata.getitemlist()
@@ -378,29 +492,64 @@ class MyApp(tkyg.App, object):
                             pts.append(pt)
                     pts = np.array(pts)
                     ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
-            ax.legend(title="Sampling probes")
+            legendprobes=ax.legend(title="Sampling probes", fontsize=10,
+                                   loc='upper right')
+            plt.setp(legendprobes.get_title(),fontsize=10)
+            ax.add_artist(legendprobes)
 
         # Plot the refinement boxes
         # ---------------------------
-        if len(plotparams['plot_refineboxes'])>0:
+        if ((plotparams['plot_refineboxes'] is not None) and 
+            (len(plotparams['plot_refineboxes'])>0)):
             #print(plotparams['plot_refineboxes'])
             allrefinements = self.listboxpopupwindict['listboxtagging']
             alltags        = allrefinements.getitemlist()
             keystr         = lambda n, d1, d2: d2.name
+            maxlevel       = 0
+            # Get the level colors
+            try: 
+                levelcolors=plt.rcParams['axes.color_cycle']
+            except:
+                levelcolors=plt.rcParams['axes.prop_cycle'].by_key()['color']
+
             for p in plotparams['plot_refineboxes']:
                 pdict = allrefinements.dumpdict('AMR-Wind',
                                                 subset=[p], keyfunc=keystr)
-                print(p)
-                print(pdict)
+                #print(p)
+                #print(pdict)
                 # Plot the Cartesian Box Refinements
                 if pdict['tagging_type'][0]=='CartBoxRefinement':
                     filename = pdict['tagging_static_refinement_def']
                     # Load the boxes
                     allboxes = readCartBoxFile(filename)
-                    #print(boxes)
-                    for boxlevel in allboxes:
-                        print(boxlevel)
-                        
+                    if len(allboxes)>maxlevel: maxlevel = len(allboxes)
+                    for ilevel, boxlevel in enumerate(allboxes):
+                        for box in boxlevel:
+                            corner1 = box[0:3]
+                            corner2 = box[3:6]
+                            color   = levelcolors[ilevel]
+                            plotRectangle(ax, corner1, corner2, ix, iy,
+                                          facecolor=color, ec='k', lw=0.5, 
+                                          alpha=0.33)
+                            
+            # Add a legend with the level labels
+            legend_el = []
+            legend_label = []
+            legend_el.append(Line2D([0],[0], 
+                                    linewidth=0, marker='s', color='gray',
+                                    alpha=0.25, label='Level 0'))
+            legend_label.append('Level 0')
+            for i in range(maxlevel):
+                legend_el.append(Line2D([0],[0], 
+                                        linewidth=0, marker='s',
+                                        color=levelcolors[i], 
+                                        alpha=0.33, 
+                                        label='Level %i'%(i+1)))
+                legend_label.append('Level %i'%(i+1))
+            legendrefine = ax.legend(legend_el, legend_label, 
+                                     frameon=True, numpoints=1, 
+                                     fontsize=10, loc='lower right')
+            ax.add_artist(legendrefine)
             
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)

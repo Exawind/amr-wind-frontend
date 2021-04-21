@@ -3,6 +3,7 @@ tabs:
   - Domain
   - ABL
   - Refinement
+  - Turbines
   - IO
   - Postpro
   - Junk
@@ -1094,10 +1095,10 @@ popupwindow:
       #   label:      Plot sample probes
       #   inputtype:  bool
       #   defaultval: True
-      - name:       plot_refinement
-        label:      Plot refinement regions
-        inputtype:  bool
-        defaultval: True
+      # - name:       plot_refinement
+      #   label:      Plot refinement regions
+      #   inputtype:  bool
+      #   defaultval: True
       - name:       plot_windnortharrows
         label:      Plot wind & N arrows
         inputtype:  bool
@@ -1272,6 +1273,27 @@ popupwindow:
           activewhen: ['QCriterionRefinement', 1]
         - input: tagging_qc_values
           activewhen: ['QCriterionRefinement', 1]
+        - input: tagging_shapes
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_type
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_origin
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_xaxis
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_yaxis
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_zaxis
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_start
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_end
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_outer_radius
+          activewhen: ['GeometryRefinement', 1]
+        - input: tagging_geom_inner_radius
+          activewhen: ['GeometryRefinement', 1]
+
       # TO-DO: finish ctrlelem
     - name:       tagging_static_refinement_def
       label:      CartBox filename
@@ -1309,6 +1331,71 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: values
+    # --- Geometry tagging ---
+    - name:       tagging_label_geom
+      label:      Geometric shape refinement
+      labelonly:  True
+    - name:       tagging_shapes
+      label:      Geometry Shapes 
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: shapes
+    - name:       tagging_geom_type
+      label:      Geometry type
+      inputtype:  str
+      optionlist: [cylinder, box]
+      defaultval: 
+      outputdef:
+        AMR-Wind: type
+    - name:       tagging_geom_origin
+      label:      Box corner
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: origin
+    - name:       tagging_geom_xaxis
+      label:      Box X-axis
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: xaxis
+    - name:       tagging_geom_yaxis
+      label:      Box Y-axis
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: yaxis
+    - name:       tagging_geom_zaxis
+      label:      Box Z-axis
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: zaxis
+    - name:       tagging_geom_start
+      label:      Cylinder start
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: start
+    - name:       tagging_geom_end
+      label:      Cylinder end
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: end
+    - name:       tagging_geom_outer_radius
+      label:      Cylinder Outer R
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: outer_radius
+    - name:       tagging_geom_inner_radius
+      label:      Cylinder Inner R
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: inner_radius
         
         
 listboxpopupwindows:
