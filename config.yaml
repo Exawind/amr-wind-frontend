@@ -6,7 +6,7 @@ tabs:
   - Turbines
   - IO
   - Postpro
-  - Junk
+  - Expert
 
 frames:
   # ==== Simulation frames ==== 
@@ -31,8 +31,8 @@ frames:
     row:   6
     title: Turbulence parameters
   - name:  frame_tolerances
-    tab:   Simulation
-    row:   7
+    tab:   Expert
+    #row:   7
     title: Tolerances
   # ==== Domain frames ==== 
   - name:  frame_Mesh
@@ -1004,44 +1004,58 @@ inputwidgets:
     row:        1
     inputtype:  filename
 
-  # =========== Junk stuff here ========================
-  - name: input_3
-    label: "list of options"
-    tab:  Junk
-    inputtype: str
-    optionlist: ['optionA', 'optionB']
-    defaultval: 'optionA'
+  # # =========== Junk stuff here ========================
+  # - name: input_3
+  #   label: "list of options"
+  #   tab:  Junk
+  #   inputtype: str
+  #   optionlist: ['optionA', 'optionB']
+  #   defaultval: 'optionA'
 
-  - name: label1
-    label: "This is some label"
-    labelonly: True
-    tab:  Junk
+  # - name: label1
+  #   label: "This is some label"
+  #   labelonly: True
+  #   tab:  Junk
 
-  - name: label2
-    label: "Some more helpful advice"
-    labelonly: True
-    tab:  Junk
+  # - name: label2
+  #   label: "Some more helpful advice"
+  #   labelonly: True
+  #   tab:  Junk
 
 buttons:
-  - name: exitbutton
-    text: Exit
-    tab:  Junk
-    row:  9
-    command: self.quit
+  - name:    calculateWindVector
+    text:    Calc W. Vec
+    frame:   frame_ABLphysics
+    row:     6
+    col:     1
+    command: self.ABL_calculateWindVector
+
+  - name:    calculateWindSpeedDir
+    text:    Calc WS/WDir
+    frame:   frame_ABLphysics
+    row:     6
+    col:     2
+    command: self.ABL_calculateWDirWS
+
+  # - name: exitbutton
+  #   text: Exit
+  #   tab:  Junk
+  #   row:  9
+  #   command: self.quit
 
   - name: reloadconfig
     text: reload yaml
-    tab:  Junk
+    tab:  Expert
     command: "self.reloadconfig"
 
   - name: pullvars
     text: pull vars
-    tab:  Junk
+    tab:  Expert
     command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
 
   - name: writeInput
     text: dump input file
-    tab:  Junk
+    tab:  Expert
     command: "partial(self.writeAMRWindInput, '', verbose=True)"
 
   - name:    loadABLstatsfile
@@ -1091,14 +1105,6 @@ popupwindow:
         inputtype:  str
         optionlist: ['XY', 'XZ', 'YZ']
         defaultval: 'XY'
-      # - name:       plot_sampleprobebool
-      #   label:      Plot sample probes
-      #   inputtype:  bool
-      #   defaultval: True
-      # - name:       plot_refinement
-      #   label:      Plot refinement regions
-      #   inputtype:  bool
-      #   defaultval: True
       - name:       plot_windnortharrows
         label:      Plot wind & N arrows
         inputtype:  bool

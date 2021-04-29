@@ -77,6 +77,10 @@ class MyApp(tkyg.App, object):
         self.abl_profiledata = {}
         return
 
+    @classmethod
+    def init_nogui(cls, *args, **kwargs):
+        return cls(configyaml=scriptpath+'/config.yaml',withdraw=True,**kwargs)
+
     def reloadconfig(self):
         with open('config.yaml') as fp:
             if tkyg.useruemel: Loader=tkyg.yaml.load
@@ -452,7 +456,7 @@ class MyApp(tkyg.App, object):
                 ax.arrow(compasscenter[ix], compasscenter[iy], 
                          plotnorthvec[ix], plotnorthvec[iy], 
                          color='r', head_width=0.1*northlength, linewidth=0.5)
-                ax.text(compasscenter[ix], compasscenter[iy], 
+                ax.text(compasscenter[ix], 0.99*compasscenter[iy], 
                         'N', color='r', ha='right', va='top')
 
         # Plot the sample probes
@@ -494,6 +498,8 @@ class MyApp(tkyg.App, object):
                     ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
             legendprobes=ax.legend(title="Sampling probes", fontsize=10,
                                    loc='upper right')
+            for legend_handle in legendprobes.legendHandles:
+                legend_handle._legmarker.set_markersize(9)
             plt.setp(legendprobes.get_title(),fontsize=10)
             ax.add_artist(legendprobes)
 
@@ -530,7 +536,7 @@ class MyApp(tkyg.App, object):
                             color   = levelcolors[ilevel]
                             plotRectangle(ax, corner1, corner2, ix, iy,
                                           facecolor=color, ec='k', lw=0.5, 
-                                          alpha=0.33)
+                                          alpha=0.75)
                             
             # Add a legend with the level labels
             legend_el = []
@@ -543,14 +549,15 @@ class MyApp(tkyg.App, object):
                 legend_el.append(Line2D([0],[0], 
                                         linewidth=0, marker='s',
                                         color=levelcolors[i], 
-                                        alpha=0.33, 
+                                        alpha=0.75, 
                                         label='Level %i'%(i+1)))
                 legend_label.append('Level %i'%(i+1))
             legendrefine = ax.legend(legend_el, legend_label, 
                                      frameon=True, numpoints=1, 
                                      fontsize=10, loc='lower right')
             ax.add_artist(legendrefine)
-            
+
+        # Set some plot formatting parameters
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)
         ax.set_ylabel('%s [m]'%ystr)
@@ -559,7 +566,35 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
 
         return
-        
+
+    # ---- ABL wind calculation ----------
+    def ABL_calculateWindVector(self):
+        WS   = self.inputvars['ABL_windspeed'].getval()
+        Wdir = self.inputvars['ABL_winddir'].getval()
+        # Check for None
+        if (WS is None) or (Wdir is None): 
+            print("Error in WS = "+repr(WS)+" or Wdir = "+repr(Wdir))
+            return
+        # Check for North/East vector
+        # TODO
+        # Calculate Wind Vector
+        theta = (270.0-Wdir)*np.pi/180.0
+        Ux    = WS*np.cos(theta)
+        Uy    = WS*np.sin(theta)
+        Uz    = 0.0
+        # Set ABL_velocity
+        self.inputvars['ABL_velocity'].setval([Ux, Uy, Uz], forcechange=True)
+        return
+
+    def ABL_calculateWDirWS(self):
+        Wvec   = self.inputvars['ABL_velocity'].getval()
+        Uhoriz = np.sqrt(Wvec[0]**2 + Wvec[1]**2)
+        # Check for North/East vector
+        # TODO
+        theta  = 270.0-np.arctan2(Wvec[1], Wvec[0])*180.0/np.pi
+        self.inputvars['ABL_windspeed'].setval(Uhoriz, forcechange=True)
+        self.inputvars['ABL_winddir'].setval(theta, forcechange=True)
+        return
 
     # ---- ABL postprocessing options ----
     def ABLpostpro_getprofileslist(self):
