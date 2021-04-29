@@ -9,7 +9,8 @@ sys.path.insert(1, scriptpath)
 import numpy as np
 from functools import partial
 import tkyamlgui as tkyg
-import postproamrwindabl as postpro
+import postproamrwindabl    as postpro
+import postproamrwindsample as ppsample
 
 if sys.version_info[0] < 3:
     import Tkinter as Tk
@@ -68,12 +69,13 @@ def plotRectangle(figax, corner1, corner2, ix, iy, **kwargs):
 # -------------------------------------------------------------
 class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
+        self.abl_stats = None
+        self.sample_ncdat = None
         super(MyApp, self).__init__(*args, **kwargs)
         self.fig.clf()
         self.fig.text(0.35,0.5,'Welcome to\nAMR-Wind')
         self.formatgridrows()
         self.extradictparams = OrderedDict()
-        self.abl_stats = None
         self.abl_profiledata = {}
         return
 
@@ -694,6 +696,120 @@ class MyApp(tkyg.App, object):
             return
         avgz         = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
         report = postpro.printReport(self.abl_stats, avgz, avgt, verbose=True)
+        return
+
+    # ---- Sample probe postprocessing options ----
+    def Samplepostpro_loadnetcdffile(self):
+        samplefile = self.inputvars['sampling_file'].getval()
+        if len(samplefile)==0:
+            print("Empty filename, choose file first")
+            return
+        if self.sample_ncdat is not None:
+            self.sample_ncdat.close()
+        print("Loading %s"%samplefile)
+        self.sample_ncdat = ppsample.loadDataset(samplefile)
+        # Update the groups
+        tkentry = self.inputvars['samplingprobe_groups'].tkentry
+        groups  = self.Samplepostpro_getgroups()
+        tkentry.delete(0, Tk.END)
+        for g in groups: tkentry.insert(Tk.END, g)
+        # Update the time labels
+        self.Samplepostpro_updatetimes()
+
+    def Samplepostpro_updatetimes(self):
+        timevec = ppsample.getVar(self.sample_ncdat, 'time')
+        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        mintime = '0: %f'%timevec[0]
+        curtime = '%i: %f'%(curindex, timevec[curindex])
+        maxtime = '%i: %f'%(len(timevec)-1, timevec[-1])
+        self.inputvars['samplingprobe_timeinfo'].setval([mintime, curtime, 
+                                                         maxtime],
+                                                        forcechange=True)
+
+    def Samplepostpro_getprevtime(self):
+        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        timevec = ppsample.getVar(self.sample_ncdat, 'time')
+        if curindex>1:
+            self.inputvars['samplingprobe_plottimeindex'].setval(curindex-1)
+            self.Samplepostpro_updatetimes()
+    
+    def Samplepostpro_getnexttime(self):
+        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        timevec = ppsample.getVar(self.sample_ncdat, 'time')
+        if curindex<len(timevec)-1-1:
+            self.inputvars['samplingprobe_plottimeindex'].setval(curindex+1)
+            self.Samplepostpro_updatetimes()
+
+    def Samplepostpro_getgroups(self):
+        if self.sample_ncdat is None:
+            return []
+        else:
+            return ppsample.getGroups(self.sample_ncdat)
+
+    def Samplepostpro_getvars(self):
+        if self.sample_ncdat is None:
+            return []
+        else:
+            group   = self.inputvars['samplingprobe_groups'].getval()
+            #print("group = "+repr(group))
+            if len(group)==0: return
+            allvars = ppsample.getVarList(self.sample_ncdat, group=group[0])
+            #print("var   = "+repr(allvars))
+            tkentry = self.inputvars['samplingprobe_variables'].tkentry
+            tkentry.delete(0, Tk.END)
+            for v in allvars: tkentry.insert(Tk.END, v)
+            return allvars
+
+    def Samplepostpro_getplot(self):
+        # Get the gorup
+        groupsel= self.inputvars['samplingprobe_groups'].getval()
+        var     = self.inputvars['samplingprobe_variables'].getval()
+        timeind = self.inputvars['samplingprobe_plottimeindex'].getval()
+
+        axis1   = self.inputvars['samplingprobe_plotaxis1'].getval()
+        axis2   = self.inputvars['samplingprobe_plotaxis2'].getval()
+        
+        self.Samplepostpro_updatetimes()
+
+        # Check to make sure some group/var/timeind is selected
+        if len(groupsel)==0:
+            print('No group selected')
+            return
+        if len(var)==0:
+            print('No var selected')
+            return
+
+        # Get the probe type
+        alltypes = set()
+        for g in groupsel:
+            alltypes.add(ppsample.getGroupSampleType(self.sample_ncdat, g))
+        alltypeslist = list(alltypes)
+        if len(alltypeslist)>1: 
+            print("ERROR: Can't plot")
+            print("Multiple sample types selected: "+repr(alltypeslist))
+            return
+        sampletype = alltypeslist[0]
+        if sampletype == 'LineSampler':
+            self.plotSampleLine(self.sample_ncdat, groupsel,var, timeind, axis1)
+        else:
+            print('sample type %s is not recognized'%sampletype)
+        return
+
+    def plotSampleLine(self, ncdat, groups, var, tindex, plotaxis, ax=None):
+        # Clear and resize figure
+        if ax is None: ax=self.setupfigax()
+
+        # Get the plot data
+        for group in groups:
+            xyz,linedat=ppsample.getLineSampleAtTime(ncdat, group, var, tindex)
+            plotx = ppsample.getPlotAxis(xyz, plotaxis)
+            for v in var:
+                ax.plot(plotx, linedat[v], label=group+':'+v)            
+        ax.set_xlabel(plotaxis)
+        ax.legend()
+        
+        self.figcanvas.draw()
+        #self.figcanvas.show()
         return
 
 if __name__ == "__main__":

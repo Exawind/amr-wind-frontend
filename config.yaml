@@ -990,19 +990,90 @@ inputwidgets:
       selectmode: multiple
       height:     5
 
-
   - name:       ablstats_reportlabel
     label:      Print ABL report
     frame:      frame_postproABL
     row:        10
     labelonly:  True
 
-  # ----------- ABL postprocessing -----------------
-  - name:       ncsampling_file
+  # ----------- Sample probe postprocessing -----------------
+  - name:       AlwaysFalse
+    frame:      frame_postprosampling
+    inputtype:  bool
+    defaultval: False
+    visible:    False
+    ctrlelem:
+      - input:  samplingprobe_timeinfolabel
+        activewhen: ['', 1]
+      - input:  samplingprobe_timeinfo
+        activewhen: ['', 1]
+
+  - name:       sampling_file
     label:      NetCDF file
     frame:      frame_postprosampling
     row:        1
     inputtype:  filename
+
+  - name:       samplingprobe_info_label
+    label:      Available Data
+    frame:      frame_postprosampling
+    row:        3
+    labelonly:  True
+
+  - name:       samplingprobe_groups
+    label:      NetCDF groups
+    frame:      frame_postprosampling
+    inputtype:  listbox
+    optionlist: "parent.Samplepostpro_getgroups()"
+    listboxopt:
+      height:   4
+      selectmode: multiple
+
+  - name:       samplingprobe_variables
+    label:      NetCDF vars
+    frame:      frame_postprosampling
+    row:        6
+    inputtype:  listbox
+    optionlist: "parent.Samplepostpro_getvars()"
+    listboxopt:
+      height:   4
+      selectmode: multiple
+
+  - name:       samplingprobe_plotaxis1
+    label:      Plot axis 1
+    frame:      frame_postprosampling
+    inputtype:  str
+    optionlist: [X, Y, Z, S]
+    defaultval: S
+
+  - name:       samplingprobe_plotaxis2
+    label:      Plot axis 2
+    frame:      frame_postprosampling
+    inputtype:  str
+    optionlist: [X, Y, Z, S]
+    defaultval: S
+
+  - name:       samplingprobe_timeinfolabel
+    label:      Times
+    frame:      frame_postprosampling
+    inputtype:  [str, str, str]
+    defaultval: ['Start','Current','End']
+
+  - name:       samplingprobe_timeinfo
+    label:      Iter:Time
+    frame:      frame_postprosampling
+    inputtype:  [str, str, str]
+    defaultval: 
+
+  - name:       samplingprobe_setcurrtimelabel
+    frame:      frame_postprosampling
+    label:      Set current time
+    labelonly:  True
+
+  - name:       samplingprobe_plottimeindex
+    frame:      frame_postprosampling
+    inputtype:  int
+    defaultval: 0
 
   # # =========== Junk stuff here ========================
   # - name: input_3
@@ -1037,12 +1108,6 @@ buttons:
     col:     2
     command: self.ABL_calculateWDirWS
 
-  # - name: exitbutton
-  #   text: Exit
-  #   tab:  Junk
-  #   row:  9
-  #   command: self.quit
-
   - name: reloadconfig
     text: reload yaml
     tab:  Expert
@@ -1061,8 +1126,8 @@ buttons:
   - name:    loadABLstatsfile
     text:    Load file
     frame:   frame_postproABL
-    row:     2
-    col:     2
+    row:     1
+    col:     3
     command: "self.ABLpostpro_loadnetcdffile"
 
   - name:    plotABLstatsprofile
@@ -1092,6 +1157,40 @@ buttons:
     row:     10
     col:     1
     command: "self.ABLpostpro_printreport"
+
+  - name:    loadSamplefile
+    text:    Load file
+    frame:   frame_postprosampling
+    row:     1
+    col:     3
+    command: "self.Samplepostpro_loadnetcdffile"
+
+  - name:    loadSamplevars
+    text:    Load variables
+    frame:   frame_postprosampling
+    row:     5
+    col:     1
+    command: "self.Samplepostpro_getvars"
+
+  - name:    Sampleprobe_prevtime
+    text:    "<Prev"
+    frame:   frame_postprosampling
+    row:     12
+    col:     0
+    command: "self.Samplepostpro_getprevtime"
+
+  - name:    Sampleprobe_nexttime
+    text:    "Next>"
+    frame:   frame_postprosampling
+    row:     12
+    col:     2
+    command: "self.Samplepostpro_getnexttime"
+
+  - name:    plotSampleprobe
+    text:    Plot Sample
+    frame:   frame_postprosampling
+    row:     13
+    command: "self.Samplepostpro_getplot"
 
     
 popupwindow:
