@@ -58,3 +58,41 @@ def getLineSampleAtTime(ncdat, group, varlist, it):
             vardat[i] = ncvar[it, i]
         linedat[var] = vardat
     return xyz, linedat
+
+def getPlaneSampleAtTime(ncdat, group, var, itime, kplane):
+    Nijk    = ncdat[group].ijk_dims
+    allpts  = ncdat[group].variables['coordinates']
+    vardat  = ncdat[group].variables[var]
+    axis1   = ncdat[group].axis1
+    axis2   = ncdat[group].axis2
+
+    N1      = Nijk[0]
+    N2      = Nijk[1]
+    xmesh   = np.zeros((N1,N2))
+    ymesh   = np.zeros((N1,N2))
+    zmesh   = np.zeros((N1,N2))
+    vmesh   = np.zeros((N1,N2))
+
+    # Set up the s directions
+    ds1     = np.linalg.norm(axis1)/(N1-1)
+    ds2     = np.linalg.norm(axis2)/(N2-1)
+    s1mesh  = np.zeros((N1,N2))
+    s2mesh  = np.zeros((N1,N2))
+
+    for i in range(N1):
+        for j in range(N2):
+            ipt = i + j*N1 + kplane*N1*N2
+            x   = allpts[ipt,0]
+            y   = allpts[ipt,1]
+            z   = allpts[ipt,2]
+            v   = vardat[itime, ipt]
+            xmesh[i,j] = x
+            ymesh[i,j] = y
+            zmesh[i,j] = z
+            vmesh[i,j] = v
+
+            s1  = i*ds1
+            s2  = j*ds2
+            s1mesh[i,j] = s1
+            s2mesh[i,j] = s2
+    return xmesh, ymesh, zmesh, s1mesh, s2mesh, vmesh

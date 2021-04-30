@@ -729,16 +729,18 @@ class MyApp(tkyg.App, object):
     def Samplepostpro_getprevtime(self):
         curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
         timevec = ppsample.getVar(self.sample_ncdat, 'time')
-        if curindex>1:
-            self.inputvars['samplingprobe_plottimeindex'].setval(curindex-1)
-            self.Samplepostpro_updatetimes()
+        if curindex>1: newindex = curindex-1
+        else:          newindex = len(timevec)-1
+        self.inputvars['samplingprobe_plottimeindex'].setval(newindex)
+        self.Samplepostpro_updatetimes()
     
     def Samplepostpro_getnexttime(self):
         curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
         timevec = ppsample.getVar(self.sample_ncdat, 'time')
-        if curindex<len(timevec)-1-1:
-            self.inputvars['samplingprobe_plottimeindex'].setval(curindex+1)
-            self.Samplepostpro_updatetimes()
+        if curindex<len(timevec)-1-1: newindex = curindex + 1
+        else:                         newindex = 0
+        self.inputvars['samplingprobe_plottimeindex'].setval(newindex)
+        self.Samplepostpro_updatetimes()
 
     def Samplepostpro_getgroups(self):
         if self.sample_ncdat is None:
@@ -751,26 +753,25 @@ class MyApp(tkyg.App, object):
             return []
         else:
             group   = self.inputvars['samplingprobe_groups'].getval()
-            #print("group = "+repr(group))
-            if len(group)==0: return
+            if len(group)==0: 
+                print("No group selected")
+                return
             allvars = ppsample.getVarList(self.sample_ncdat, group=group[0])
-            #print("var   = "+repr(allvars))
             tkentry = self.inputvars['samplingprobe_variables'].tkentry
             tkentry.delete(0, Tk.END)
             for v in allvars: tkentry.insert(Tk.END, v)
             return allvars
 
     def Samplepostpro_getplot(self):
-        # Get the gorup
+        # Get the group
         groupsel= self.inputvars['samplingprobe_groups'].getval()
         var     = self.inputvars['samplingprobe_variables'].getval()
         timeind = self.inputvars['samplingprobe_plottimeindex'].getval()
 
         axis1   = self.inputvars['samplingprobe_plotaxis1'].getval()
         axis2   = self.inputvars['samplingprobe_plotaxis2'].getval()
+        kindex  = self.inputvars['samplingprobe_kindex'].getval()
         
-        self.Samplepostpro_updatetimes()
-
         # Check to make sure some group/var/timeind is selected
         if len(groupsel)==0:
             print('No group selected')
@@ -789,8 +790,14 @@ class MyApp(tkyg.App, object):
             print("Multiple sample types selected: "+repr(alltypeslist))
             return
         sampletype = alltypeslist[0]
+
+        self.Samplepostpro_updatetimes()
+
         if sampletype == 'LineSampler':
             self.plotSampleLine(self.sample_ncdat, groupsel,var, timeind, axis1)
+        elif sampletype == 'PlaneSampler':
+            self.plotSamplePlane(self.sample_ncdat, groupsel, var, timeind, 
+                                 kindex, axis1, axis2)
         else:
             print('sample type %s is not recognized'%sampletype)
         return
@@ -806,8 +813,59 @@ class MyApp(tkyg.App, object):
             for v in var:
                 ax.plot(plotx, linedat[v], label=group+':'+v)            
         ax.set_xlabel(plotaxis)
-        ax.legend()
-        
+        ax.legend(fontsize=10)
+
+        timevec = ppsample.getVar(self.sample_ncdat, 'time')
+        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        ax.set_title('Time: %f'%(timevec[curindex]))        
+
+        self.figcanvas.draw()
+        #self.figcanvas.show()
+        return
+
+    def plotSamplePlane(self, ncdat, groups, varselect, tindex, kindex, 
+                        plotaxis1, plotaxis2, ax=None):
+        # Clear and resize figure
+        if ax is None: ax=self.setupfigax()
+
+        if isinstance(varselect, list):
+            var = varselect[0]
+            if len(varselect)>1:
+                print("Multiple variables selected.  Using %s"%var)            
+        else:
+            var = varselect
+
+        nlevels = 40  # Number of contour levels
+        # Get the plot data
+        for group in groups:
+            x,y,z,s1,s2,v = ppsample.getPlaneSampleAtTime(self.sample_ncdat, 
+                                                          group, var, tindex, 
+                                                          kindex)
+            if plotaxis1=='X': plotx = x
+            if plotaxis1=='Y': plotx = y
+            if plotaxis1=='Z': plotx = z
+            if plotaxis1=='S': plotx = s1
+            if plotaxis2=='X': ploty = x
+            if plotaxis2=='Y': ploty = y
+            if plotaxis2=='Z': ploty = z
+            if plotaxis2=='S': ploty = s2
+
+            # plot the mesh
+            im = ax.contourf(plotx, ploty, v, nlevels)
+            im.autoscale()
+            self.fig.colorbar(im, ax=ax)
+
+        xlabel = 'Axis1' if plotaxis1=='S' else plotaxis1
+        ylabel = 'Axis2' if plotaxis2=='S' else plotaxis2
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        # Set the title
+        timevec = ppsample.getVar(self.sample_ncdat, 'time')
+        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        ax.set_title('Time: %f'%(timevec[curindex]))        
+        ax.set_aspect('equal')
+
         self.figcanvas.draw()
         #self.figcanvas.show()
         return
@@ -821,12 +879,17 @@ if __name__ == "__main__":
     parser.add_argument('--ablstatsfile',   
                         default='',  
                         help="Load the ABL statistics file [default: None]")
+    parser.add_argument('--samplefile',   
+                        default='',  
+                        help="Load the sample probe file [default: None]")
     parser.add_argument('--outputfile',   
                         default='',  
                         help="Write the output file [default: None]")
+
     args         = parser.parse_args()
     inputfile    = args.inputfile
     ablstatsfile = args.ablstatsfile
+    samplefile   = args.samplefile
     outputfile   = args.outputfile
 
     mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
@@ -842,5 +905,12 @@ if __name__ == "__main__":
     if len(ablstatsfile)>0:
         mainapp.inputvars['ablstats_file'].setval(ablstatsfile)
         mainapp.ABLpostpro_loadnetcdffile()
-        mainapp.notebook.select(5)
+        mainapp.notebook.select(6)
+
+    # Load the samplefile
+    if len(samplefile)>0:
+        mainapp.inputvars['sampling_file'].setval(samplefile)
+        mainapp.Samplepostpro_loadnetcdffile()
+        mainapp.notebook.select(6)
+
     mainapp.mainloop()

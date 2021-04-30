@@ -1053,6 +1053,12 @@ inputwidgets:
     optionlist: [X, Y, Z, S]
     defaultval: S
 
+  - name:       samplingprobe_kindex
+    frame:      frame_postprosampling
+    label:      k-plane
+    inputtype:  int
+    defaultval: 0
+
   - name:       samplingprobe_timeinfolabel
     label:      Times
     frame:      frame_postprosampling
@@ -1175,21 +1181,21 @@ buttons:
   - name:    Sampleprobe_prevtime
     text:    "<Prev"
     frame:   frame_postprosampling
-    row:     12
+    row:     13
     col:     0
     command: "self.Samplepostpro_getprevtime"
 
   - name:    Sampleprobe_nexttime
     text:    "Next>"
     frame:   frame_postprosampling
-    row:     12
+    row:     13
     col:     2
     command: "self.Samplepostpro_getnexttime"
 
   - name:    plotSampleprobe
     text:    Plot Sample
     frame:   frame_postprosampling
-    row:     13
+    #row:     14
     command: "self.Samplepostpro_getplot"
 
     
