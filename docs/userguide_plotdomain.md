@@ -73,5 +73,6 @@ fig, ax = plt.subplots(figsize=(10,10), facecolor='w')
 app.plotDomain(ax=ax)
 ```
 
-This should result in
+This should result in the following picture:  
+
 ![domain](amrwind_frontend_jupyter_plotdomain.png)
