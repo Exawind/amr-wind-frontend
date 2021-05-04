@@ -1,0 +1,141 @@
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            SIMULATION STOP            #
+#.......................................#
+time.stop_time               =  20000.0     # Max (simulated) time to evolve
+time.max_step                =   -1          # Max number of time steps
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#         TIME STEP COMPUTATION         #
+#.......................................#
+time.fixed_dt         =   0.25        # Use this constant dt if > 0
+time.cfl              =   0.95       # CFL factor
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            INPUT AND OUTPUT           #
+#.......................................#
+time.plot_interval            =  1000       # Steps between plot files
+time.checkpoint_interval      =  10000       # Steps between checkpoint files
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#               PHYSICS                 #
+#.......................................#
+incflo.gravity        =  0.0  0.0 -9.81  # Gravitational force (3D)
+incflo.density        =  1.0             # Reference density
+incflo.use_godunov = 1
+incflo.godunov_type = "ppm_nolim"
+
+transport.viscosity = 1.872e-5
+transport.laminar_prandtl = 0.7
+transport.turbulent_prandtl = 0.3333
+turbulence.model = OneEqKsgsM84
+incflo.physics = ABL
+ICNS.source_terms = BoussinesqBuoyancy CoriolisForcing ABLForcing
+TKE.source_terms = KsgsM84Src
+
+BoussinesqBuoyancy.reference_temperature = 300.0
+CoriolisForcing.east_vector = 1.0 0.0 0.0
+CoriolisForcing.north_vector = 0.0 1.0 0.0
+CoriolisForcing.latitude = 41.5
+CoriolisForcing.rotational_time_period = 86164.0900027328
+ABLForcing.abl_forcing_height = 20.0
+
+incflo.velocity = 3.5355339059327373 3.5355339059327373 0.0
+ABL.reference_temperature = 300.0
+ABL.temperature_heights =  0.0 650.0 750.0 1000.0
+ABL.temperature_values = 300.0 300.0 308.0 308.75 
+ABL.perturb_temperature = false
+ABL.cutoff_height = 50.0
+ABL.perturb_velocity = true
+ABL.perturb_ref_height = 50.0
+ABL.kappa = 0.40
+ABL.surface_roughness_z0 = 0.0005
+ABL.surface_temp_rate = -0.32
+ABL.normal_direction = 2
+ABL.stats_output_frequency = 2
+ABL.stats_output_format = netcdf
+
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#        ADAPTIVE MESH REFINEMENT       #
+#.......................................#
+amr.n_cell              = 576 576 384    # Grid cells at coarsest AMRlevel
+amr.max_level           = 0           # Max AMR level in hierarchy
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              GEOMETRY                 #
+#.......................................#
+geometry.prob_lo        =   0.       0.     0.  # Lo corner coordinates
+geometry.prob_hi        =   1500.  1500.  1000.  # Hi corner coordinates
+geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
+
+# Boundary conditions
+zlo.type =   "wall_model"
+zlo.temperature_type = "wall_model"
+zhi.type =   "slip_wall"
+zhi.temperature_type = "fixed_gradient"
+zhi.temperature = 0.003
+zlo.tke_type = "fixed_gradient"
+incflo.verbose          =   0
+# MLMG settings
+nodal_proj.mg_rtol = 1.0e-6
+nodal_proj.mg_atol = 1.0e-12
+mac_proj.mg_rtol = 1.0e-6
+mac_proj.mg_atol = 1.0e-12
+diffusion.mg_rtol = 1.0e-6
+diffusion.mg_atol = 1.0e-12
+temperature_diffusion.mg_rtol = 1.0e-10
+temperature_diffusion.mg_atol = 1.0e-13
+
+# Activate data probe sampling
+incflo.post_processing = sampling
+
+# Frequency of output for the data
+sampling.output_frequency = 100
+# Type of probes to output
+sampling.labels = p_h p_f 
+
+# Fields to output
+sampling.fields = velocity temperature
+
+# Definitions for each probe
+sampling.p_h.type = PlaneSampler
+sampling.p_h.axis1 = 1500.0 0.0 0.0
+sampling.p_h.axis2 = 0.0 1500.0 0.0
+sampling.p_h.origin = 0.0 0.0 20.0
+sampling.p_h.num_points = 76 76
+sampling.p_h.normal = 0.0 0.0 1.0
+sampling.p_h.offsets = 0.0 20.0 40.0
+
+sampling.p_f.type                        = PlaneSampler
+sampling.p_f.num_points                  = 21 21
+sampling.p_f.origin                      = 0.0 0.0 20.0
+sampling.p_f.axis1                       = 400.0 0.0 0.0
+sampling.p_f.axis2                       = 0.0 400.0 0.0
+sampling.p_f.normal = 0.0 0.0 1.0
+sampling.p_f.offsets = 0.0 20.0 40.0
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#          MESH TAGGING                 #
+#.......................................#
+tagging.labels = s1 f1 g1
+tagging.s1.type = CartBoxRefinement
+tagging.s1.static_refinement_def = refinebox.txt
+
+tagging.f1.type = FieldRefinement
+tagging.f1.field_name = density
+tagging.f1.grad_error = 0.1 0.1 0.1
+
+tagging.g1.type = GeometryRefinement
+tagging.g1.shapes = b1
+
+tagging.g1.b1.type = box
+tagging.g1.b1.origin = 300.0 150.0 250.0
+tagging.g1.b1.xaxis =  450.0 600.0 0.0
+tagging.g1.b1.yaxis =  -150.0 100.0 0.0
+tagging.g1.b1.zaxis = 0.0 0.0 500.0
+
+#tagging.g1.c1.type = cylinder
+#tagging.g1.c1.start = 500.0 500.0 250.0
+#tagging.g1.c1.end = 500.0 500.0 750.0
+#tagging.g1.c1.outer_radius = 300.0
+#tagging.g1.c1.inner_radius = 275.0

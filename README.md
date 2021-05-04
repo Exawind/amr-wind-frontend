@@ -30,9 +30,10 @@ $ ./amrwind_frontend.py
 ```
 
 This is what it should look like:
-![screenshot](docs/amrwind_frontend_splash.png).
+![screenshot](docs/amrwind_frontend_splash.png)
 
 ## User guide
 
-This section is forthcoming.
+See the [user guide](docs/README.md) for details on how to use
+`amrwind-frontend`.
 
