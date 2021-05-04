@@ -14,7 +14,7 @@ $ git submodule update --recursive
 ```
 ## Running
 ```bash
-$ ./amrwind-input.py
+$ ./amrwind_frontend.py
 ```
 
 Here's a screenshot
