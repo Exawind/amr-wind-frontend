@@ -115,7 +115,8 @@ class MyApp(tkyg.App, object):
     def writeAMRWindInput(self, filename, verbose=False, 
                           outputextraparams=True):
         """
-        Do more sophisticated output control later
+        Write out the input file for AMR-Wind
+        TODO: Do more sophisticated output control later
         """
         inputdict = self.getDictFromInputs('AMR-Wind')
 
@@ -157,6 +158,17 @@ class MyApp(tkyg.App, object):
                                                  title = "Save AMR-Wind file")
         if len(filename)>0:
             self.writeAMRWindInput(filename)
+        return
+
+    def getInputHelp(self):
+        for widget in self.yamldict['inputwidgets']:
+            appname  = widget['name']
+            amrname  = '' 
+            default  = '' if 'defaultval' not in widget else repr(widget['defaultval'])
+            if 'outputdef' in widget:
+                if 'AMR-Wind' in widget['outputdef']:
+                    amrname = widget['outputdef']['AMR-Wind']
+            print("%-40s %-40s %-10s"%(appname, amrname, default))
         return
 
     @classmethod

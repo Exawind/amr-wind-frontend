@@ -78,6 +78,10 @@ frames:
   - name:  frame_ABLoutput
     tab:   ABL
     title: ABL output parameters
+  - name:  frame_ABLboundaryplane
+    tab:   ABL
+    title: ABL Boundary Plane
+    row:   10
 
   # ==== IO frames ==== 
   - name:  frame_IOplotting
@@ -109,6 +113,26 @@ frames:
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
+
+# *********** INPUTWIDGET FORMAT ****************
+# 
+#  Specify each input widget
+#
+# - name:       NAME         # Name of variable [required]
+#   label:      SOME TEXT    # displayed label in GUI
+#   tab:        TABNAME      # Which tab to put widget 
+#   frame:      FRAMENAME    # Which frame to put widget
+#                            #  either tab or frame must be specified
+#   row:        ROWNUM       # which row to put widget [optional]
+#   inputtype:  float        # Type of input [required]
+#                            #  Types available: 
+#                            #  float/int/bool/str/filename/listbox
+#   defaultval: 100.0        # default value [optional]
+# 
+#   optionlist: [var1, var2, ..]
+#   outputdef:
+#     AMR-Wind: time.stop_time
+# ***********************************************
 
 inputwidgets:
   # ========== Simulation inputs ==============================
@@ -157,7 +181,7 @@ inputwidgets:
     tab:        Simulation
     row:        1
     inputtype:  listbox
-    optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex]
+    optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex, Actuator]
     defaultval: ABL
     listboxopt:
       selectmode: multiple
@@ -653,6 +677,7 @@ inputwidgets:
       - ['CoriolisForcing',   'CoriolisForcing',     '']
     outputdef:
       AMR-Wind: ICNS.source_terms
+
   # ========== ABL output parameters ==========================
   - name:       ABL_stats_output_frequency
     label:      Output frequency
@@ -670,6 +695,58 @@ inputwidgets:
     defaultval: netcdf
     outputdef:
       AMR-Wind: ABL.stats_output_format
+
+  # ========== ABL output parameters ==========================
+  - name:       ABL_useboundaryplane
+    label:      Use boundary plane I/O
+    tab:        ABL
+    row:        9
+    inputtype:  bool
+    ctrlelem:
+      - frame:      frame_ABLboundaryplane
+        activewhen: ['', 1]
+
+  - name:       ABL_bndry_io_mode
+    label:      Boundary plane IO mode
+    frame:      frame_ABLboundaryplane
+    inputtype:  str
+    optionlist: [0, 1]
+    defaultval: -1
+    outputdef:
+      AMR-Wind: ABL.bndry_io_mode
+
+  - name:       ABL_bndry_file
+    label:      Boundary file
+    frame:      frame_ABLboundaryplane
+    inputtype:  filename
+    outputdef:
+      AMR-Wind: ABL.bndry_file
+
+  - name:       ABL_bndry_planes
+    label:      Boundary planes
+    frame:      frame_ABLboundaryplane
+    inputtype:  listbox
+    optionlist: [xlo, ylo]
+    listboxopt:
+      selectmode: multiple
+      height:   2
+    outputdef:
+     AMR-Wind:  ABL.bndry_planes
+
+  - name:       ABL_bndry_output_start_time
+    label:      Output start time
+    frame:      frame_ABLboundaryplane
+    inputtype:  float
+    outputdef:
+     AMR-Wind:  ABL.bndry_output_start_time
+
+  - name:       ABL_bndry_var_names
+    label:      Output variables
+    frame:      frame_ABLboundaryplane
+    inputtype:  str
+    defaultval: velocity temperature
+    outputdef:
+     AMR-Wind:  ABL.bndry_var_names
 
   # ========== ABL specification ==============================
   - name:       ABL_velocity
@@ -1080,6 +1157,9 @@ inputwidgets:
     frame:      frame_postprosampling
     inputtype:  int
     defaultval: 0
+
+  # =========== Turbine stuff here ====================
+
 
   # # =========== Junk stuff here ========================
   # - name: input_3
