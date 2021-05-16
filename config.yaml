@@ -141,6 +141,7 @@ inputwidgets:
     frame:      frame_time
     inputtype:  float
     defaultval: 100.0
+    help:       Max (simulated) time to evolve
     outputdef:
       AMR-Wind: time.stop_time
 

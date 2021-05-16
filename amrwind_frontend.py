@@ -160,15 +160,19 @@ class MyApp(tkyg.App, object):
             self.writeAMRWindInput(filename)
         return
 
-    def getInputHelp(self):
+    def getInputHelp(self, search=''):
         for widget in self.yamldict['inputwidgets']:
             appname  = widget['name']
             amrname  = '' 
             default  = '' if 'defaultval' not in widget else repr(widget['defaultval'])
+            helpstr  = '' if 'help' not in widget else repr(widget['help'])
             if 'outputdef' in widget:
                 if 'AMR-Wind' in widget['outputdef']:
                     amrname = widget['outputdef']['AMR-Wind']
-            print("%-40s %-40s %-10s"%(appname, amrname, default))
+            # Combine and search if necessary
+            printentry = True if len(search)==0 else False
+            allstrings = appname+' '+default+' '+helpstr+' '+amrname
+            print("%-40s %-40s %-10s %s"%(appname, amrname, default, helpstr))
         return
 
     @classmethod
