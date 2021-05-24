@@ -109,10 +109,17 @@ frames:
     row:   2
     title: Plot Sample Planes
 
+  # ==== Turbine frames ==== 
+  - name:  frame_turbineglobals
+    tab:   Turbines
+    row:   1
+    title: Turbine parameters
+
 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
+  turbinetypes: &turbinetypes [TurbineFastLine, FlatPlateLine]
 
 # *********** INPUTWIDGET FORMAT ****************
 # 
@@ -676,6 +683,7 @@ inputwidgets:
       - ['ABLForcing',        'ABLForcing',          '']
       - ['BoussinesqForcing', 'BoussinesqBuoyancy',  '']    
       - ['CoriolisForcing',   'CoriolisForcing',     '']
+      - ['ActuatorForcing',   'ActuatorForcing',     '']
     outputdef:
       AMR-Wind: ICNS.source_terms
 
@@ -1160,6 +1168,134 @@ inputwidgets:
     defaultval: 0
 
   # =========== Turbine stuff here ====================
+  - name:       ActuatorForcing
+    label:      Add turbine models
+    tab:        Turbines
+    row:        0
+    inputtype:  bool
+    defaultval: 0
+    ctrlelem:  
+      - frame:  frame_turbineglobals
+
+  - name:       turbine_default_params
+    label:      Default parameters
+    frame:      frame_turbineglobals
+    labelonly:  True
+
+  - name:       Actuator_default_type
+    label:      Actuator type
+    frame:      frame_turbineglobals
+    inputtype:  str
+    optionlist: *turbinetypes
+    defaultval: TurbineFastLine
+    outputdef:
+      AMR-Wind: Actuator.type
+      
+  - name:       Actuator_TurbineFastLine_rotor_diameter
+    label:      Rotor D
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.rotor_diameter
+
+  - name:       Actuator_TurbineFastLine_hub_height
+    label:      Hub height
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.hub_height
+
+  - name:       Actuator_TurbineFastLine_num_points_blade
+    label:      Num blade points
+    frame:      frame_turbineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.num_points_blade
+
+  - name:       Actuator_TurbineFastLine_num_points_tower
+    label:      Num tower points
+    frame:      frame_turbineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.num_points_tower
+
+  - name:       Actuator_TurbineFastLine_epsilon
+    label:      Epsilon
+    frame:      frame_turbineglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.epsilon
+      
+  - name:       Actuator_TurbineFastLine_epsilon_tower
+    label:      Epsilon tower
+    frame:      frame_turbineglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.epsilon_tower
+
+  - name:       Actuator_TurbineFastLine_openfast_start_time
+    label:      FAST start time
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.openfast_start_time
+
+  - name:       Actuator_TurbineFastLine_openfast_stop_time
+    label:      FAST stop time
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.openfast_stop_time
+
+  - name:       Actuator_TurbineFastLine_nacelle_drag_coeff
+    label:      Nacelle Cd
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.nacelle_drag_coeff
+
+  - name:       Actuator_TurbineFastLine_nacelle_area
+    label:      Nacelle Area
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.nacelle_area
+
+  - name:       Actuator_TurbineFastLine_output_frequency
+    label:      FAST output freq
+    frame:      frame_turbineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.output_frequency
+
+  - name:       Actuator_TurbineFastLine_density
+    label:      Density
+    frame:      frame_turbineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.density
+
+  - name:       turbine_stuff1
+    label:      
+    frame:      frame_turbineglobals
+    labelonly:  True
+
+#  - name:       turbine_stuff2
+#    label:      
+#    frame:      frame_turbineglobals
+#    labelonly:  True
 
 
   # # =========== Junk stuff here ========================
@@ -1309,6 +1445,13 @@ popupwindow:
         defaultval: 
         listboxopt:
           selectmode: multiple
+      - name:       plot_turbines
+        label:      Plot Turbines
+        inputtype:  listbox
+        optionlist: "self.parent.listboxpopupwindict['listboxactuator'].getitemlist()"
+        defaultval: 
+        listboxopt:
+          selectmode: multiple
           
     buttons:
       - name: plot
@@ -1358,7 +1501,7 @@ popupwindow:
           activewhen: ['PlaneSampler', 1]
         - input:  sampling_p_offsets
           activewhen: ['PlaneSampler', 1]
-    # -- sample line ---
+    # -- sample file ---
     - name:       sampling_pf_label
       label:      Probe file specifications
       labelonly:  True
@@ -1528,11 +1671,17 @@ popupwindow:
       label:      Geometric shape refinement
       labelonly:  True
     - name:       tagging_shapes
-      label:      Geometry Shapes 
+      label:      Geometry Names
       inputtype:  str
       defaultval: 
       outputdef:
         AMR-Wind: shapes
+    - name:       tagging_geom_level
+      label:      Geometry level
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: level
     - name:       tagging_geom_type
       label:      Geometry type
       inputtype:  str
@@ -1588,7 +1737,65 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: inner_radius
-        
+
+# === Turbine window ===
+  turbine:
+    title:        Actuator line      # optional
+    datakeyname:  Actuator_name      # optional
+    loadonstart:  False              # optional
+    inputwidgets:
+    - name:       actuator_label
+      label:      Actuator forcing
+      labelonly:  True
+    - name:       Actuator_name
+      label:      Name 
+      inputtype:  str
+      defaultval: newturbine
+    - name:       Actuator_type
+      label:      Actuator type
+      inputtype:  str
+      optionlist: *turbinetypes
+      defaultval: 
+      outputdef:
+        AMR-Wind: type
+    - name:       Actuator_openfast_input_file
+      label:      OpenFAST fst file
+      inputtype:  filename
+      defaultval:
+      outputdef:
+        AMR-Wind: openfast_input_file
+    - name:       Actuator_base_position
+      label:      Base position
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: base_position
+    - name:       num_points_blade
+      label:      Num blade points
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_blade
+    - name:       num_points_tower
+      label:      Num tower points
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_tower
+    - name:       epsilon
+      label:      Epsilon
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: epsilon
+    - name:       epsilon_tower
+      label:      Epsilon tower
+      inputtype:  [float, float, float]
+      defaultval: 
+      outputdef:
+        AMR-Wind: epsilon_tower
+
+
         
 listboxpopupwindows:
   - name:       listboxsampling
@@ -1609,3 +1816,14 @@ listboxpopupwindows:
       AMR-Wind: labels
     outputprefix:                    # optional
       AMR-Wind: tagging
+
+  - name:       listboxactuator
+    label:      "Turbine List:"
+    #tab:        Turbines
+    frame:      frame_turbineglobals
+    row:        16
+    popupinput: turbine
+    outputprefix:                    # optional
+      AMR-Wind: Actuator
+    outputlist:                      # optional
+      AMR-Wind: labels

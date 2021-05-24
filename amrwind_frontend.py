@@ -66,6 +66,83 @@ def plotRectangle(figax, corner1, corner2, ix, iy, **kwargs):
     figax.add_patch(rect)
     return x1, y1, x2, y2
 
+def plot3DBox(figax, origin, xaxis, yaxis, zaxis, ix, iy, **kwargs):
+    """
+    Plots a 3D box on figax.  Corner is at origin 
+    """
+    # Define the faces to plot
+    plotfaces = [[origin, xaxis, yaxis],
+                 [origin, xaxis, zaxis],
+                 [origin, yaxis, zaxis]]
+    # Build list for each of three faces
+    for face in plotfaces:
+        p1     = np.array(face[0])
+        p2     = p1+np.array(face[1])
+        p3     = p2+np.array(face[2])
+        p4     = p3-np.array(face[1])
+        ptlist = [p1, p2, p3, p4]
+        xlist  = [p[ix] for p in ptlist]
+        ylist  = [p[iy] for p in ptlist]
+        figax.fill(xlist, ylist, **kwargs)
+    return
+
+def rotatepoint(pt, orig, theta):
+    """
+    Rotates a point pt about origin orig
+    Here theta is measured w.r.t. the x-axis
+    """
+    dx = pt[0]-orig[0]
+    dy = pt[1]-orig[1]
+    p2=[0.0, 0.0, 0.0]
+    p2[0] = dx*np.cos(theta) - dy*np.sin(theta) + orig[0]
+    p2[1] = dx*np.sin(theta) + dy*np.cos(theta) + orig[1]
+    p2[2] = pt[2]
+    return p2
+
+def plotTurbine(figax, basexyz, hubheight, turbD, nacelledir, ix, iy, **kwargs):
+    """
+    Plot turbine on figax
+    """
+    turbR = 0.5*turbD
+    Nsegs = 30  # Number of segments on rotor circumference
+    # Construct the rotor diameter ring
+    rotorpts = []
+    for theta in np.linspace(0, 360, Nsegs+1):
+        x = 0
+        y = turbR*np.cos(theta*np.pi/180.0)
+        z = turbR*np.sin(theta*np.pi/180.0)
+        rotorpts.append([x,y,z])
+    # Rotate the rotor ring to the right orientation
+    rotatetheta = (270.0-nacelledir)*np.pi/180.0
+    rotatedring = [rotatepoint(p, [0.0,0.0,0.0], rotatetheta) for p in rotorpts]
+    # Translate the right to the right location
+    hhpt     = np.array([0.0, 0.0, hubheight])
+    rotorpts = [np.array(p)+np.array(basexyz)+hhpt for p in rotatedring]
+    #print(rotorpts)
+    # Get the list of x and y points and plot them
+    xlist = [p[ix] for p in rotorpts]
+    ylist = [p[iy] for p in rotorpts]
+    figax.fill(xlist, ylist, **kwargs)
+    #figax.plot(xlist, ylist, **kwargs)
+    
+    # Plot the turbine nacelle
+    nacelleW = 0.1*turbD   # nacelle width (lateral)
+    nacelleH = 0.1*turbD   # nacelle height
+    nacelleL = 0.2*turbD   # nacelle length (streamwise)
+    nacellecorner = [0, -nacelleW/2, -nacelleH/2]
+    nacelleLaxis  = [nacelleL, 0, 0]
+    nacelleWaxis  = [0, nacelleW, 0]
+    nacelleHaxis  = [0, 0, nacelleH]
+    # Rotate the points
+    nacelleLaxis  = rotatepoint(nacelleLaxis, [0,0,0], rotatetheta)
+    nacelleWaxis  = rotatepoint(nacelleWaxis, [0,0,0], rotatetheta)
+    # rotate and translate the corner
+    nacellecorner = rotatepoint(nacellecorner, [0,0,0], rotatetheta)
+    nacellecorner = np.array(nacellecorner) + np.array(basexyz) + hhpt
+    plot3DBox(figax, nacellecorner, nacelleLaxis, nacelleWaxis, nacelleHaxis,
+              ix, iy, **kwargs)
+    return
+
 # -------------------------------------------------------------
 class MyApp(tkyg.App, object):
     def __init__(self, *args, **kwargs):
@@ -122,14 +199,17 @@ class MyApp(tkyg.App, object):
 
         # Get the sampling outputs
         samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
-        sampledict= self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
+        sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
         
         taggingdict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', keyfunc=self.getTaggingKey)
+
+        actuatordict= self.listboxpopupwindict['listboxactuator'].dumpdict('AMR-Wind', keyfunc=samplingkey)
 
         # Construct the output dict
         outputdict=inputdict.copy()
         outputdict.update(sampledict)
         outputdict.update(taggingdict)
+        outputdict.update(actuatordict)
 
         # Add any extra parameters
         if outputextraparams:
@@ -170,9 +250,13 @@ class MyApp(tkyg.App, object):
                 if 'AMR-Wind' in widget['outputdef']:
                     amrname = widget['outputdef']['AMR-Wind']
             # Combine and search if necessary
-            printentry = True if len(search)==0 else False
             allstrings = appname+' '+default+' '+helpstr+' '+amrname
-            print("%-40s %-40s %-10s %s"%(appname, amrname, default, helpstr))
+            hassearchterm = False
+            if ((len(search)==0) or (search.upper() in allstrings.upper())):
+                hassearchterm = True
+            #printentry = True if len(search)==0 else False
+            if hassearchterm:
+                print("%-40s %-40s %-10s %s"%(appname, amrname, default, helpstr))
         return
 
     @classmethod
@@ -272,7 +356,7 @@ class MyApp(tkyg.App, object):
         if pre+'.labels' not in inputdict: return taggingdict, inputdict
         extradict = inputdict.copy()
         
-        # Get the sampling labels
+        # Get the tagging labels
         allkeys = [key for key, item in inputdict.items()]
         taggingkeys = [key for key in allkeys if key.lower().startswith(pre)]
         taggingnames = inputdict[pre+'.labels'].strip().split()
@@ -336,6 +420,60 @@ class MyApp(tkyg.App, object):
             taggingdict[name] = itemdict.copy()
         return taggingdict, extradict
 
+    def AMRWindExtractActuatorDict(self, inputdict, template, sep=['.','.','.']):
+        """
+        From input dict, extract all of the sampling probe parameters
+        """
+        pre='Actuator'
+        dictkeypre= 'Actuator_'
+        actuatordict = OrderedDict()
+        if pre+'.labels' not in inputdict: return actuatordict, inputdict
+        extradict = inputdict.copy()
+
+        # Get the Actuator labels
+        allkeys = [key for key, item in inputdict.items()]
+        actuatorkeys = [key for key in allkeys if key.lower().startswith(pre.lower())]
+        actuatornames = inputdict[pre+'.labels'].strip().split()
+        extradict.pop(pre+'.labels')
+        print(actuatorkeys)
+        getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
+        matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
+        #print(getinputtype(template['inputwidgets'], 'sampling_p_offsets')[0])
+
+        for name in actuatornames:
+            probedict=OrderedDict()
+            # Process all keys for name
+            prefix    = pre+sep[0]+name+sep[1]
+            probekeys = [k for k in actuatorkeys if k.startswith(prefix) ]
+            print(prefix)
+            print(probekeys)
+            # First process the type
+            probetype = tkyg.getdictval(inputdict, prefix+'type', None)
+            l = '' #lmap[probetype.lower()]
+            if probetype is None:
+                probetype = self.inputvars['Actuator_default_type'].getval()
+            else:
+                probekeys.remove(prefix+'type')
+                extradict.pop(prefix+'type')
+            probedict[dictkeypre+'name']  = name
+            probedict[dictkeypre+'type']  = probetype
+            # Remove them from the list & dict
+            # Go through the rest of the keys
+            for key in probekeys:
+                suffix = key[len(prefix):]
+                probedictkey = dictkeypre+l+suffix
+                print(probedictkey)
+                # Check what kind of data it's supposed to provide
+                inputtype=getinputtype(template['inputwidgets'], probedictkey)[0]
+                data = matchlisttype(inputdict[key], inputtype)
+                probedict[probedictkey] = data
+                extradict.pop(key)
+            print(probedict)
+            actuatordict[name] = probedict.copy()
+
+        #print(samplingdict)
+        return actuatordict, extradict
+        
     def loadAMRWindInput(self, filename, string=False, printunused=False):
         if string:
             amrdict=self.AMRWindStringToDict(filename)
@@ -354,6 +492,12 @@ class MyApp(tkyg.App, object):
             self.yamldict['popupwindow']['tagging'])
         self.listboxpopupwindict['listboxtagging'].populatefromdict(taggingdict)
 
+        # Input the turbine actuators
+        actuatordict, extradict = \
+            self.AMRWindExtractActuatorDict(extradict, 
+            self.yamldict['popupwindow']['turbine'])
+        self.listboxpopupwindict['listboxactuator'].populatefromdict(actuatordict)
+        
         if printunused and len(extradict)>0:
             print("# -- Unused variables: -- ")
             for key, data in extradict.items():
@@ -529,7 +673,9 @@ class MyApp(tkyg.App, object):
             allrefinements = self.listboxpopupwindict['listboxtagging']
             alltags        = allrefinements.getitemlist()
             keystr         = lambda n, d1, d2: d2.name
-            maxlevel       = 0
+            
+            # Need to validate maxlevel! Fix this!
+            maxlevel       = self.inputvars['max_level'].getval()
             # Get the level colors
             try: 
                 levelcolors=plt.rcParams['axes.color_cycle']
@@ -555,7 +701,28 @@ class MyApp(tkyg.App, object):
                             plotRectangle(ax, corner1, corner2, ix, iy,
                                           facecolor=color, ec='k', lw=0.5, 
                                           alpha=0.75)
-                            
+                # Plot the Geometry Refinements
+                if pdict['tagging_type'][0]=='GeometryRefinement':
+                    if pdict['tagging_geom_type']=='box':
+                        origin = pdict['tagging_geom_origin']
+                        xaxis  = pdict['tagging_geom_xaxis']
+                        yaxis  = pdict['tagging_geom_yaxis']
+                        zaxis  = pdict['tagging_geom_zaxis']
+                        ilevel = pdict['tagging_geom_level']
+                        if ilevel is not None: 
+                            color   = levelcolors[ilevel]
+                        else:
+                            color   = levelcolors[0]
+                        #print("plotting box: ")
+                        #print(" origin: "+repr(origin))
+                        #print(" xaxis:  "+repr(xaxis))
+                        #print(" yaxis:  "+repr(yaxis))
+                        #print(" zaxis:  "+repr(zaxis))
+                        plot3DBox(ax, origin, xaxis, yaxis, zaxis, ix, iy,
+                                  lw=0.4, facecolor=color, alpha=0.75)
+                    if pdict['tagging_geom_type']=='cylinder':
+                        print("cylinder geometry refinement plotting not supported")
+
             # Add a legend with the level labels
             legend_el = []
             legend_label = []
@@ -575,6 +742,36 @@ class MyApp(tkyg.App, object):
                                      fontsize=10, loc='lower right')
             ax.add_artist(legendrefine)
 
+        # Plot the turbines
+        # ---------------------------
+        if ((plotparams['plot_turbines'] is not None) and 
+            (len(plotparams['plot_turbines'])>0)):
+            print("Plotting turbines")
+            allturbines  = self.listboxpopupwindict['listboxactuator']
+            alltags      = allturbines.getitemlist()
+            keystr       = lambda n, d1, d2: d2.name
+
+            # Get the defaults
+            default_type   = self.inputvars['Actuator_default_type'].getval()
+            default_turbD  = self.inputvars['Actuator_TurbineFastLine_rotor_diameter'].getval()
+            default_hh     = self.inputvars['Actuator_TurbineFastLine_hub_height'].getval()
+
+            # Get the wind direction
+            self.ABL_calculateWDirWS()
+            winddir = self.inputvars['ABL_winddir'].getval()
+            
+            for turb in plotparams['plot_turbines']:
+                tdict = allturbines.dumpdict('AMR-Wind',
+                                             subset=[turb], keyfunc=keystr)
+                turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
+                basepos  = tdict['Actuator_base_position']
+                yaw      = winddir #270.0
+                print(tdict)
+                print(turbtype)
+                plotTurbine(ax, basepos, default_hh, default_turbD, yaw, ix, iy,
+                            lw=1, color='k', alpha=0.75)
+                
+        # --------------------------------
         # Set some plot formatting parameters
         ax.set_aspect('equal')
         ax.set_xlabel('%s [m]'%xstr)
