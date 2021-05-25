@@ -185,7 +185,8 @@ class MyApp(tkyg.App, object):
         if datadict.name.startswith('tagging_geom'):
             #print(keyname+datadict.outputdef['AMR-Wind']+" needs fixing!")
             keynamedict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', subset=[keyname])
-            intername=keynamedict[keyname+".shapes"].strip()+"."
+            if keyname+".shapes" in keynamedict:
+                intername=keynamedict[keyname+".shapes"].strip()+"."
             #print(listboxdict)
         return keyheader+keyname+"."+intername+datadict.outputdef['AMR-Wind']
 
@@ -435,7 +436,7 @@ class MyApp(tkyg.App, object):
         actuatorkeys = [key for key in allkeys if key.lower().startswith(pre.lower())]
         actuatornames = inputdict[pre+'.labels'].strip().split()
         extradict.pop(pre+'.labels')
-        print(actuatorkeys)
+        #print(actuatorkeys)
         getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
         matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
         #print(getinputtype(template['inputwidgets'], 'sampling_p_offsets')[0])
@@ -445,8 +446,6 @@ class MyApp(tkyg.App, object):
             # Process all keys for name
             prefix    = pre+sep[0]+name+sep[1]
             probekeys = [k for k in actuatorkeys if k.startswith(prefix) ]
-            print(prefix)
-            print(probekeys)
             # First process the type
             probetype = tkyg.getdictval(inputdict, prefix+'type', None)
             l = '' #lmap[probetype.lower()]
@@ -462,13 +461,13 @@ class MyApp(tkyg.App, object):
             for key in probekeys:
                 suffix = key[len(prefix):]
                 probedictkey = dictkeypre+l+suffix
-                print(probedictkey)
+                #print(probedictkey)
                 # Check what kind of data it's supposed to provide
                 inputtype=getinputtype(template['inputwidgets'], probedictkey)[0]
                 data = matchlisttype(inputdict[key], inputtype)
                 probedict[probedictkey] = data
                 extradict.pop(key)
-            print(probedict)
+            #print(probedict)
             actuatordict[name] = probedict.copy()
 
         #print(samplingdict)
@@ -766,8 +765,8 @@ class MyApp(tkyg.App, object):
                 turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
-                print(tdict)
-                print(turbtype)
+                #print(tdict)
+                #print(turbtype)
                 plotTurbine(ax, basepos, default_hh, default_turbD, yaw, ix, iy,
                             lw=1, color='k', alpha=0.75)
                 

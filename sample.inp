@@ -28,8 +28,8 @@ transport.viscosity = 1.872e-5
 transport.laminar_prandtl = 0.7
 transport.turbulent_prandtl = 0.3333
 turbulence.model = OneEqKsgsM84
-incflo.physics = ABL
-ICNS.source_terms = BoussinesqBuoyancy CoriolisForcing ABLForcing
+incflo.physics = ABL Actuator
+ICNS.source_terms = BoussinesqBuoyancy CoriolisForcing ABLForcing ActuatorForcing
 TKE.source_terms = KsgsM84Src
 
 BoussinesqBuoyancy.reference_temperature = 300.0
@@ -39,7 +39,7 @@ CoriolisForcing.latitude = 41.5
 CoriolisForcing.rotational_time_period = 86164.0900027328
 ABLForcing.abl_forcing_height = 20.0
 
-incflo.velocity = 3.5355339059327373 3.5355339059327373 0.0
+incflo.velocity = 10 0 0 #3.5355339059327373 3.5355339059327373 0.0
 ABL.reference_temperature = 300.0
 ABL.temperature_heights =  0.0 650.0 750.0 1000.0
 ABL.temperature_values = 300.0 300.0 308.0 308.75 
@@ -108,9 +108,9 @@ sampling.p_h.offsets = 0.0 20.0 40.0
 
 sampling.p_f.type                        = PlaneSampler
 sampling.p_f.num_points                  = 21 21
-sampling.p_f.origin                      = 0.0 0.0 20.0
-sampling.p_f.axis1                       = 400.0 0.0 0.0
-sampling.p_f.axis2                       = 0.0 400.0 0.0
+sampling.p_f.origin                      = 500.0 500.0 90.0
+sampling.p_f.axis1                       = 500.0 0.0 0.0
+sampling.p_f.axis2                       = 0.0 500.0 0.0
 sampling.p_f.normal = 0.0 0.0 1.0
 sampling.p_f.offsets = 0.0 20.0 40.0
 
@@ -129,13 +129,39 @@ tagging.g1.type = GeometryRefinement
 tagging.g1.shapes = b1
 
 tagging.g1.b1.type = box
-tagging.g1.b1.origin = 300.0 150.0 250.0
-tagging.g1.b1.xaxis =  450.0 600.0 0.0
-tagging.g1.b1.yaxis =  -150.0 100.0 0.0
-tagging.g1.b1.zaxis = 0.0 0.0 500.0
+tagging.g1.b1.origin =  50.0 500.0 50.0
+tagging.g1.b1.xaxis =  300.0    0.0 0.0
+tagging.g1.b1.yaxis =    0.0 500.0 0.0
+tagging.g1.b1.zaxis = 0.0 0.0 100.0
 
 #tagging.g1.c1.type = cylinder
 #tagging.g1.c1.start = 500.0 500.0 250.0
 #tagging.g1.c1.end = 500.0 500.0 750.0
 #tagging.g1.c1.outer_radius = 300.0
 #tagging.g1.c1.inner_radius = 275.0
+
+Actuator.labels = WTG01 WTG02 WTG03
+Actuator.type = TurbineFastLine
+
+Actuator.TurbineFastLine.rotor_diameter = 126.0
+Actuator.TurbineFastLine.hub_height = 90.0
+Actuator.TurbineFastLine.num_points_blade = 64
+Actuator.TurbineFastLine.num_points_tower = 12
+Actuator.TurbineFastLine.epsilon = 10.0 10.0 10.0
+Actuator.TurbineFastLine.epsilon_tower = 5.0 5.0 5.0
+Actuator.TurbineFastLine.openfast_start_time = 0.0
+Actuator.TurbineFastLine.openfast_stop_time = 1.0
+Actuator.TurbineFastLine.nacelle_drag_coeff = 0.0
+Actuator.TurbineFastLine.nacelle_area = 0.0
+Actuator.TurbineFastLine.output_frequency = 10
+Actuator.TurbineFastLine.density = 1.225
+
+Actuator.WTG01.base_position       = 750 750 0 
+Actuator.WTG01.openfast_input_file = "fast_inp/nrel5mw.fst"
+
+Actuator.WTG02.base_position       = 850 850 0 
+Actuator.WTG02.openfast_input_file = "fast_inp/nrel5mw.fst"
+
+Actuator.WTG03.base_position       = 650 650 0 
+Actuator.WTG03.openfast_input_file = "fast_inp/nrel5mw.fst"
+
