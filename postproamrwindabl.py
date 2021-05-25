@@ -117,7 +117,7 @@ def calculateExpr(expr, allvars, avgt, ncdat):
         answer=expr
         for v in requiredvars:
             exprv = exprvars[v]
-            answer=answer.replace(exprv.decode('utf-8'), '('+repr(var[v][i])+')')
+            answer=answer.replace(exprv.encode().decode('utf-8'), '('+repr(var[v][i])+')')
         vec.append(eval(answer))
     # compute U horizontal
     return var['z'], np.array(vec)
@@ -210,7 +210,7 @@ class CalculatedProfile:
                 answer=self.expr
                 for v in self.requiredvars:
                     exprv = exprvars[v]
-                    answer= answer.replace(exprv.decode('utf-8'), 
+                    answer= answer.replace(exprv.encode().decode('utf-8'), 
                                            '('+repr(var[v][i])+')')
                 evalans = eval(answer)
                 vec.append(evalans)

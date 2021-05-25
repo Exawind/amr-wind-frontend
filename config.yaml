@@ -1061,7 +1061,7 @@ inputwidgets:
     label:      ABL Profile Stats
     frame:      frame_postproABL
     inputtype:  listbox
-    optionlist: "parent.ABLpostpro_getprofileslist()"
+    optionlist: "self.parent.ABLpostpro_getprofileslist()"
     listboxopt:
       selectmode: multiple
       height:     5
@@ -1070,7 +1070,7 @@ inputwidgets:
     label:      ABL Scalar Stats
     frame:      frame_postproABL
     inputtype:  listbox
-    optionlist: "parent.ABLpostpro_getscalarslist()"
+    optionlist: "self.parent.ABLpostpro_getscalarslist()"
     row:        8
     listboxopt:
       selectmode: multiple

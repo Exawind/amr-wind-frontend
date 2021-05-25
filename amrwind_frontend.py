@@ -817,8 +817,9 @@ class MyApp(tkyg.App, object):
     def ABLpostpro_getscalarslist(self):
         return postpro.scalarvars[1:]
 
-    def ABLpostpro_loadnetcdffile(self, updatetimes=False):
-        ablfile        = self.inputvars['ablstats_file'].getval()
+    def ABLpostpro_loadnetcdffile(self, ablfile=None, updatetimes=False):
+        if ablfile is None:
+            ablfile = self.inputvars['ablstats_file'].getval()
         if self.abl_stats is not None:
             self.abl_stats.close()
         self.abl_stats = postpro.loadnetcdffile(ablfile)
@@ -830,14 +831,16 @@ class MyApp(tkyg.App, object):
         print("Done.")
         return
 
-    def ABLpostpro_plotprofiles(self):
+    def ABLpostpro_plotprofiles(self, ax=None, plotvars=None, avgt=None):
         # Get the list of selected quantities
-        selectedvars = self.inputvars['ablstats_profileplot'].getval()
-        avgt         = self.inputvars['ablstats_avgt'].getval()
-        ax=self.setupfigax()
+        if plotvars is None:
+            plotvars = self.inputvars['ablstats_profileplot'].getval()
+        if avgt is None:
+            avgt         = self.inputvars['ablstats_avgt'].getval()
+        if ax is None: ax=self.setupfigax()
 
-        if len(selectedvars)<1: return
-        for var in selectedvars:
+        if len(plotvars)<1: return
+        for var in plotvars:
             #print(var)
             # initialize the profile
             prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
@@ -860,14 +863,16 @@ class MyApp(tkyg.App, object):
         self.figcanvas.draw()
         return
 
-    def ABLpostpro_plotscalars(self):
+    def ABLpostpro_plotscalars(self, ax=None, plotvars=None, avgt=None):
         # Get the list of selected quantities
-        selectedvars = self.inputvars['ablstats_scalarplot'].getval()
-        avgt         = self.inputvars['ablstats_avgt'].getval()
-        ax=self.setupfigax()
+        if plotvars is None:
+            plotvars     = self.inputvars['ablstats_scalarplot'].getval()
+        if avgt is None:
+            avgt         = self.inputvars['ablstats_avgt'].getval()
+        if ax is None: ax=self.setupfigax()
         
-        if len(selectedvars)<1: return
-        for var in selectedvars:
+        if len(plotvars)<1: return
+        for var in plotvars:
             print(var)
             t, v = postpro.extractScalarTimeHistory(self.abl_stats, var)
             ax.plot(t, v, label=var)
