@@ -457,11 +457,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: xlo.temperature_type
 
-  - name:       xlo_temperature
-    label:      "Lower Y temperature"
+  - name:       xlo_density
+    label:      "Lower X density"
     frame:      frame_xBC
     inputtype:  float
-    defaultval: 0.0
+    outputdef:
+      AMR-Wind: xlo.density
+
+  - name:       xlo_velocity
+    label:      "Lower X velocity"
+    frame:      frame_xBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: xlo.velocity
+
+  - name:       xlo_temperature
+    label:      "Lower X temperature"
+    frame:      frame_xBC
+    inputtype:  float
     outputdef:
       AMR-Wind: xlo.temperature
 
@@ -492,11 +505,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: xhi.temperature_type
 
+  - name:       xhi_density
+    label:      "Upper X density"
+    frame:      frame_xBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: xhi.density
+
+  - name:       xhi_velocity
+    label:      "Upper X velocity"
+    frame:      frame_xBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: xhi.velocity
+
   - name:       xhi_temperature
     label:      "Upper X temperature"
     frame:      frame_xBC
     inputtype:  float
-    defaultval: 0.0
     outputdef:
       AMR-Wind: xhi.temperature
 
@@ -527,11 +553,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: ylo.temperature_type
 
+  - name:       ylo_density
+    label:      "Lower Y density"
+    frame:      frame_yBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: ylo.density
+
+  - name:       ylo_velocity
+    label:      "Lower Y velocity"
+    frame:      frame_yBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: ylo.velocity
+
   - name:       ylo_temperature
     label:      "Lower Y temperature"
     frame:      frame_yBC
     inputtype:  float
-    defaultval: 0.0
     outputdef:
       AMR-Wind: ylo.temperature
 
@@ -562,11 +601,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: yhi.temperature_type
 
+  - name:       yhi_density
+    label:      "Upper Y density"
+    frame:      frame_yBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: yhi.density
+
+  - name:       yhi_velocity
+    label:      "Upper Y velocity"
+    frame:      frame_yBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: yhi.velocity
+
   - name:       yhi_temperature
     label:      "Upper Y temperature"
     frame:      frame_yBC
     inputtype:  float
-    defaultval: 0.0
     outputdef:
       AMR-Wind: yhi.temperature
 
@@ -597,11 +649,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: zlo.temperature_type
 
+  - name:       zlo_density
+    label:      "Lower Z density"
+    frame:      frame_zBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: zlo.density
+
+  - name:       zlo_velocity
+    label:      "Lower Z velocity"
+    frame:      frame_zBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: zlo.velocity
+
   - name:       zlo_temperature
     label:      "Lower Z temperature"
     frame:      frame_zBC
     inputtype:  float
-    defaultval: #0.0
     outputdef:
       AMR-Wind: zlo.temperature
 
@@ -632,11 +697,24 @@ inputwidgets:
     outputdef:
       AMR-Wind: zhi.temperature_type
 
+  - name:       zhi_density
+    label:      "Upper Z density"
+    frame:      frame_zBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: zhi.density
+
+  - name:       zhi_velocity
+    label:      "Upper Z velocity"
+    frame:      frame_zBC
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: zhi.velocity
+
   - name:       zhi_temperature
     label:      "Upper Z temperature"
     frame:      frame_zBC
     inputtype:  float
-    defaultval: #0.0
     outputdef:
       AMR-Wind: zhi.temperature
 
