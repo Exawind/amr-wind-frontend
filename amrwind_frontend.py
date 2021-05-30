@@ -27,6 +27,8 @@ import matplotlib.pyplot    as plt
 from matplotlib.lines       import Line2D
 import argparse
 
+import validateinputs
+
 # -------------------------------------------------------------
 def readCartBoxFile(filename):
     """
@@ -1111,6 +1113,11 @@ if __name__ == "__main__":
 
     mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
     mainapp.notebook.enable_traversal()
+
+    # Load validateinputs plugins
+    for p in validateinputs.pluginlist:
+        #inst = p()
+        p().check(mainapp)
 
     # Load an inputfile
     if inputfile is not None:
