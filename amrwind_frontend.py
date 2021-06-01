@@ -542,6 +542,11 @@ class MyApp(tkyg.App, object):
                                              'plotdomain', savebutton=False))
         menubar.add_cascade(label="Plot", menu=plotmenu)
 
+        # Validate menu
+        checkmenu = Tk.Menu(menubar, tearoff=0)
+        checkmenu.add_command(label="Check Inputs", 
+                              command=self.validate)
+        menubar.add_cascade(label="Validate", menu=checkmenu)        
 
         # Help menu
         helpmenu = Tk.Menu(menubar, tearoff=0)
@@ -554,6 +559,24 @@ class MyApp(tkyg.App, object):
         root.config(menu=menubar)
         return
 
+    def validate(self):
+        # Load validateinputs plugins
+        num_nonactive = 0
+        num_active    = 0
+        print("-- Checking inputs --")
+        for p in validateinputs.pluginlist:
+            active = True if "active" not in vars(p) else p.active
+            if active:
+                num_active = num_active+1
+                results = p().check(self)
+                for r in results:
+                    print("[%5s] %-20s %s"%(r['result'].name,
+                                            p.name+":"+r['subname'],
+                                            r['mesg']))
+            else:
+                num_nonactive = num_nonactive+1                    
+        return
+    
     def setupfigax(self, clear=True, subplot=111):
         # Clear and resize figure
         canvaswidget=self.figcanvas.get_tk_widget()
@@ -1104,27 +1127,35 @@ if __name__ == "__main__":
     parser.add_argument('--outputfile',   
                         default='',  
                         help="Write the output file [default: None]")
+    parser.add_argument('--validate',   
+                        action='store_true',  
+                        help="Check input file for errors and quit [default: False]")
 
     args         = parser.parse_args()
     inputfile    = args.inputfile
     ablstatsfile = args.ablstatsfile
     samplefile   = args.samplefile
     outputfile   = args.outputfile
+    validate     = args.validate
 
+    # Validate the input file
+    if validate:
+        mainapp=MyApp.init_nogui()
+        mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.validate()
+        sys.exit()
+
+    # Instantiate the app
     mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
     mainapp.notebook.enable_traversal()
-
-    # Load validateinputs plugins
-    for p in validateinputs.pluginlist:
-        #inst = p()
-        p().check(mainapp)
 
     # Load an inputfile
     if inputfile is not None:
         mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+                
     if len(outputfile)>0:
         mainapp.writeAMRWindInput(outputfile, outputextraparams=True)
-        
+    
     # Load the abl statsfile
     if len(ablstatsfile)>0:
         mainapp.inputvars['ablstats_file'].setval(ablstatsfile)
