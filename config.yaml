@@ -190,7 +190,7 @@ inputwidgets:
     row:        1
     inputtype:  listbox
     optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex, Actuator]
-    defaultval: ABL
+    #defaultval: ABL
     listboxopt:
       selectmode: multiple
     outputdef:
@@ -957,7 +957,7 @@ inputwidgets:
     label:      Temp profile z
     frame:      frame_ABLTprof
     inputtype:  str
-    defaultval: 0.0 650.0 750.0 1000.0
+    #defaultval: 0.0 650.0 750.0 1000.0
     outputdef:
       AMR-Wind: ABL.temperature_heights
 
@@ -965,7 +965,7 @@ inputwidgets:
     label:      Temp profile val
     frame:      frame_ABLTprof
     inputtype:  str
-    defaultval: 300.0 300.0 308.0 308.75 
+    #defaultval: 300.0 300.0 308.0 308.75 
     outputdef:
       AMR-Wind: ABL.temperature_values
 
@@ -1529,12 +1529,36 @@ popupwindow:
         optionlist: "self.parent.listboxpopupwindict['listboxactuator'].getitemlist()"
         defaultval: 
         listboxopt:
-          selectmode: multiple
-          
+          selectmode: multiple          
     buttons:
       - name: plot
         text: Plot Domain
         command: "partial(self.savethenexec, 'self.master.plotDomain()')"
+
+  # === Plot FAST output ===
+  plotfastout:
+    title:        Plot FAST output # optional
+    loadonstart:  True             # optional
+    inputwidgets:
+      - name:       plotfastout_fastfile
+        label:      "FAST out file"
+        inputtype:  filename
+        defaultval: 
+      - name:       plotfastout_vars
+        label:      Plot Variables
+        inputtype:  listbox
+        #optionlist: "self.parent.listboxpopupwindict['listboxtagging'].getitemlist()"
+        defaultval: 
+        listboxopt:
+          selectmode: multiple
+          height: 10
+    buttons:
+      - name: plotfastout_loadbutton
+        text: Load/Reload Data
+        command: "partial(self.savethenexec, 'self.master.FAST_loadoutputs(self)')"
+      - name: plotfastout_plotbutton
+        text: Plot 
+        command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs()')"
 
   # === Sampling window ===
   sampling:

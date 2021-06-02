@@ -20,12 +20,12 @@ class Check_max_level():
     def check(self, app):
         max_level = app.inputvars['max_level'].getval()
 
-        checkstatus = {}       # Dict which holds
-        checkstatus['subname'] = ''
+        checkstatus                = {}   # Dict containing return status
+        checkstatus['subname']     = ''   # Additional name info
         if max_level >= 0:
             checkstatus['result']  = status.PASS  
             checkstatus['mesg']    = 'max_level = %i >= 0'%max_level
         else:
             checkstatus['result']  = status.FAIL
             checkstatus['mesg']    = 'max_level = %i < 0'%max_level            
-        return [checkstatus]   # Must be a list of dicts
+        return [checkstatus]              # Must be a list of dicts

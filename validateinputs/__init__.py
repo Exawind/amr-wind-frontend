@@ -34,6 +34,7 @@ class CheckStatus(Enum):
     PASS = 1
     SKIP = 2
     FAIL = 3
+    WARN = 4
 
 # Small utility to automatically load modules
 def load_module(path):

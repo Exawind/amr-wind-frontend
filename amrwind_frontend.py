@@ -27,7 +27,9 @@ import matplotlib.pyplot    as plt
 from matplotlib.lines       import Line2D
 import argparse
 
+# amrwind-frontend libraries
 import validateinputs
+import OpenFASTutil as OpenFAST
 
 # -------------------------------------------------------------
 def readCartBoxFile(filename):
@@ -156,6 +158,12 @@ class MyApp(tkyg.App, object):
         self.formatgridrows()
         self.extradictparams = OrderedDict()
         self.abl_profiledata = {}
+        self.savefile        = ''
+
+        # for fast output plotting
+        self.fast_dat        = None
+        self.fast_headers    = None
+        self.fast_units      = None
         return
 
     @classmethod
@@ -241,6 +249,15 @@ class MyApp(tkyg.App, object):
                                                  title = "Save AMR-Wind file")
         if len(filename)>0:
             self.writeAMRWindInput(filename)
+            self.savefile = filename
+        return
+
+    def saveAMRWindInputGUI(self):
+        if len(self.savefile)>0:
+            self.writeAMRWindInput(self.savefile)
+            print("Saved "+self.savefile)
+        else:
+            self.writeAMRWindInputGUI()
         return
 
     def getInputHelp(self, search=''):
@@ -515,6 +532,7 @@ class MyApp(tkyg.App, object):
                                               title = "Select AMR-Wind file")
         if len(filename)>0:
             self.extradictparams = self.loadAMRWindInput(filename, printunused=True)
+            self.savefile = filename
         return
 
     def menubar(self, root):
@@ -526,11 +544,12 @@ class MyApp(tkyg.App, object):
 
         # File menu
         filemenu = Tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Save input file", 
+                             command=self.saveAMRWindInputGUI)
+        filemenu.add_command(label="Save input file As", 
+                             command=self.writeAMRWindInputGUI)
         filemenu.add_command(label="Import AMR-Wind file", 
                              command=self.loadAMRWindInputGUI)
-        filemenu.add_command(label="Save AMR-Wind file", 
-                             command=self.writeAMRWindInputGUI)
-
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
@@ -540,6 +559,9 @@ class MyApp(tkyg.App, object):
         plotmenu.add_command(label="Plot domain", 
                              command=partial(self.launchpopupwin, 
                                              'plotdomain', savebutton=False))
+        plotmenu.add_command(label="FAST outputs", 
+                             command=partial(self.launchpopupwin, 
+                                             'plotfastout', savebutton=False))
         menubar.add_cascade(label="Plot", menu=plotmenu)
 
         # Validate menu
@@ -709,8 +731,6 @@ class MyApp(tkyg.App, object):
             for p in plotparams['plot_refineboxes']:
                 pdict = allrefinements.dumpdict('AMR-Wind',
                                                 subset=[p], keyfunc=keystr)
-                #print(p)
-                #print(pdict)
                 # Plot the Cartesian Box Refinements
                 if pdict['tagging_type'][0]=='CartBoxRefinement':
                     filename = pdict['tagging_static_refinement_def']
@@ -757,7 +777,7 @@ class MyApp(tkyg.App, object):
             for i in range(maxlevel):
                 legend_el.append(Line2D([0],[0], 
                                         linewidth=0, marker='s',
-                                        color=levelcolors[i], 
+                                        color=levelcolors[i+1], 
                                         alpha=0.75, 
                                         label='Level %i'%(i+1)))
                 legend_label.append('Level %i'%(i+1))
@@ -790,8 +810,14 @@ class MyApp(tkyg.App, object):
                 turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
-                #print(tdict)
-                #print(turbtype)
+
+                if turbtype in ['TurbineFastLine']:
+                    fstfile  = tdict['Actuator_openfast_input_file']
+                    EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
+                    EDdict   = OpenFAST.FASTfile2dict(EDfile)
+                    EDyaw    = float(EDdict['NacYaw'])
+                    yaw      = 270.0-EDyaw
+
                 plotTurbine(ax, basepos, default_hh, default_turbD, yaw, ix, iy,
                             lw=1, color='k', alpha=0.75)
                 
@@ -805,6 +831,38 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
 
         return
+
+    # ---- plot FAST outputs ---
+    def FAST_loadoutputs(self, window):
+        plotparams = self.popup_storteddata['plotfastout']
+        outfile = plotparams['plotfastout_fastfile']
+        print(outfile)
+        self.fast_dat, self.fast_headers, self.fast_units = \
+            OpenFAST.loadoutfile(outfile)
+
+        # Set the variables to plot
+        if window is not None:
+            tkentry = window.temp_inputvars['plotfastout_vars'].tkentry
+            tkentry.delete(0, Tk.END)
+            for h in self.fast_headers[1:]: tkentry.insert(Tk.END, h)
+        return
+
+    def FAST_plotoutputs(self, ax=None):
+        # Clear and resize figure
+        if ax is None: ax=self.setupfigax()
+
+        plotparams = self.popup_storteddata['plotfastout']
+
+        for v in plotparams['plotfastout_vars']:
+            indx = self.fast_headers.index(v)
+            ax.plot(self.fast_dat[:,0], self.fast_dat[:,indx], 
+                    label=v+' '+self.fast_units[indx])
+
+        ax.legend()
+        ax.set_xlabel(self.fast_headers[0]+' '+self.fast_units[0])
+        self.figcanvas.draw()
+        return
+
 
     # ---- ABL wind calculation ----------
     def ABL_calculateWindVector(self):
@@ -1152,6 +1210,7 @@ if __name__ == "__main__":
     # Load an inputfile
     if inputfile is not None:
         mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.savefile = inputfile
                 
     if len(outputfile)>0:
         mainapp.writeAMRWindInput(outputfile, outputextraparams=True)

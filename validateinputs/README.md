@@ -11,20 +11,35 @@ validateinputs/
 └── ...
 ```
 
+Inside `__init__.py` it defines 
+```python
+class CheckStatus(Enum):
+    PASS = 1
+    SKIP = 2
+    FAIL = 3
+    WARN = 4
+```
+
 Here's an example of a condition check 
 ```python
 from validateinputs import registerplugin
 from validateinputs import CheckStatus as status
 
-@registerplugin                # Class decorator to register check condition
-class CheckCondition(): 
-    name   = "Condition"       # Name of condition to check
-	active = True              # Optional, assumed true if not present
+@registerplugin
+class Check_max_level(): 
+    name = "max_level"
 
-    def check(self, app):      # Must be fuction called check
-		checkstatus = {}       # Dict which holds
-		checkstatus['subname'] = 'Test XYZ'
-		checkstatus['result']  = CheckStatus.PASS
-		checkstatus['mesg']    = 'All good'
-		return [checkstatus]   # Must be a list of dicts
+    def check(self, app):
+        max_level = app.inputvars['max_level'].getval()
+
+        checkstatus                = {}   # Dict containing return status
+        checkstatus['subname']     = ''   # Additional name info
+        if max_level >= 0:
+            checkstatus['result']  = status.PASS  
+            checkstatus['mesg']    = 'max_level = %i >= 0'%max_level
+        else:
+            checkstatus['result']  = status.FAIL
+            checkstatus['mesg']    = 'max_level = %i < 0'%max_level            
+        return [checkstatus]              # Must be a list of dicts
+
 ```
