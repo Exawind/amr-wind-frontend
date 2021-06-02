@@ -568,14 +568,21 @@ class MyApp(tkyg.App, object):
         checkmenu = Tk.Menu(menubar, tearoff=0)
         checkmenu.add_command(label="Check Inputs", 
                               command=self.validate)
-        menubar.add_cascade(label="Validate", menu=checkmenu)        
+        menubar.add_cascade(label="Run", menu=checkmenu)        
 
         # Help menu
+        long_text = """This is a multiline string.
+We can write this in multiple lines too!
+Hello from AskPython. This is the third line.
+This is the fourth line. Although the length of the text is longer than
+the width, we can use tkinter's scrollbar to solve this problem!
+"""
         helpmenu = Tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Help Index", 
                              command=partial(tkyg.donothing, root))
         helpmenu.add_command(label="About...", 
-                             command=partial(tkyg.donothing, root))
+                             command=partial(tkyg.messagewindow, root,
+                                             long_text))
         menubar.add_cascade(label="Help", menu=helpmenu)
         
         root.config(menu=menubar)
