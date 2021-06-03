@@ -201,7 +201,7 @@ class MyApp(tkyg.App, object):
         return keyheader+keyname+"."+intername+datadict.outputdef['AMR-Wind']
 
     def writeAMRWindInput(self, filename, verbose=False, 
-                          outputextraparams=True):
+                          outputextraparams=True, comments=True):
         """
         Write out the input file for AMR-Wind
         TODO: Do more sophisticated output control later
@@ -218,17 +218,47 @@ class MyApp(tkyg.App, object):
 
         # Construct the output dict
         outputdict=inputdict.copy()
-        outputdict.update(sampledict)
-        outputdict.update(taggingdict)
-        outputdict.update(actuatordict)
+        if len(sampledict)>0:
+            commentdict = {'#comment_sampledict':'\n#---- sample defs ----'}
+            if comments: outputdict.update(commentdict)
+            outputdict.update(sampledict)
+        if len(taggingdict)>0:
+            commentdict = {'#comment_taggingdict':'\n#---- tagging defs ----'}
+            if comments:  outputdict.update(commentdict)
+            outputdict.update(taggingdict)
+        if len(actuatordict)>0:
+            commentdict = {'#comment_actuatordict':'\n#---- actuator defs ----'}
+            if comments:  outputdict.update(commentdict)
+            outputdict.update(actuatordict)
 
         # Add any extra parameters
         if outputextraparams:
             outputdict.update(self.extradictparams)
 
+        # Add the end comment
+        if comments: 
+            outputdict.update({'#comment_end':'#== END AMR-WIND INPUT =='})
+
+        # Get the help dict
+        helpdict = self.getHelpFromInputs('AMR-Wind', 'help')
+
+        # Convert the dictionary to string output
+        returnstr = ''
         if len(filename)>0:  f=open(filename, "w")
         for key, val in outputdict.items():
             outputkey = key
+            # Write out a comment
+            if (key[0] == '#') and comments:
+                try:
+                    writestr = bytes(val, "utf-8").decode("unicode_escape")
+                except:
+                    writestr = val.decode('string_escape')
+                if verbose: print(writestr)
+                if len(filename)>0: f.write(writestr+"\n")
+                returnstr += writestr+"\n"
+                continue
+            elif (key[0] == '#'):
+                continue
             # convert val to string
             if val is None:
                 continue
@@ -237,12 +267,16 @@ class MyApp(tkyg.App, object):
             else:
                 outputstr=str(self.ifbool(val))
             if len(outputstr)>0 and (outputstr != 'None'):
-                writestr = "%-40s = %s"%(outputkey, outputstr)
+                writestr = "%-40s = %-20s"%(outputkey, outputstr)
+                # Add any help to this
+                if comments and (outputkey in helpdict):
+                    writestr += "# "+helpdict[outputkey]
                 if verbose: print(writestr)
                 if len(filename)>0: f.write(writestr+"\n")
+                returnstr += writestr+"\n"
         if len(filename)>0:     f.close()
-        #print(sampledict)
-        return
+        
+        return returnstr
 
     def writeAMRWindInputGUI(self):
         filename  = filedialog.asksaveasfilename(initialdir = "./",
@@ -258,6 +292,11 @@ class MyApp(tkyg.App, object):
             print("Saved "+self.savefile)
         else:
             self.writeAMRWindInputGUI()
+        return
+
+    def dumpAMRWindInputGUI(self):
+        tkyg.messagewindow(self, self.writeAMRWindInput(''), 
+                           height=40)
         return
 
     def getInputHelp(self, search=''):
@@ -840,9 +879,9 @@ the width, we can use tkinter's scrollbar to solve this problem!
         return
 
     # ---- plot FAST outputs ---
-    def FAST_loadoutputs(self, window):
+    def FAST_loadoutputs(self, window, outfile=None):
         plotparams = self.popup_storteddata['plotfastout']
-        outfile = plotparams['plotfastout_fastfile']
+        if outfile is None: outfile = plotparams['plotfastout_fastfile']
         print(outfile)
         self.fast_dat, self.fast_headers, self.fast_units = \
             OpenFAST.loadoutfile(outfile)

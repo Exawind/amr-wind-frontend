@@ -26,9 +26,13 @@ frames:
     tab:   Simulation
     row:   5
     title: Fluid and transport properties
-  - name:  frame_turbulence
+  - name:  frame_constants
     tab:   Simulation
     row:   6
+    title: Constant values
+  - name:  frame_turbulence
+    tab:   Simulation
+    row:   7
     title: Turbulence parameters
   - name:  frame_tolerances
     tab:   Expert
@@ -126,7 +130,7 @@ predefinedlists:
 #  Specify each input widget
 #
 # - name:       NAME         # Name of variable [required]
-#   label:      SOME TEXT    # displayed label in GUI
+#   label:      SOME TEXT    # displayed label in GUI [optional]
 #   tab:        TABNAME      # Which tab to put widget 
 #   frame:      FRAMENAME    # Which frame to put widget
 #                            #  either tab or frame must be specified
@@ -135,6 +139,7 @@ predefinedlists:
 #                            #  Types available: 
 #                            #  float/int/bool/str/filename/listbox
 #   defaultval: 100.0        # default value [optional]
+#   visible:    True         # if false, make invisible [optional, default:True]
 # 
 #   optionlist: [var1, var2, ..]
 #   outputdef:
@@ -143,14 +148,22 @@ predefinedlists:
 
 inputwidgets:
   # ========== Simulation inputs ==============================
+  - name:       comment_simtimectrl
+    frame:      frame_time
+    inputtype:  str
+    defaultval: "# --- Simulation time control parameters ---"
+    visible:    False
+    outputdef:
+      AMR-Wind: '#comment_simtimectrl'
+
   - name:       stop_time
     label:      Max time
     frame:      frame_time
     inputtype:  float
     defaultval: 100.0
-    help:       Max (simulated) time to evolve
     outputdef:
       AMR-Wind: time.stop_time
+      help:     Max (simulated) time to evolve
 
   - name:       max_step
     label:      Max steps
@@ -368,7 +381,32 @@ inputwidgets:
     outputdef:
       AMR-Wind: transport.turbulent_prandtl
 
+  # ---------- Constant values --------------------------------
+  - name:       ConstValue_density
+    label:      Constant density
+    frame:      frame_constants
+    inputtype:  float
+    #defaultval: 0.3333
+    outputdef:
+      AMR-Wind: ConstValue.density.value
+
+  - name:       ConstValue_velocity
+    label:      Constant velocity
+    frame:      frame_constants
+    inputtype:  [float, float, float]
+    #defaultval: 0.3333
+    outputdef:
+      AMR-Wind: ConstValue.velocity.value  
+
   # ========== Mesh and Domain inputs =========================
+  - name:       comment_geommesh
+    frame:      frame_Mesh
+    inputtype:  str
+    defaultval: "\n# --- Geometry and Mesh ---"
+    visible:    False
+    outputdef:
+      AMR-Wind: '#comment_geommesh'
+
   - name:       prob_lo
     label:      "Domain corner 1"
     frame:      frame_Mesh
@@ -453,7 +491,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: wall_model
+    #defaultval: wall_model
     outputdef:
       AMR-Wind: xlo.temperature_type
 
@@ -501,7 +539,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *bctypes
-    defaultval: fixed_gradient
+    #defaultval: fixed_gradient
     outputdef:
       AMR-Wind: xhi.temperature_type
 
@@ -729,6 +767,14 @@ inputwidgets:
 
   # ============================================================
   # ========== ABL forcing selection ==========================
+  - name:       comment_ablparams
+    frame:      frame_ABLforcing
+    inputtype:  str
+    defaultval: "\n# --- ABL parameters ---"
+    visible:    False
+    outputdef:
+      AMR-Wind: '#comment_ablparams'
+
   - name:       ABLForcing
     label:      add ABL Forcing
     frame:      frame_ABLforcing
@@ -1049,6 +1095,7 @@ inputwidgets:
     defaultval: 100.0
     outputdef:
       AMR-Wind: ABL.cutoff_height
+
   # =========== Sampling stuff here ====================
   - name:       plot_label
     label:      Plotting inputs
@@ -1094,6 +1141,14 @@ inputwidgets:
     ctrlelem:
       - frame:  frame_IOsampling
         activewhen: ['sampling', 1]
+
+  - name:       comment_sampling
+    frame:      frame_IOsampling
+    inputtype:  str
+    defaultval: "\n# --- Sampling parameters ---"
+    visible:    False
+    outputdef:
+      AMR-Wind: '#comment_sampling'
 
   - name:       sampling_output_frequency
     label:      Output freq
@@ -1422,7 +1477,8 @@ buttons:
   - name: writeInput
     text: dump input file
     tab:  Expert
-    command: "partial(self.writeAMRWindInput, '', verbose=True)"
+    command: self.dumpAMRWindInputGUI
+      #"partial(self.writeAMRWindInput, '', verbose=True)"
 
   - name:    loadABLstatsfile
     text:    Load file
@@ -1547,7 +1603,6 @@ popupwindow:
       - name:       plotfastout_vars
         label:      Plot Variables
         inputtype:  listbox
-        #optionlist: "self.parent.listboxpopupwindict['listboxtagging'].getitemlist()"
         defaultval: 
         listboxopt:
           selectmode: multiple
