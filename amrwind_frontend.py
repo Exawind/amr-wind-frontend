@@ -161,9 +161,18 @@ class MyApp(tkyg.App, object):
         self.savefile        = ''
 
         # for fast output plotting
-        self.fast_dat        = None
+        #self.fast_dat        = None
+        self.fast_outdata    = None
+        self.fast_outfiles   = None
         self.fast_headers    = None
         self.fast_units      = None
+
+        # build the map going from AMR-Wind var --> amrwind_frontend var
+        self.amrkeydict      = OrderedDict()
+        for key, var in self.inputvars.items():
+            outputkey = 'AMR-Wind'
+            if outputkey in var.outputdef:
+                self.amrkeydict[var.outputdef[outputkey]] = key
         return
 
     @classmethod
@@ -187,6 +196,14 @@ class MyApp(tkyg.App, object):
     def ifbool(cls, x):
         if not isinstance(x, bool): return x
         return 'true' if x else 'false'
+
+    def setAMRWindInput(self, name, val, **kwargs):
+        try:
+            inputkey = self.amrkeydict[name]
+            self.inputvars[inputkey].setval(val, **kwargs)
+        except:
+            print("Cannot set "+name)
+        return
 
     def getTaggingKey(self, keyname, listboxdict, datadict):
         keyheader = 'tagging.'
@@ -233,6 +250,8 @@ class MyApp(tkyg.App, object):
 
         # Add any extra parameters
         if outputextraparams:
+            commentdict = {'#comment_extradict':'\n#---- extra params ----'}
+            if comments:  outputdict.update(commentdict)
             outputdict.update(self.extradictparams)
 
         # Add the end comment
@@ -610,18 +629,13 @@ class MyApp(tkyg.App, object):
         menubar.add_cascade(label="Run", menu=checkmenu)        
 
         # Help menu
-        long_text = """This is a multiline string.
-We can write this in multiple lines too!
-Hello from AskPython. This is the third line.
-This is the fourth line. Although the length of the text is longer than
-the width, we can use tkinter's scrollbar to solve this problem!
-"""
+        help_text = """This is AMR-Wind!"""
         helpmenu = Tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Help Index", 
                              command=partial(tkyg.donothing, root))
         helpmenu.add_command(label="About...", 
                              command=partial(tkyg.messagewindow, root,
-                                             long_text))
+                                             help_text))
         menubar.add_cascade(label="Help", menu=helpmenu)
         
         root.config(menu=menubar)
@@ -879,32 +893,80 @@ the width, we can use tkinter's scrollbar to solve this problem!
         return
 
     # ---- plot FAST outputs ---
-    def FAST_loadoutputs(self, window, outfile=None):
-        plotparams = self.popup_storteddata['plotfastout']
-        if outfile is None: outfile = plotparams['plotfastout_fastfile']
-        print(outfile)
-        self.fast_dat, self.fast_headers, self.fast_units = \
-            OpenFAST.loadoutfile(outfile)
+    def FAST_addoutfilesGUI(self, window):
+        files  = filedialog.askopenfilename(initialdir = "./",
+                                            title = "Select FAST out file",
+                                            multiple = True,
+                                            filetypes = 
+                                            [("FAST out files", "*.out"), 
+                                            ("all files","*.*")])
+        # Add files to the file listbox
+        if window is not None:
+            tkentry = window.temp_inputvars['plotfastout_files'].tkentry  
+            for f in list(files): tkentry.insert(Tk.END, os.path.relpath(f))
 
+
+    def FAST_loadallfiles(self, window, outfile=None):
+        plotparams = self.popup_storteddata['plotfastout']
+        if outfile is None: 
+            outfile = window.temp_inputvars['plotfastout_files'].tkentry.get(0, Tk.END)
+        self.fast_outdata = []
+        self.fast_outfiles = []
+        for f in list(outfile):
+            print("Loading "+f)
+            dat, headers, units = OpenFAST.loadoutfile(f)
+            # To do: check to make sure headers line up
+            self.fast_outdata.append(dat)
+            self.fast_outfiles.append(f)
+        self.fast_headers = headers
+        self.fast_units   = units
         # Set the variables to plot
         if window is not None:
             tkentry = window.temp_inputvars['plotfastout_vars'].tkentry
             tkentry.delete(0, Tk.END)
             for h in self.fast_headers[1:]: tkentry.insert(Tk.END, h)
+        # Set the file selectors
+        if window is not None:
+            N = len(window.temp_inputvars['plotfastout_files'].tkentry.get(0, Tk.END))
+            for i in range(N):
+                window.temp_inputvars['plotfastout_files'].tkentry.selection_set(i)
         return
 
-    def FAST_plotoutputs(self, ax=None):
+    # def FAST_loadoutputs(self, window, outfile=None):
+    #     plotparams = self.popup_storteddata['plotfastout']
+    #     if outfile is None: outfile = plotparams['plotfastout_fastfile']
+    #     #print(outfile)
+    #     self.fast_dat, self.fast_headers, self.fast_units = \
+    #         OpenFAST.loadoutfile(outfile)
+
+    #     # Set the variables to plot
+    #     if window is not None:
+    #         tkentry = window.temp_inputvars['plotfastout_vars'].tkentry
+    #         tkentry.delete(0, Tk.END)
+    #         for h in self.fast_headers[1:]: tkentry.insert(Tk.END, h)
+    #     return
+
+    def FAST_plotoutputs(self, window=None, ax=None):
         # Clear and resize figure
         if ax is None: ax=self.setupfigax()
 
         plotparams = self.popup_storteddata['plotfastout']
 
-        for v in plotparams['plotfastout_vars']:
-            indx = self.fast_headers.index(v)
-            ax.plot(self.fast_dat[:,0], self.fast_dat[:,indx], 
-                    label=v+' '+self.fast_units[indx])
+        if window is None: 
+            datindices = range(len(self.fast_outdata))
+        else:
+            allfiles  = window.temp_inputvars['plotfastout_files'].tkentry.get(0, Tk.END)
+            plotfiles = window.temp_inputvars['plotfastout_files'].getval()
+            datindices = [allfiles.index(x) for x in plotfiles]
 
-        ax.legend()
+        for i in datindices:
+            dat = self.fast_outdata[i]
+            for v in plotparams['plotfastout_vars']:
+                indx = self.fast_headers.index(v)
+                ax.plot(dat[:,0], dat[:,indx], 
+                        label=self.fast_outfiles[i]+': '+v+' '+self.fast_units[indx])
+
+        ax.legend(fontsize=8)
         ax.set_xlabel(self.fast_headers[0]+' '+self.fast_units[0])
         self.figcanvas.draw()
         return

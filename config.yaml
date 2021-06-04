@@ -139,9 +139,14 @@ predefinedlists:
 #                            #  Types available: 
 #                            #  float/int/bool/str/filename/listbox
 #   defaultval: 100.0        # default value [optional]
-#   visible:    True         # if false, make invisible [optional, default:True]
-# 
+#   visible:    True         # if false, make invisible [optional,default:True] 
 #   optionlist: [var1, var2, ..]
+#   fileopenopt:             # options for filename [optional]
+#     selecttype: open       # open/saveas/directory [optional]
+#     kwargs:                # Optional arguments to tkinter.filedialog
+#       filetypes: 
+#       - ["FAST out files", "*.out"]
+#       - ["all files", "*.*"]
 #   outputdef:
 #     AMR-Wind: time.stop_time
 # ***********************************************
@@ -1176,7 +1181,11 @@ inputwidgets:
     frame:      frame_postproABL
     row:        1
     inputtype:  filename
-
+    fileopenopt:
+      kwargs:
+        filetypes: 
+          - ["NETCDF files", "*.nc"]
+          - ["all files", "*.*"]
   - name:       ablstats_avgt
     label:      Avg times
     frame:      frame_postproABL
@@ -1232,6 +1241,11 @@ inputwidgets:
     frame:      frame_postprosampling
     row:        1
     inputtype:  filename
+    fileopenopt:
+      kwargs:
+        filetypes: 
+          - ["NETCDF files", "*.nc"]
+          - ["all files", "*.*"]
 
   - name:       samplingprobe_info_label
     label:      Available Data
@@ -1596,10 +1610,14 @@ popupwindow:
     title:        Plot FAST output # optional
     loadonstart:  True             # optional
     inputwidgets:
-      - name:       plotfastout_fastfile
-        label:      "FAST out file"
-        inputtype:  filename
-        defaultval: 
+      - name:       plotfastout_files
+        label:      FAST Files
+        inputtype:  listbox
+        defaultval:
+        row:        1
+        listboxopt:
+          selectmode: multiple
+          height: 5
       - name:       plotfastout_vars
         label:      Plot Variables
         inputtype:  listbox
@@ -1607,13 +1625,26 @@ popupwindow:
         listboxopt:
           selectmode: multiple
           height: 10
+        row: 3
+      - name:         plotfastout_label
+        label:        "Plot options"
+        labelonly:    True
+        visible:      False
+
     buttons:
+      - name: plotfastout_addfilebutton
+        text: Add file
+        command: "partial(self.savethenexec, 'self.master.FAST_addoutfilesGUI(self)')"
+        row:  2
       - name: plotfastout_loadbutton
         text: Load/Reload Data
-        command: "partial(self.savethenexec, 'self.master.FAST_loadoutputs(self)')"
+        command: "partial(self.savethenexec, 'self.master.FAST_loadallfiles(self)')"
+        row:  2
+        col:  1
       - name: plotfastout_plotbutton
         text: Plot 
-        command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs()')"
+        command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs(window=self)')"
+        row:  4
 
   # === Sampling window ===
   sampling:
