@@ -908,6 +908,8 @@ class MyApp(tkyg.App, object):
 
     def FAST_loadallfiles(self, window, outfile=None):
         plotparams = self.popup_storteddata['plotfastout']
+        if (outfile is not None) and isinstance(outfile, str):
+            outfile = [outfile]
         if outfile is None: 
             outfile = window.temp_inputvars['plotfastout_files'].tkentry.get(0, Tk.END)
         self.fast_outdata = []
@@ -931,20 +933,6 @@ class MyApp(tkyg.App, object):
             for i in range(N):
                 window.temp_inputvars['plotfastout_files'].tkentry.selection_set(i)
         return
-
-    # def FAST_loadoutputs(self, window, outfile=None):
-    #     plotparams = self.popup_storteddata['plotfastout']
-    #     if outfile is None: outfile = plotparams['plotfastout_fastfile']
-    #     #print(outfile)
-    #     self.fast_dat, self.fast_headers, self.fast_units = \
-    #         OpenFAST.loadoutfile(outfile)
-
-    #     # Set the variables to plot
-    #     if window is not None:
-    #         tkentry = window.temp_inputvars['plotfastout_vars'].tkentry
-    #         tkentry.delete(0, Tk.END)
-    #         for h in self.fast_headers[1:]: tkentry.insert(Tk.END, h)
-    #     return
 
     def FAST_plotoutputs(self, window=None, ax=None):
         # Clear and resize figure
@@ -1107,8 +1095,11 @@ class MyApp(tkyg.App, object):
         return
 
     # ---- Sample probe postprocessing options ----
-    def Samplepostpro_loadnetcdffile(self):
-        samplefile = self.inputvars['sampling_file'].getval()
+    def Samplepostpro_loadnetcdffile(self, ncfile=None):
+        if ncfile is None:
+            samplefile = self.inputvars['sampling_file'].getval()
+        else:
+            samplefile = ncfile
         if len(samplefile)==0:
             print("Empty filename, choose file first")
             return
@@ -1202,17 +1193,19 @@ class MyApp(tkyg.App, object):
         self.Samplepostpro_updatetimes()
 
         if sampletype == 'LineSampler':
-            self.plotSampleLine(self.sample_ncdat, groupsel,var, timeind, axis1)
+            self.plotSampleLine(groupsel,var, timeind, axis1)
         elif sampletype == 'PlaneSampler':
-            self.plotSamplePlane(self.sample_ncdat, groupsel, var, timeind, 
+            self.plotSamplePlane(groupsel, var, timeind, 
                                  kindex, axis1, axis2)
         else:
             print('sample type %s is not recognized'%sampletype)
         return
 
-    def plotSampleLine(self, ncdat, groups, var, tindex, plotaxis, ax=None):
+    def plotSampleLine(self, groups, var, tindex, plotaxis, ax=None,ncdat=None):
+        if isinstance(groups, str): groups=[groups]
         # Clear and resize figure
         if ax is None: ax=self.setupfigax()
+        if ncdat is None: ncdat = self.sample_ncdat
 
         # Get the plot data
         for group in groups:
@@ -1231,10 +1224,13 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
         return
 
-    def plotSamplePlane(self, ncdat, groups, varselect, tindex, kindex, 
-                        plotaxis1, plotaxis2, ax=None):
+    def plotSamplePlane(self, groups, varselect, tindex, kindex, 
+                        plotaxis1, plotaxis2, ax=None, ncdat=None,
+                        colorbar=True, levels=41, **contourfargs):
+        if isinstance(groups, str): groups=[groups]
         # Clear and resize figure
         if ax is None: ax=self.setupfigax()
+        if ncdat is None: ncdat = self.sample_ncdat
 
         if isinstance(varselect, list):
             var = varselect[0]
@@ -1243,8 +1239,9 @@ class MyApp(tkyg.App, object):
         else:
             var = varselect
 
-        nlevels = 40  # Number of contour levels
+        #nlevels = 40  # Number of contour levels
         # Get the plot data
+        imvec = []
         for group in groups:
             x,y,z,s1,s2,v = ppsample.getPlaneSampleAtTime(self.sample_ncdat, 
                                                           group, var, tindex, 
@@ -1259,9 +1256,10 @@ class MyApp(tkyg.App, object):
             if plotaxis2=='S': ploty = s2
 
             # plot the mesh
-            im = ax.contourf(plotx, ploty, v, nlevels)
-            im.autoscale()
-            self.fig.colorbar(im, ax=ax)
+            im = ax.contourf(plotx, ploty, v, levels, **contourfargs)
+            imvec.append(im)
+            #im.autoscale()
+        if colorbar: self.fig.colorbar(im, ax=ax)
 
         xlabel = 'Axis1' if plotaxis1=='S' else plotaxis1
         ylabel = 'Axis2' if plotaxis2=='S' else plotaxis2
@@ -1270,13 +1268,13 @@ class MyApp(tkyg.App, object):
 
         # Set the title
         timevec = ppsample.getVar(self.sample_ncdat, 'time')
-        curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
-        ax.set_title('Time: %f'%(timevec[curindex]))        
+        #curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
+        ax.set_title('Time: %f'%(timevec[tindex]))        
         ax.set_aspect('equal')
 
         self.figcanvas.draw()
         #self.figcanvas.show()
-        return
+        return imvec
 
 if __name__ == "__main__":
     title='AMR-Wind'
