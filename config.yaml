@@ -118,6 +118,14 @@ frames:
     tab:   Turbines
     row:   1
     title: Turbine parameters
+  - name:  frame_turbinefastlineglobals
+    tab:   Turbines
+    row:   2
+    title: OpenFAST ALM global parameters
+  - name:  frame_turbinefastdiskglobals
+    tab:   Turbines
+    row:   3
+    title: OpenFAST ADM global parameters
 
 
 predefinedlists:
@@ -1324,23 +1332,24 @@ inputwidgets:
     ctrlelem:  
       - frame:  frame_turbineglobals
 
-  - name:       turbine_default_params
-    label:      Default parameters
-    frame:      frame_turbineglobals
-    labelonly:  True
-
   - name:       Actuator_default_type
-    label:      Actuator type
+    label:      Default actuator type
     frame:      frame_turbineglobals
-    inputtype:  str
+    inputtype:  listbox
     optionlist: *turbinetypes
-    defaultval: TurbineFastLine
+    #defaultval: TurbineFastLine
     outputdef:
       AMR-Wind: Actuator.type
-      
+    ctrlelem:
+      - frame:  frame_turbinefastlineglobals
+        activewhen: ['TurbineFastLine', 1]
+      - frame:  frame_turbinefastdiskglobals
+        activewhen: ['TurbineFastDisk', 1]
+
+  # ------ TurbineFastLine Globals -------------------
   - name:       Actuator_TurbineFastLine_rotor_diameter
     label:      Rotor D
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1348,7 +1357,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_hub_height
     label:      Hub height
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1356,7 +1365,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_num_points_blade
     label:      Num blade points
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  int
     defaultval: 
     outputdef:
@@ -1364,7 +1373,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_num_points_tower
     label:      Num tower points
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  int
     defaultval: 
     outputdef:
@@ -1372,7 +1381,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_epsilon
     label:      Epsilon
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  [float, float, float]
     defaultval: 
     outputdef:
@@ -1380,7 +1389,7 @@ inputwidgets:
       
   - name:       Actuator_TurbineFastLine_epsilon_tower
     label:      Epsilon tower
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  [float, float, float]
     defaultval: 
     outputdef:
@@ -1388,7 +1397,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_openfast_start_time
     label:      FAST start time
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1396,7 +1405,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_openfast_stop_time
     label:      FAST stop time
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1404,7 +1413,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_nacelle_drag_coeff
     label:      Nacelle Cd
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1412,7 +1421,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_nacelle_area
     label:      Nacelle Area
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
@@ -1420,7 +1429,7 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_output_frequency
     label:      FAST output freq
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  int
     defaultval: 
     outputdef:
@@ -1428,16 +1437,113 @@ inputwidgets:
 
   - name:       Actuator_TurbineFastLine_density
     label:      Density
-    frame:      frame_turbineglobals
+    frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.density
 
-  - name:       turbine_stuff1
-    label:      
-    frame:      frame_turbineglobals
-    labelonly:  True
+  # ------ TurbineFastDisk Globals -------------------
+  - name:       Actuator_TurbineFastDisk_rotor_diameter
+    label:      Rotor D
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.rotor_diameter
+
+  - name:       Actuator_TurbineFastDisk_hub_height
+    label:      Hub height
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.hub_height
+
+  - name:       Actuator_TurbineFastDisk_num_points_blade
+    label:      Num blade points
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.num_points_blade
+
+  - name:       Actuator_TurbineFastDisk_num_points_tower
+    label:      Num tower points
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.num_points_tower
+
+  - name:       Actuator_TurbineFastDisk_epsilon
+    label:      Epsilon
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.epsilon
+      
+  - name:       Actuator_TurbineFastDisk_epsilon_tower
+    label:      Epsilon tower
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.epsilon_tower
+
+  - name:       Actuator_TurbineFastDisk_openfast_start_time
+    label:      FAST start time
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.openfast_start_time
+
+  - name:       Actuator_TurbineFastDisk_openfast_stop_time
+    label:      FAST stop time
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.openfast_stop_time
+
+  - name:       Actuator_TurbineFastDisk_nacelle_drag_coeff
+    label:      Nacelle Cd
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.nacelle_drag_coeff
+
+  - name:       Actuator_TurbineFastDisk_nacelle_area
+    label:      Nacelle Area
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.nacelle_area
+
+  - name:       Actuator_TurbineFastDisk_output_frequency
+    label:      FAST output freq
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.output_frequency
+
+  - name:       Actuator_TurbineFastDisk_density
+    label:      Density
+    frame:      frame_turbinefastdiskglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.density
+
+#  - name:       turbine_stuff1
+#    label:      
+#    frame:      frame_turbinefastlineglobals
+#    labelonly:  True
 
 #  - name:       turbine_stuff2
 #    label:      

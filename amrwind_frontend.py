@@ -871,7 +871,7 @@ class MyApp(tkyg.App, object):
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
 
-                if turbtype in ['TurbineFastLine']:
+                if turbtype[0] in ['TurbineFastLine', 'TurbineFastDisk']:
                     fstfile  = tdict['Actuator_openfast_input_file']
                     EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
                     EDdict   = OpenFAST.FASTfile2dict(EDfile)
