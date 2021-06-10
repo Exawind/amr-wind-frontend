@@ -804,7 +804,7 @@ class MyApp(tkyg.App, object):
                             color   = levelcolors[ilevel]
                             plotRectangle(ax, corner1, corner2, ix, iy,
                                           facecolor=color, ec='k', lw=0.5, 
-                                          alpha=0.75)
+                                          alpha=0.90)
                 # Plot the Geometry Refinements
                 if pdict['tagging_type'][0]=='GeometryRefinement':
                     if pdict['tagging_geom_type']=='box':
@@ -823,7 +823,7 @@ class MyApp(tkyg.App, object):
                         #print(" yaxis:  "+repr(yaxis))
                         #print(" zaxis:  "+repr(zaxis))
                         plot3DBox(ax, origin, xaxis, yaxis, zaxis, ix, iy,
-                                  lw=0.4, facecolor=color, alpha=0.75)
+                                  lw=0.4, facecolor=color, alpha=0.90)
                     if pdict['tagging_geom_type']=='cylinder':
                         print("cylinder geometry refinement plotting not supported")
 
@@ -856,9 +856,9 @@ class MyApp(tkyg.App, object):
             keystr       = lambda n, d1, d2: d2.name
 
             # Get the defaults
-            default_type   = self.inputvars['Actuator_default_type'].getval()
-            default_turbD  = self.inputvars['Actuator_TurbineFastLine_rotor_diameter'].getval()
-            default_hh     = self.inputvars['Actuator_TurbineFastLine_hub_height'].getval()
+            default_type   = self.inputvars['Actuator_default_type'].getval()[0]
+            default_turbD  = self.inputvars['Actuator_%s_rotor_diameter'%default_type].getval()
+            default_hh     = self.inputvars['Actuator_%s_hub_height'%default_type].getval()
 
             # Get the wind direction
             self.ABL_calculateWDirWS()
@@ -871,7 +871,7 @@ class MyApp(tkyg.App, object):
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
 
-                if turbtype[0] in ['TurbineFastLine', 'TurbineFastDisk']:
+                if turbtype in ['TurbineFastLine', 'TurbineFastDisk']:
                     fstfile  = tdict['Actuator_openfast_input_file']
                     EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
                     EDdict   = OpenFAST.FASTfile2dict(EDfile)

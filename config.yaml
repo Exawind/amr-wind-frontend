@@ -795,6 +795,9 @@ inputwidgets:
     defaultval: 1
     ctrlelem:  
       - frame:   frame_ABLphysics
+      - frame:   frame_ABLprop
+      - frame:   frame_ABLTprof        
+      - frame:   frame_ABLpeturb
 
   - name:       CoriolisForcing
     label:      add Coriolis forces
