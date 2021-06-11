@@ -76,6 +76,14 @@ def getFileFromFST(fstfile, key, fstdict=None):
     fstpath = os.path.dirname(os.path.abspath(fstfile))
     return os.path.join(fstpath, keyfile)
 
+def getVarFromFST(fstfile, key, fstdict=None):
+    """
+    Get the file referenced by key in fstfile
+    """
+    if fstdict is None:
+        fstdict=FASTfile2dict(fstfile)
+    return fstdict[key]
+
 def loadoutfile(filename):
     """
     Loads the FAST output file

@@ -426,7 +426,7 @@ class MyApp(tkyg.App, object):
     @classmethod
     def AMRWindExtractTaggingDict(cls, inputdict, template, sep=['.','.','.']):
         """
-        From input dict, extract all of the sampling probe parameters
+        From input dict, extract all of the tagging parameters
         """
         pre='tagging'
         dictkeypre= 'tagging_'
@@ -466,8 +466,17 @@ class MyApp(tkyg.App, object):
             readtaggingkeys = True
             taginsert       = ''
             if tagtype=='GeometryRefinement':
-                suffix = 'shapes'
+                # Get the level
+                suffix    = 'level'
+                tagdictkey= dictkeypre+suffix     
+                key       = prefix+suffix
+                if key in inputdict:
+                    leveldata = int(inputdict[key])
+                    itemdict[tagdictkey] = leveldata
+                    extradict.pop(key)
+                
                 # Get the shapes
+                suffix = 'shapes'
                 tagdictkey = dictkeypre+suffix     
                 key       = prefix+suffix
                 shapedata = inputdict[key]
@@ -484,7 +493,8 @@ class MyApp(tkyg.App, object):
                     taginsert = 'geom_'
 
             if not readtaggingkeys: continue
-
+            #print(taggingkeys)
+            #print(tagkeys)
             # Go through the rest of the keys
             for key in tagkeys:
                 suffix = key[len(prefix):]
@@ -812,7 +822,7 @@ class MyApp(tkyg.App, object):
                         xaxis  = pdict['tagging_geom_xaxis']
                         yaxis  = pdict['tagging_geom_yaxis']
                         zaxis  = pdict['tagging_geom_zaxis']
-                        ilevel = pdict['tagging_geom_level']
+                        ilevel = pdict['tagging_level']
                         if ilevel is not None: 
                             color   = levelcolors[ilevel]
                         else:
@@ -837,9 +847,9 @@ class MyApp(tkyg.App, object):
             for i in range(maxlevel):
                 legend_el.append(Line2D([0],[0], 
                                         linewidth=0, marker='s',
-                                        color=levelcolors[i+1], 
+                                        color=levelcolors[i+0], 
                                         alpha=0.75, 
-                                        label='Level %i'%(i+1)))
+                                        label='Level %i'%(i+0)))
                 legend_label.append('Level %i'%(i+1))
             legendrefine = ax.legend(legend_el, legend_label, 
                                      frameon=True, numpoints=1, 
@@ -1136,7 +1146,7 @@ class MyApp(tkyg.App, object):
     def Samplepostpro_getnexttime(self):
         curindex = self.inputvars['samplingprobe_plottimeindex'].getval()
         timevec = ppsample.getVar(self.sample_ncdat, 'time')
-        if curindex<len(timevec)-1-1: newindex = curindex + 1
+        if curindex<len(timevec)-1:   newindex = curindex + 1
         else:                         newindex = 0
         self.inputvars['samplingprobe_plottimeindex'].setval(newindex)
         self.Samplepostpro_updatetimes()

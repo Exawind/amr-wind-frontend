@@ -1,6 +1,7 @@
 from validateinputs import registerplugin
 from validateinputs import CheckStatus as status
 import os.path
+import OpenFASTutil
 
 """
 See README.md for details on the structure of classes here
@@ -36,7 +37,7 @@ class Check_Actuator_Physics():
             checkstatus['result']  = status.FAIL
             checkstatus['mesg']    = 'incflo.physics must have Actuator and ICNS.source_terms must have ActuatorForcing'
         return [checkstatus]
-            
+
 @registerplugin
 class Check_Actuator_FSTfile(): 
     name = "Actuator FST"
@@ -68,6 +69,7 @@ class Check_Actuator_FSTfile():
             tdict = allturbines.dumpdict('AMR-Wind',
                                          subset=[turb], keyfunc=keystr)
             turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
+            fstfile  = ''
             if turbtype[0] not in ['TurbineFastLine', 'TurbineFastDisk']:
                 checkstatus['result']      = status.SKIP
                 checkstatus['mesg']        = 'Not OpenFAST'                
@@ -80,5 +82,91 @@ class Check_Actuator_FSTfile():
                     checkstatus['result']      = status.FAIL
                     checkstatus['mesg']        = '[%s] does NOT exist'%fstfile 
             checklist.append(checkstatus)
-        
+
+            # Now check for other things in the input file
+            if checkstatus['result'] == status.PASS:
+                # Check CompInflow
+                check = Check_Actuator_FST_CompInflow.check(app, fstfile, subname=turb)
+                for c in check: checklist.append(c)
+
+                check = Check_Actuator_FST_Aerodyn.check(app, fstfile, subname=turb)
+                for c in check: checklist.append(c)
+
         return checklist
+
+# Don't register this one, it's called by Check_Actuator_FSTfile
+class Check_Actuator_FST_CompInflow(): 
+    """
+    Check CompInflow
+    """
+    name = "FST CompInflow"
+
+    @classmethod
+    def check(self, app, fstfile, subname=''):
+        checkstatus = {'subname':subname}  
+        # Get compinflow from fstfile
+        CompInflow = int(OpenFASTutil.getVarFromFST(fstfile, 'CompInflow'))
+        if CompInflow == 2:
+            checkstatus['result']  = status.PASS
+            checkstatus['mesg']    = 'CompInflow OK'
+        else:
+            checkstatus['result']  = status.FAIL
+            checkstatus['mesg']    = 'CompInflow=%i, should be 2.'%CompInflow
+        return [checkstatus]
+            
+# Don't register this one, it's called by Check_Actuator_FSTfile
+class Check_Actuator_FST_Aerodyn(): 
+    """
+    Check Aerodyn inputs
+    """
+    name = "FST Aerodyn"
+
+    @classmethod
+    def check(self, app, fstfile, subname=''):
+        allchecks   = []
+
+        checkaerodyn = {'subname':subname}  
+        CompAero = int(OpenFASTutil.getVarFromFST(fstfile, 'CompAero'))
+        if CompAero in [1,2]:
+            # Check to make sure AeroFile exists
+            AeroFile = OpenFASTutil.getVarFromFST(fstfile, 'AeroFile').strip('"')
+            AeroFileWPath = os.path.join(os.path.dirname(fstfile), AeroFile)
+            if os.path.isfile(AeroFileWPath): 
+                checkaerodyn['result']  = status.PASS
+                checkaerodyn['mesg']    = '[%s] exists'%AeroFileWPath
+            else:
+                checkaerodyn['result']  = status.FAIL
+                checkaerodyn['mesg']    = \
+                 'AeroFile=[%s] does not exist'%AeroFileWPath
+        else:
+            checkaerodyn['result']  = status.SKIP
+            checkaerodyn['mesg']    = 'CompAero=%i... skipping Aerodyn'%CompAero
+        allchecks.append(checkaerodyn)
+
+        # Now check for things in the AerodynFile
+        if checkaerodyn['result']  == status.PASS:
+            # Check WakeMod
+            WakeMod = int(OpenFASTutil.getVarFromFST(AeroFileWPath, 'WakeMod'))
+            checkwakemod = {'subname':subname}  
+            if WakeMod == 0:
+                checkwakemod['result']  = status.PASS
+                checkwakemod['mesg']    = 'WakeMod=%i OK'%WakeMod
+            else:
+                checkwakemod['result']  = status.FAIL
+                checkwakemod['mesg']    = 'WakeMod=%i, should be 0'%WakeMod
+            pass
+            allchecks.append(checkwakemod)
+
+            # Check Density
+            checkdensity = {'subname':subname}
+            AirDens = float(OpenFASTutil.getVarFromFST(AeroFileWPath,'AirDens'))
+            incflo_density = app.inputvars['density'].getval()
+            if abs(AirDens - incflo_density) > 1.0E-6:
+                checkdensity['result'] = status.WARN
+                checkdensity['mesg']   = 'AirDens=%f, does not match incflo.density=%f'%(AirDens, incflo_density)
+            else:
+                checkdensity['result'] = status.PASS
+                checkdensity['mesg']   = 'AirDens=%f, matches incflo.density=%f'%(AirDens, incflo_density)
+            allchecks.append(checkdensity)
+
+        return allchecks

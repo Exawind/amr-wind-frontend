@@ -1907,6 +1907,8 @@ popupwindow:
           activewhen: ['QCriterionRefinement', 1]
         - input: tagging_shapes
           activewhen: ['GeometryRefinement', 1]
+        - input: tagging_level
+          activewhen: ['GeometryRefinement', 1]
         - input: tagging_geom_type
           activewhen: ['GeometryRefinement', 1]
         - input: tagging_geom_origin
@@ -1973,7 +1975,7 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: shapes
-    - name:       tagging_geom_level
+    - name:       tagging_level
       label:      Geometry level
       inputtype:  int
       defaultval: 
