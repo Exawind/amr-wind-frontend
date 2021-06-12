@@ -127,12 +127,42 @@ frames:
     row:   3
     title: OpenFAST ADM global parameters
 
-
+    
+# ********** PREDEFEINED ANCHORS ****************
+# Define things here which will be repeated later on
+# This is using anchors (part of YAML definition)
+# 
 predefinedlists:
   # Check amr-wind/incflo_enums.H
-  bctypes: &bctypes [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
-  turbinetypes: &turbinetypes [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
+  bctypes:      &PREDEFINED_BCTYPES [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
+  turbinetypes: &PREDEFINED_TURBINETYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
 
+  # ------- stuff used in turbine parameters ----
+  rotordiameter: &PREDEFINED_ROTOR_DIAMETER
+    name:       rotor_diameter
+    label:      Rotor D
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+        AMR-Wind: rotor_diameter
+  hub_height: &PREDEFINED_HUB_HEIGHT
+    name:       hub_height
+    label:      Hub height
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: hub_height
+  num_points_blade: &PREDEFINED_NUM_POINTS_BLADE
+    name:       num_points_blade
+    label:      Num blade points
+    frame:      frame_turbinefastlineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: num_points_blade
+      
 # *********** INPUTWIDGET FORMAT ****************
 # 
 #  Specify each input widget
@@ -494,7 +524,7 @@ inputwidgets:
     label:      "Lower X velocity BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: xlo.type
@@ -503,7 +533,7 @@ inputwidgets:
     label:      "Lower X temp BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     #defaultval: wall_model
     outputdef:
       AMR-Wind: xlo.temperature_type
@@ -533,7 +563,7 @@ inputwidgets:
     label:      "Lower X TKE BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #None
     outputdef:
       AMR-Wind: xlo.tke_type
@@ -542,7 +572,7 @@ inputwidgets:
     label:      "Upper X velocity BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: xhi.type
@@ -551,7 +581,7 @@ inputwidgets:
     label:      "Upper X temp BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     #defaultval: fixed_gradient
     outputdef:
       AMR-Wind: xhi.temperature_type
@@ -581,7 +611,7 @@ inputwidgets:
     label:      "Upper X TKE BC"
     frame:      frame_xBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #None
     outputdef:
       AMR-Wind: xhi.tke_type
@@ -590,7 +620,7 @@ inputwidgets:
     label:      "Lower Y velocity BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: ylo.type
@@ -599,7 +629,7 @@ inputwidgets:
     label:      "Lower Y temp BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: wall_model
     outputdef:
       AMR-Wind: ylo.temperature_type
@@ -629,7 +659,7 @@ inputwidgets:
     label:      "Lower Y TKE BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #None
     outputdef:
       AMR-Wind: ylo.tke_type
@@ -638,7 +668,7 @@ inputwidgets:
     label:      "Upper Y velocity BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: yhi.type
@@ -647,7 +677,7 @@ inputwidgets:
     label:      "Upper Y temp BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: fixed_gradient
     outputdef:
       AMR-Wind: yhi.temperature_type
@@ -677,7 +707,7 @@ inputwidgets:
     label:      "Upper Y TKE BC"
     frame:      frame_yBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #None
     outputdef:
       AMR-Wind: yhi.tke_type
@@ -686,7 +716,7 @@ inputwidgets:
     label:      "Lower Z velocity BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zlo.type
@@ -695,7 +725,7 @@ inputwidgets:
     label:      "Lower Z temp BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #wall_model
     outputdef:
       AMR-Wind: zlo.temperature_type
@@ -725,7 +755,7 @@ inputwidgets:
     label:      "Lower Z TKE BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #slip_wall
     outputdef:
       AMR-Wind: zlo.tke_type
@@ -734,7 +764,7 @@ inputwidgets:
     label:      "Upper Z velocity BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zhi.type
@@ -743,7 +773,7 @@ inputwidgets:
     label:      "Upper Z temp BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #fixed_gradient
     outputdef:
       AMR-Wind: zhi.temperature_type
@@ -773,7 +803,7 @@ inputwidgets:
     label:      "Upper Z TKE BC"
     frame:      frame_zBC
     inputtype:  str
-    optionlist: *bctypes
+    optionlist: *PREDEFINED_BCTYPES
     defaultval: #slip_wall
     outputdef:
       AMR-Wind: zhi.tke_type
@@ -1339,8 +1369,7 @@ inputwidgets:
     label:      Default actuator type
     frame:      frame_turbineglobals
     inputtype:  listbox
-    optionlist: *turbinetypes
-    #defaultval: TurbineFastLine
+    optionlist: *PREDEFINED_TURBINETYPES
     outputdef:
       AMR-Wind: Actuator.type
     ctrlelem:
@@ -1350,27 +1379,28 @@ inputwidgets:
         activewhen: ['TurbineFastDisk', 1]
 
   # ------ TurbineFastLine Globals -------------------
-  - name:       Actuator_TurbineFastLine_rotor_diameter
-    label:      Rotor D
-    frame:      frame_turbinefastlineglobals
-    inputtype:  float
-    defaultval: 
+  - <<: *PREDEFINED_ROTOR_DIAMETER
+    name:       Actuator_TurbineFastLine_rotor_diameter
+    # label:      Rotor D
+    # frame:      frame_turbinefastlineglobals
+    # inputtype:  float
+    # defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.rotor_diameter
-
-  - name:       Actuator_TurbineFastLine_hub_height
-    label:      Hub height
-    frame:      frame_turbinefastlineglobals
-    inputtype:  float
-    defaultval: 
+  - <<: *PREDEFINED_HUB_HEIGHT
+    name:       Actuator_TurbineFastLine_hub_height
+  #   label:      Hub height
+  #   frame:      frame_turbinefastlineglobals
+  #   inputtype:  float
+  #   defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.hub_height
-
-  - name:       Actuator_TurbineFastLine_num_points_blade
-    label:      Num blade points
-    frame:      frame_turbinefastlineglobals
-    inputtype:  int
-    defaultval: 
+  - <<: *PREDEFINED_NUM_POINTS_BLADE
+    name:       Actuator_TurbineFastLine_num_points_blade
+    # label:      Num blade points
+    # frame:      frame_turbinefastlineglobals
+    # inputtype:  int
+    # defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.num_points_blade
 
@@ -1447,19 +1477,18 @@ inputwidgets:
       AMR-Wind: Actuator.TurbineFastLine.density
 
   # ------ TurbineFastDisk Globals -------------------
-  - name:       Actuator_TurbineFastDisk_rotor_diameter
-    label:      Rotor D
+  - <<: *PREDEFINED_ROTOR_DIAMETER
+    name:       Actuator_TurbineFastDisk_rotor_diameter
     frame:      frame_turbinefastdiskglobals
-    inputtype:  float
-    defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.rotor_diameter
 
-  - name:       Actuator_TurbineFastDisk_hub_height
-    label:      Hub height
+  - <<: *PREDEFINED_HUB_HEIGHT
+    name:       Actuator_TurbineFastDisk_hub_height
     frame:      frame_turbinefastdiskglobals
-    inputtype:  float
-    defaultval: 
+    # label:      Hub height
+    # inputtype:  float
+    # defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.hub_height
 
@@ -1546,11 +1575,6 @@ inputwidgets:
 #  - name:       turbine_stuff1
 #    label:      
 #    frame:      frame_turbinefastlineglobals
-#    labelonly:  True
-
-#  - name:       turbine_stuff2
-#    label:      
-#    frame:      frame_turbineglobals
 #    labelonly:  True
 
 
@@ -2053,7 +2077,7 @@ popupwindow:
     - name:       Actuator_type
       label:      Actuator type
       inputtype:  str
-      optionlist: *turbinetypes
+      optionlist: *PREDEFINED_TURBINETYPES
       defaultval: 
       outputdef:
         AMR-Wind: type
@@ -2069,12 +2093,17 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: base_position
-    - name:       num_points_blade
-      label:      Num blade points
-      inputtype:  int
-      defaultval: 
+    - <<: *PREDEFINED_ROTOR_DIAMETER
+      name:       rotor_diameter
       outputdef:
-        AMR-Wind: num_points_blade
+        AMR-Wind: rotor_diameter
+    - <<: *PREDEFINED_NUM_POINTS_BLADE
+    # - name:       num_points_blade
+    #   label:      Num blade points
+    #   inputtype:  int
+    #   defaultval: 
+    #   outputdef:
+    #     AMR-Wind: num_points_blade
     - name:       num_points_tower
       label:      Num tower points
       inputtype:  int
