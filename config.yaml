@@ -145,7 +145,8 @@ predefinedlists:
     inputtype:  float
     defaultval: 
     outputdef:
-        AMR-Wind: rotor_diameter
+      AMR-Wind: rotor_diameter
+      help:     Rotor diameter [m]
   hub_height: &PREDEFINED_HUB_HEIGHT
     name:       hub_height
     label:      Hub height
