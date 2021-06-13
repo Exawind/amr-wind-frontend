@@ -120,11 +120,11 @@ frames:
     title: Turbine parameters
   - name:  frame_turbinefastlineglobals
     tab:   Turbines
-    row:   2
+    row:   3
     title: OpenFAST ALM global parameters
   - name:  frame_turbinefastdiskglobals
     tab:   Turbines
-    row:   3
+    row:   4
     title: OpenFAST ADM global parameters
 
     
@@ -163,7 +163,80 @@ predefinedlists:
     defaultval: 
     outputdef:
       AMR-Wind: num_points_blade
-      
+  num_points_tower: &PREDEFINED_NUM_POINTS_TOWER
+    name:       num_points_tower
+    label:      Num tower points
+    frame:      frame_turbinefastlineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: num_points_tower
+  epsilon: &PREDEFINED_EPSILON
+    name:       epsilon
+    label:      Epsilon
+    frame:      frame_turbinefastlineglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: epsilon
+  epsilon_tower: &PREDEFINED_EPSILON_TOWER
+    name:       epsilon_tower
+    label:      Epsilon tower
+    frame:      frame_turbinefastlineglobals
+    inputtype:  [float, float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: epsilon_tower
+  openfast_start_time: &PREDEFINED_OPENFAST_START_TIME
+    name:       openfast_start_time
+    label:      FAST start time
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: openfast_start_time
+  openfast_stop_time: &PREDEFINED_OPENFAST_STOP_TIME
+  - name:       openfast_stop_time
+    label:      FAST stop time
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: openfast_stop_time
+  nacelle_drag_coeff: &PREDEFINED_NACELLE_DRAG_COEFF
+    name:       nacelle_drag_coeff
+    label:      Nacelle Cd
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: nacelle_drag_coeff
+  nacelle_area: &PREDEFINED_NACELLE_AREA
+    name:       nacelle_area
+    label:      Nacelle Area
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: nacelle_area
+  output_frequency: &PREDEFINED_OUTPUT_FREQUENCY
+    name:       output_frequency
+    label:      FAST output freq
+    frame:      frame_turbinefastlineglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: output_frequency
+  density: &PREDEFINED_DENSITY
+  - name:       density
+    label:      Density
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: density
+
+
 # *********** INPUTWIDGET FORMAT ****************
 # 
 #  Specify each input widget
@@ -1365,10 +1438,13 @@ inputwidgets:
     defaultval: 0
     ctrlelem:  
       - frame:  frame_turbineglobals
+      - input:  Actuator_default_type
 
   - name:       Actuator_default_type
     label:      Default actuator type
-    frame:      frame_turbineglobals
+    tab:        Turbines
+    row:        2
+    #frame:      frame_turbineglobals
     inputtype:  listbox
     optionlist: *PREDEFINED_TURBINETYPES
     outputdef:
@@ -1377,19 +1453,22 @@ inputwidgets:
       - frame:  frame_turbinefastlineglobals
         activewhen: ['TurbineFastLine', 1]
       - frame:  frame_turbinefastdiskglobals
-        activewhen: ['TurbineFastDisk', 1]
+        activewhen: ['TurbineFastDisk', 1]          
 
   # ------ TurbineFastLine Globals -------------------
   - <<: *PREDEFINED_ROTOR_DIAMETER
     name:       Actuator_TurbineFastLine_rotor_diameter
+    frame:      frame_turbinefastlineglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.rotor_diameter
   - <<: *PREDEFINED_HUB_HEIGHT
     name:       Actuator_TurbineFastLine_hub_height
+    frame:      frame_turbinefastlineglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.hub_height
   - <<: *PREDEFINED_NUM_POINTS_BLADE
     name:       Actuator_TurbineFastLine_num_points_blade
+    frame:      frame_turbinefastlineglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.num_points_blade
 
@@ -2052,17 +2131,22 @@ popupwindow:
 
 # === Turbine window ===
   turbine:
-    title:        Actuator line      # optional
+    title:        New Turbine        # optional
     datakeyname:  Actuator_name      # optional
     loadonstart:  False              # optional
     inputwidgets:
     - name:       actuator_label
-      label:      Actuator forcing
+      label:      Add a new turbine   
       labelonly:  True
     - name:       Actuator_name
       label:      Name 
       inputtype:  str
-      defaultval: newturbine
+      defaultval: turbine
+    - name:       use_turbine_type
+      label:      Use turbine type
+      inputtype:  str
+      optionlist: [''] #*PREDEFINED_TURBINETYPES
+      defaultval: 
     - name:       Actuator_type
       label:      Actuator type
       inputtype:  str
@@ -2083,36 +2167,40 @@ popupwindow:
       outputdef:
         AMR-Wind: base_position
     - <<: *PREDEFINED_ROTOR_DIAMETER
-      name:       rotor_diameter
-      outputdef:
-        AMR-Wind: rotor_diameter
     - <<: *PREDEFINED_NUM_POINTS_BLADE
-    # - name:       num_points_blade
-    #   label:      Num blade points
-    #   inputtype:  int
-    #   defaultval: 
-    #   outputdef:
-    #     AMR-Wind: num_points_blade
-    - name:       num_points_tower
-      label:      Num tower points
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_points_tower
-    - name:       epsilon
-      label:      Epsilon
-      inputtype:  [float, float, float]
-      defaultval: 
-      outputdef:
-        AMR-Wind: epsilon
-    - name:       epsilon_tower
-      label:      Epsilon tower
-      inputtype:  [float, float, float]
-      defaultval: 
-      outputdef:
-        AMR-Wind: epsilon_tower
+    - <<: *PREDEFINED_NUM_POINTS_TOWER
+    - <<: *PREDEFINED_EPSILON
+    - <<: *PREDEFINED_EPSILON_TOWER
+    - <<: *PREDEFINED_OPENFAST_START_TIME
+    - <<: *PREDEFINED_OPENFAST_STOP_TIME
+    - <<: *PREDEFINED_NACELLE_DRAG_COEFF
+    - <<: *PREDEFINED_NACELLE_AREA
+    - <<: *PREDEFINED_OUTPUT_FREQUENCY
+    - <<: *PREDEFINED_DENSITY
+    buttons:
+      - name: preload_turbinetype
+        text: Load
+        command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs(window=self)')"
+        row:  2
+        col:  2
 
-
+# === Turbine type window ===
+  turbinetype:
+    title:        New Turbine Type   # optional
+    datakeyname:  turbinetype_name   
+    loadonstart:  False              # optional
+    inputwidgets:
+    - name:       actuator_label
+      label:      Add a new turbine type
+      labelonly:  True
+    - name:       turbinetype_name
+      label:      Name 
+      inputtype:  str
+      defaultval: turbinetype
+    - name:       turbinetype_comment
+      label:      Comment
+      inputtype:  str
+      defaultval: 
         
 listboxpopupwindows:
   - name:       listboxsampling
@@ -2134,11 +2222,16 @@ listboxpopupwindows:
     outputprefix:                    # optional
       AMR-Wind: tagging
 
+  - name:       listboxturbinetype
+    label:      "Turbine Types:"
+    frame:      frame_turbineglobals
+    popupinput: turbinetype
+
   - name:       listboxactuator
     label:      "Turbine List:"
     #tab:        Turbines
     frame:      frame_turbineglobals
-    row:        16
+    row:        6
     popupinput: turbine
     outputprefix:                    # optional
       AMR-Wind: Actuator
