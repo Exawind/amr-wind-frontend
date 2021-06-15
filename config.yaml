@@ -1382,26 +1382,14 @@ inputwidgets:
   # ------ TurbineFastLine Globals -------------------
   - <<: *PREDEFINED_ROTOR_DIAMETER
     name:       Actuator_TurbineFastLine_rotor_diameter
-    # label:      Rotor D
-    # frame:      frame_turbinefastlineglobals
-    # inputtype:  float
-    # defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.rotor_diameter
   - <<: *PREDEFINED_HUB_HEIGHT
     name:       Actuator_TurbineFastLine_hub_height
-  #   label:      Hub height
-  #   frame:      frame_turbinefastlineglobals
-  #   inputtype:  float
-  #   defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.hub_height
   - <<: *PREDEFINED_NUM_POINTS_BLADE
     name:       Actuator_TurbineFastLine_num_points_blade
-    # label:      Num blade points
-    # frame:      frame_turbinefastlineglobals
-    # inputtype:  int
-    # defaultval: 
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.num_points_blade
 

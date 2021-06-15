@@ -198,6 +198,9 @@ class MyApp(tkyg.App, object):
         return 'true' if x else 'false'
 
     def setAMRWindInput(self, name, val, **kwargs):
+        """
+        Use this function to set the AMR-Wind keyword name to value.
+        """
         try:
             inputkey = self.amrkeydict[name]
             self.inputvars[inputkey].setval(val, **kwargs)
@@ -593,13 +596,17 @@ class MyApp(tkyg.App, object):
         for key,  inputvar in self.inputvars.items():
             if self.inputvars[key].ctrlelem is not None:
                 self.inputvars[key].onoffctrlelem(None)
+
+        self.extradictparams = extradict
         return extradict
 
     def loadAMRWindInputGUI(self):
+        kwargs = {'filetypes':[("Input files","*.inp *.i"), ("all files","*.*")]}
         filename  = filedialog.askopenfilename(initialdir = "./",
-                                              title = "Select AMR-Wind file")
+                                               title = "Select AMR-Wind file",
+                                               **kwargs)
         if len(filename)>0:
-            self.extradictparams = self.loadAMRWindInput(filename, printunused=True)
+            self.loadAMRWindInput(filename, printunused=True)
             self.savefile = filename
         return
 
@@ -633,10 +640,12 @@ class MyApp(tkyg.App, object):
         menubar.add_cascade(label="Plot", menu=plotmenu)
 
         # Validate menu
-        checkmenu = Tk.Menu(menubar, tearoff=0)
-        checkmenu.add_command(label="Check Inputs", 
-                              command=self.validate)
-        menubar.add_cascade(label="Run", menu=checkmenu)        
+        runmenu = Tk.Menu(menubar, tearoff=0)
+        runmenu.add_command(label="Check Inputs", 
+                            command=self.validate)
+        runmenu.add_command(label="Run locally", 
+                            command=partial(tkyg.donothing, root))
+        menubar.add_cascade(label="Run", menu=runmenu)        
 
         # Help menu
         help_text = """This is AMR-Wind!"""
@@ -651,22 +660,30 @@ class MyApp(tkyg.App, object):
         root.config(menu=menubar)
         return
 
-    def validate(self):
+    def validate(self, printeverything=True):
         # Load validateinputs plugins
         num_nonactive = 0
         num_active    = 0
         print("-- Checking inputs --")
+        resultclass = OrderedDict()
+        for c in validateinputs.CheckStatus: resultclass[c.name] = []
         for p in validateinputs.pluginlist:
             active = True if "active" not in vars(p) else p.active
             if active:
                 num_active = num_active+1
                 results = p().check(self)
                 for r in results:
-                    print("[%5s] %-20s %s"%(r['result'].name,
-                                            p.name+":"+r['subname'],
-                                            r['mesg']))
+                    resultclass[r['result'].name].append(r)
+                    if printeverything:
+                        print("[%5s] %-20s %s"%(r['result'].name,
+                                                p.name+":"+r['subname'],
+                                                r['mesg']))
             else:
-                num_nonactive = num_nonactive+1                    
+                num_nonactive = num_nonactive+1            
+        print('')
+        print("Results: ")
+        for k, g in resultclass.items():
+            print(' %i %s'%(len(g), k))
         return
     
     def setupfigax(self, clear=True, subplot=111):
@@ -1315,7 +1332,7 @@ if __name__ == "__main__":
     # Validate the input file
     if validate:
         mainapp=MyApp.init_nogui()
-        mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.loadAMRWindInput(inputfile, printunused=True)
         mainapp.validate()
         sys.exit()
 
@@ -1325,7 +1342,7 @@ if __name__ == "__main__":
 
     # Load an inputfile
     if inputfile is not None:
-        mainapp.extradictparams = mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.loadAMRWindInput(inputfile, printunused=True)
         mainapp.savefile = inputfile
                 
     if len(outputfile)>0:
