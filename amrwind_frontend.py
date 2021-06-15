@@ -189,7 +189,7 @@ class MyApp(tkyg.App, object):
             frame  = self.tabframeselector(listboxdict)
             name   = listboxdict['name']
             popupdict = self.yamldict['popupwindow'][listboxdict['popupinput']]
-            self.listboxpopupwindict[name] = tkyg.listboxpopupwindows(frame, listboxdict, popupdict)
+            self.listboxpopupwindict[name] = tkyg.listboxpopupwindows(self, frame, listboxdict, popupdict)
         return
 
     @classmethod
@@ -1302,6 +1302,12 @@ class MyApp(tkyg.App, object):
         self.figcanvas.draw()
         #self.figcanvas.show()
         return imvec
+
+    def turbinemodels_loadfromfile(self, filename, deleteprev=False):
+        """
+        Load all of the turbine model from a yaml file
+        """
+        return 
 
 if __name__ == "__main__":
     title='AMR-Wind'

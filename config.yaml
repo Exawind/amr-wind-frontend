@@ -135,7 +135,7 @@ frames:
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes:      &PREDEFINED_BCTYPES [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
-  turbinetypes: &PREDEFINED_TURBINETYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
+  turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
 
   # ------- stuff used in turbine parameters ----
   rotordiameter: &PREDEFINED_ROTOR_DIAMETER
@@ -252,13 +252,16 @@ predefinedlists:
 #                            #  float/int/bool/str/filename/listbox
 #   defaultval: 100.0        # default value [optional]
 #   visible:    True         # if false, make invisible [optional,default:True] 
-#   optionlist: [var1, var2, ..]
+#   optionlist: [var1, var2, ..] # user-selectable choices for listbox or str
 #   fileopenopt:             # options for filename [optional]
 #     selecttype: open       # open/saveas/directory [optional]
 #     kwargs:                # Optional arguments to tkinter.filedialog
 #       filetypes: 
 #       - ["FAST out files", "*.out"]
 #       - ["all files", "*.*"]
+#   listboxopt:              # Options for listbox [optional]
+#     selectmode: multiple
+#     height:   2
 #   outputdef:
 #     AMR-Wind: time.stop_time
 # ***********************************************
@@ -1431,7 +1434,7 @@ inputwidgets:
 
   # =========== Turbine stuff here ====================
   - name:       ActuatorForcing
-    label:      Add turbine models
+    label:      Add turbines to simulation
     tab:        Turbines
     row:        0
     inputtype:  bool
@@ -1440,13 +1443,25 @@ inputwidgets:
       - frame:  frame_turbineglobals
       - input:  Actuator_default_type
 
+  - name:       label_add_newturbinetype
+    label:      "\nDefined turbine models"
+    frame:      frame_turbineglobals
+    row:        1
+    labelonly:  True
+
+  - name:       label_add_newturbines
+    label:      "\nAdd turbines here"
+    frame:      frame_turbineglobals
+    row:        5
+    labelonly:  True
+
   - name:       Actuator_default_type
     label:      Default actuator type
     tab:        Turbines
     row:        2
     #frame:      frame_turbineglobals
     inputtype:  listbox
-    optionlist: *PREDEFINED_TURBINETYPES
+    optionlist: *PREDEFINED_ACTUATORTYPES
     outputdef:
       AMR-Wind: Actuator.type
     ctrlelem:
@@ -2144,13 +2159,13 @@ popupwindow:
       defaultval: turbine
     - name:       use_turbine_type
       label:      Use turbine type
-      inputtype:  str
-      optionlist: [''] #*PREDEFINED_TURBINETYPES
-      defaultval: 
+      inputtype:  str 
+      optionlist: "self.parent.listboxpopupwindict['listboxturbinetype'].getitemlist()"
+      defaultval: ""
     - name:       Actuator_type
       label:      Actuator type
       inputtype:  str
-      optionlist: *PREDEFINED_TURBINETYPES
+      optionlist: *PREDEFINED_ACTUATORTYPES
       defaultval: 
       outputdef:
         AMR-Wind: type
@@ -2180,7 +2195,7 @@ popupwindow:
     buttons:
       - name: preload_turbinetype
         text: Load
-        command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs(window=self)')"
+        command: "partial(self.savethenexec, 'self.master.turbinetypes_getllist()')"
         row:  2
         col:  2
 
@@ -2223,15 +2238,15 @@ listboxpopupwindows:
       AMR-Wind: tagging
 
   - name:       listboxturbinetype
-    label:      "Turbine Types:"
+    label:      "Models"
     frame:      frame_turbineglobals
+    row:        2
     popupinput: turbinetype
 
   - name:       listboxactuator
     label:      "Turbine List:"
-    #tab:        Turbines
     frame:      frame_turbineglobals
-    row:        6
+    row:        8
     popupinput: turbine
     outputprefix:                    # optional
       AMR-Wind: Actuator
