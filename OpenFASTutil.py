@@ -19,7 +19,7 @@ def FASTfile2dict(FASTfile):
     d = OrderedDict()
     # go through the file line-by-line
     with open(FASTfile) as fp:
-	line=fp.readline()
+        line=fp.readline()
         while line:
             # Check to make sure the line doesn't start with comment char
             firstchar = line.strip()[0]
