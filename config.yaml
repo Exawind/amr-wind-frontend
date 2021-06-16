@@ -138,9 +138,24 @@ predefinedlists:
   turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
 
   # ------- stuff used in turbine parameters ----
+  actuatorselection: &PREDEFINED_ACTUATORSELECTION
+    name:       Actuator_type
+    label:      Actuator type
+    inputtype:  str
+    optionlist: *PREDEFINED_ACTUATORTYPES
+    defaultval: 
+    outputdef:
+      AMR-Wind: type
+  openfast_input_file: &PREDEFINED_OPENFAST_INPUT_FILE
+  - name:       Actuator_openfast_input_file
+    label:      OpenFAST fst file
+    inputtype:  filename
+    defaultval:
+    outputdef:
+      AMR-Wind: openfast_input_file
   rotordiameter: &PREDEFINED_ROTOR_DIAMETER
     name:       rotor_diameter
-    label:      Rotor D
+    label:      Rotor Diameter
     frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
@@ -1444,7 +1459,7 @@ inputwidgets:
       - input:  Actuator_default_type
 
   - name:       label_add_newturbinetype
-    label:      "\nDefined turbine models"
+    label:      "\nAvailable turbine models"
     frame:      frame_turbineglobals
     row:        1
     labelonly:  True
@@ -2162,19 +2177,15 @@ popupwindow:
       inputtype:  str 
       optionlist: "self.parent.listboxpopupwindict['listboxturbinetype'].getitemlist()"
       defaultval: ""
-    - name:       Actuator_type
-      label:      Actuator type
-      inputtype:  str
-      optionlist: *PREDEFINED_ACTUATORTYPES
-      defaultval: 
+    - name:       copy_fast_files
+      label:      Copy FAST files
+      inputtype:  bool
+      defaultval: 1
+    - <<: *PREDEFINED_ACTUATORSELECTION
+      #name:       actuator_individual_type
       outputdef:
         AMR-Wind: type
-    - name:       Actuator_openfast_input_file
-      label:      OpenFAST fst file
-      inputtype:  filename
-      defaultval:
-      outputdef:
-        AMR-Wind: openfast_input_file
+    - <<: *PREDEFINED_OPENFAST_INPUT_FILE
     - name:       Actuator_base_position
       label:      Base position
       inputtype:  [float, float, float]
@@ -2182,6 +2193,7 @@ popupwindow:
       outputdef:
         AMR-Wind: base_position
     - <<: *PREDEFINED_ROTOR_DIAMETER
+    - <<: *PREDEFINED_HUB_HEIGHT
     - <<: *PREDEFINED_NUM_POINTS_BLADE
     - <<: *PREDEFINED_NUM_POINTS_TOWER
     - <<: *PREDEFINED_EPSILON
@@ -2195,7 +2207,7 @@ popupwindow:
     buttons:
       - name: preload_turbinetype
         text: Load
-        command: "partial(self.savethenexec, 'self.master.turbinetypes_getllist()')"
+        command: "partial(self.savethenexec, 'self.parent.turbinemodels_copytoturbine(window=self)')"
         row:  2
         col:  2
 
@@ -2216,6 +2228,25 @@ popupwindow:
       label:      Comment
       inputtype:  str
       defaultval: 
+    # The following are predefined from anchors
+    - <<: *PREDEFINED_ACTUATORSELECTION
+    - <<: *PREDEFINED_OPENFAST_INPUT_FILE
+    - <<: *PREDEFINED_ROTOR_DIAMETER
+    - <<: *PREDEFINED_HUB_HEIGHT
+    - <<: *PREDEFINED_NUM_POINTS_BLADE
+    - <<: *PREDEFINED_NUM_POINTS_TOWER
+    - <<: *PREDEFINED_EPSILON
+    - <<: *PREDEFINED_EPSILON_TOWER
+    - <<: *PREDEFINED_OPENFAST_START_TIME
+    - <<: *PREDEFINED_OPENFAST_STOP_TIME
+    - <<: *PREDEFINED_NACELLE_DRAG_COEFF
+    - <<: *PREDEFINED_NACELLE_AREA
+    - <<: *PREDEFINED_OUTPUT_FREQUENCY
+    - name:       turbinetype_filelocation
+      label:      File location
+      inputtype:  str
+      defaultval: 
+      visible:    False
         
 listboxpopupwindows:
   - name:       listboxsampling

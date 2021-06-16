@@ -161,7 +161,6 @@ class MyApp(tkyg.App, object):
         self.savefile        = ''
 
         # for fast output plotting
-        #self.fast_dat        = None
         self.fast_outdata    = None
         self.fast_outfiles   = None
         self.fast_headers    = None
@@ -173,6 +172,9 @@ class MyApp(tkyg.App, object):
             outputkey = 'AMR-Wind'
             if outputkey in var.outputdef:
                 self.amrkeydict[var.outputdef[outputkey]] = key
+
+        # Load any turbines
+        self.turbinemodels_populate()
         return
 
     @classmethod
@@ -883,9 +885,17 @@ class MyApp(tkyg.App, object):
             keystr       = lambda n, d1, d2: d2.name
 
             # Get the defaults
-            default_type   = self.inputvars['Actuator_default_type'].getval()[0]
-            default_turbD  = self.inputvars['Actuator_%s_rotor_diameter'%default_type].getval()
-            default_hh     = self.inputvars['Actuator_%s_hub_height'%default_type].getval()
+            default_type   = self.inputvars['Actuator_default_type'].getval()
+            default_type   = None if len(default_type)==0 else default_type
+            default_type   = default_type[0] if isinstance(default_type, list) else default_type
+            if 'Actuator_%s_rotor_diameter'%default_type in self.inputvars:
+                default_turbD  = self.inputvars['Actuator_%s_rotor_diameter'%default_type].getval()
+            else:
+                default_turbD  = None
+            if 'Actuator_%s_hub_height'%default_type in self.inputvars:
+                default_hh     = self.inputvars['Actuator_%s_hub_height'%default_type].getval()
+            else:
+                default_hh     = None
 
             # Get the wind direction
             self.ABL_calculateWDirWS()
@@ -894,7 +904,11 @@ class MyApp(tkyg.App, object):
             for turb in plotparams['plot_turbines']:
                 tdict = allturbines.dumpdict('AMR-Wind',
                                              subset=[turb], keyfunc=keystr)
-                turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
+                turbtype = default_type if 'Actuator_type' not in tdict else tdict['Actuator_type']
+                turbtype = turbtype[0] if isinstance(turbtype, list) else turbtype
+                turbhh   = default_hh  if tdict['hub_height'] is None else tdict['hub_height']
+                turbD    = default_turbD if tdict['rotor_diameter'] is None else tdict['rotor_diameter']
+                
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
 
@@ -905,7 +919,7 @@ class MyApp(tkyg.App, object):
                     EDyaw    = float(EDdict['NacYaw'])
                     yaw      = 270.0-EDyaw
 
-                plotTurbine(ax, basepos, default_hh, default_turbD, yaw, ix, iy,
+                plotTurbine(ax, basepos, turbhh, turbD, yaw, ix, iy,
                             lw=1, color='k', alpha=0.75)
                 
         # --------------------------------
@@ -1303,11 +1317,63 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
         return imvec
 
-    def turbinemodels_loadfromfile(self, filename, deleteprev=False):
+    def turbinemodels_loadfromfile(self, filename, deleteprevious=False):
         """
-        Load all of the turbine model from a yaml file
+        Load all of the turbine model from the yaml file filename
         """
+        with open(filename) as fp:
+            filepath = os.path.dirname(os.path.realpath(filename))
+            if tkyg.useruemel: Loader=tkyg.yaml.load
+            else:              Loader=tkyg.yaml.safe_load
+            turbmodeldict = Loader(fp)
+            if 'turbines' in turbmodeldict:
+                # Add in the file locations
+                for turb in turbmodeldict['turbines']:
+                    turbmodeldict['turbines'][turb]['turbinetype_filelocation']\
+                        = filepath
+                
+                self.listboxpopupwindict['listboxturbinetype'].populatefromdict(turbmodeldict['turbines'], deleteprevious=deleteprevious, forcechange=True)
+            else:  
+                # No turbines in YAML file
+                pass
+            
+            
         return 
+
+    def turbinemodels_populate(self, deleteprevious=False):
+        turbinedir = 'turbines'
+        # Check if we need to prepend any paths
+        if turbinedir.startswith('/'):
+            loadpath = turbinedir
+        else:
+            loadpath = os.path.join(scriptpath, turbinedir)
+        # Go through each file 
+        for fname in os.listdir(loadpath):
+            if not fname.startswith('.') and \
+               (fname.endswith('.yaml') or fname.endswith('.YAML')):
+                self.turbinemodels_loadfromfile(os.path.join(loadpath, fname), \
+                                                deleteprevious=deleteprevious)
+        return
+
+    def turbinemodels_copytoturbine(self, window=None):
+        # Get the selected turbine model
+        use_turbine_type = window.temp_inputvars['use_turbine_type'].getval()
+        
+        if len(use_turbine_type)==0: 
+            return  # No turbine type selected, return
+        # Get the turbine model
+        allturbinemodels = self.listboxpopupwindict['listboxturbinetype']
+        keystr = lambda n, d1, d2: d2.name
+        modelparams = allturbinemodels.dumpdict('AMR-Wind', 
+                                                subset=[use_turbine_type], 
+                                                keyfunc=keystr)
+        #print(modelparams)
+        for key, item in modelparams.items():
+            if (key in window.temp_inputvars) and (item is not None):
+                #print('%s: %s'%(key, repr(item)))
+                window.temp_inputvars[key].setval(item)
+        return
+
 
 if __name__ == "__main__":
     title='AMR-Wind'

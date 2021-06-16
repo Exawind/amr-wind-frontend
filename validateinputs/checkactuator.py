@@ -68,9 +68,10 @@ class Check_Actuator_FSTfile():
             checkstatus['subname']     = turb
             tdict = allturbines.dumpdict('AMR-Wind',
                                          subset=[turb], keyfunc=keystr)
-            turbtype = default_type if 'actuator_individual_type' not in tdict else tdict['actuator_individual_type']
+            turbtype = default_type if 'Actuator_type' not in tdict else tdict['Actuator_type']
             fstfile  = ''
-            if turbtype[0] not in ['TurbineFastLine', 'TurbineFastDisk']:
+            turbtype = turbtype[0] if isinstance(turbtype, list) else turbtype
+            if turbtype not in ['TurbineFastLine', 'TurbineFastDisk']:
                 checkstatus['result']      = status.SKIP
                 checkstatus['mesg']        = 'Not OpenFAST'                
             else:
