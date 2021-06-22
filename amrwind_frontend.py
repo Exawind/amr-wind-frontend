@@ -647,7 +647,8 @@ class MyApp(tkyg.App, object):
         runmenu.add_command(label="Check Inputs", 
                             command=self.validate)
         runmenu.add_command(label="Run locally", 
-                            command=partial(tkyg.donothing, root))
+                             command=partial(self.launchpopupwin, 
+                                             'localrun', savebutton=False))
         menubar.add_cascade(label="Run", menu=runmenu)        
 
         # Help menu

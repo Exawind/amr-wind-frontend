@@ -2279,6 +2279,36 @@ popupwindow:
       inputtype:  str
       defaultval: 
       visible:    False
+
+  # === Set up a local run ===
+  localrun:
+    title:        Run locally     # optional
+    loadonstart:  True            # optional
+    inputwidgets:
+      - name:       localrun_warning
+        label:      Warning! This could use a lot of RAM/CPU!
+        labelonly:  True
+      - name:       localrun_exe
+        label:      amr_wind EXE
+        inputtype:  filename
+        defaultval: 'amr_wind'
+        fileopenopt:             
+          selecttype: open       # open/saveas/directory [optional]          
+      - name:       localrun_modules
+        label:      modules to load
+        inputtype:  str
+        defaultval: 
+      - name:       nproc
+        label:      N processors
+        inputtype:  int
+        defaultval: 1
+      - name:       localrun_logfile
+        label:      Log filename
+        inputtype:  filename
+        defaultval: 
+        fileopenopt:             
+          selecttype: saveas       # open/saveas/directory [optional]
+
         
 listboxpopupwindows:
   - name:       listboxsampling
