@@ -576,18 +576,18 @@ class MyApp(tkyg.App, object):
         samplingdict, extradict = \
             self.AMRWindExtractSampleDict(extradict, 
             self.yamldict['popupwindow']['sampling'])
-        self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict)
+        self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict, forcechange=True)
         # Input the tagging/refinement zones
         taggingdict, extradict = \
             self.AMRWindExtractTaggingDict(extradict, 
             self.yamldict['popupwindow']['tagging'])
-        self.listboxpopupwindict['listboxtagging'].populatefromdict(taggingdict)
+        self.listboxpopupwindict['listboxtagging'].populatefromdict(taggingdict, forcechange=True)
 
         # Input the turbine actuators
         actuatordict, extradict = \
             self.AMRWindExtractActuatorDict(extradict, 
             self.yamldict['popupwindow']['turbine'])
-        self.listboxpopupwindict['listboxactuator'].populatefromdict(actuatordict)
+        self.listboxpopupwindict['listboxactuator'].populatefromdict(actuatordict, forcechange=True)
         
         if printunused and len(extradict)>0:
             print("# -- Unused variables: -- ")

@@ -60,7 +60,10 @@ def FASTfile2dict(FASTfile):
                 idx = allnums.index(False)
 
             keyword = linesplit[idx]
-            d[keyword] = linesplit[0]
+            if idx==1:
+                d[keyword] = linesplit[0]
+            else:
+                d[keyword] = linesplit[:idx]
 
             line=fp.readline()
     return d

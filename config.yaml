@@ -36,8 +36,11 @@ frames:
     title: Turbulence parameters
   - name:  frame_tolerances
     tab:   Expert
-    #row:   7
     title: Tolerances
+  - name:  frame_numerics
+    tab:   Expert
+    title: Numerics
+
   # ==== Domain frames ==== 
   - name:  frame_Mesh
     tab:   Domain
@@ -474,6 +477,28 @@ inputwidgets:
     inputtype:  float
     outputdef:
       AMR-Wind: temperature_diffusion.mg_atol
+
+  # ---------- Numerics parameters --------------------------
+  - name:       Do initial projections
+    label:      incflo.do_initial_proj
+    frame:      frame_numerics
+    inputtype:  int
+    outputdef:
+      AMR-Wind: incflo.do_initial_proj
+
+  - name:       Number of initial iterations
+    label:      incflo.initial_iterations
+    frame:      frame_numerics
+    inputtype:  int
+    outputdef:
+      AMR-Wind: incflo.initial_iterations
+
+  - name:       Nodal proj. verbosity
+    label:      nodal_proj.verbose
+    frame:      frame_numerics
+    inputtype:  int
+    outputdef:
+      AMR-Wind: nodal_proj.verbose
 
   # ---------- incflo fluid properties ------------------------
   - name:       gravity
@@ -1256,6 +1281,13 @@ inputwidgets:
     defaultval: plt
     outputdef:
       AMR-Wind: io.plot_file
+
+  - name:       io_outputs
+    label:      Output variables
+    frame:      frame_IOplotting
+    inputtype:  str
+    outputdef:
+      AMR-Wind: io.outputs
 
   - name:       KE_int
     label:      ouput KE interval
