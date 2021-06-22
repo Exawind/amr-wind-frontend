@@ -179,7 +179,8 @@ class MyApp(tkyg.App, object):
 
     @classmethod
     def init_nogui(cls, *args, **kwargs):
-        return cls(configyaml=scriptpath+'/config.yaml',withdraw=True,**kwargs)
+        return cls(configyaml=scriptpath+'/config.yaml',localconfigdir='local',
+                   withdraw=True, **kwargs)
 
     def reloadconfig(self):
         with open('config.yaml') as fp:
@@ -1409,7 +1410,8 @@ if __name__ == "__main__":
         sys.exit()
 
     # Instantiate the app
-    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', title=title)
+    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', localconfigdir='local',\
+                  title=title)
     mainapp.notebook.enable_traversal()
 
     # Load an inputfile
