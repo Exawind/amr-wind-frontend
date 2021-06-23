@@ -2289,7 +2289,7 @@ popupwindow:
         label:      Warning! This could use a lot of RAM/CPU!
         labelonly:  True
       - name:       localrun_exe
-        label:      amr_wind EXE
+        label:      amr_wind executable
         inputtype:  filename
         defaultval: 'amr_wind'
         fileopenopt:             
@@ -2298,7 +2298,11 @@ popupwindow:
         label:      modules to load
         inputtype:  str
         defaultval: 
-      - name:       nproc
+      - name:       localrun_mpicmd
+        label:      MPI command
+        inputtype:  str
+        defaultval: mpirun
+      - name:       localrun_nproc
         label:      N processors
         inputtype:  int
         defaultval: 1
@@ -2308,8 +2312,81 @@ popupwindow:
         defaultval: 
         fileopenopt:             
           selecttype: saveas       # open/saveas/directory [optional]
+    buttons:
+      - name: save_and_run
+        text: Save & Run
+        command: "partial(self.savethenexec, 'self.master.localrun_execute()')"
+        row:  6
+      - name: stop_run
+        text: Stop job
+        command: "partial(self.savethenexec, 'self.master.localrun_kill()')"
+        row:  6
+        col:  1
 
-        
+  # === Set up a submission script ===
+  submitscript:
+    title:        Submission script
+    loadonstart:  True            
+    inputwidgets:
+      - name:       submitscript_name
+        label:      Set up submission script
+        labelonly:  True
+      - name:       submitscript_filename
+        label:      submit script filename
+        inputtype:  filename
+        defaultval: 
+        fileopenopt:             
+          selecttype: saveas       # open/saveas/directory [optional]
+      - name:       submitscript_logfile
+        label:      Log filename
+        inputtype:  filename
+        defaultval: 
+        fileopenopt:             
+          selecttype: saveas       # open/saveas/directory [optional]
+      - name:       submitscript_exe
+        label:      amr_wind executable
+        inputtype:  filename
+        defaultval: 'amr_wind'
+        fileopenopt:             
+          selecttype: open       # open/saveas/directory [optional]          
+      - name:       submitscript_modules
+        label:      modules to load
+        inputtype:  str
+        defaultval: 
+      - name:       submitscript_jobname
+        label:      Job name
+        inputtype:  str
+        defaultval: 
+      - name:       submitscript_numnodes
+        label:      Number of nodes
+        inputtype:  int
+        defaultval: 
+      - name:       submitscript_runtime
+        label:      Run time
+        inputtype:  str
+        defaultval: 
+      - name:       submitscript_template
+        label:      Submit script template
+        visible:    False
+        inputtype:  str
+        # See https://learnxinyminutes.com/docs/yaml/ for YAML tricks
+        # This is a default LSF scipt from summit
+        defaultval: |
+          #!/bin/bash
+          # Begin LSF Directives
+          #BSUB -P ABC123
+          #BSUB -W 3:00
+          #BSUB -nnodes 2048
+          #BSUB -alloc_flags gpumps
+          #BSUB -J RunSim123
+          #BSUB -o RunSim123.%J
+          #BSUB -e RunSim123.%J
+          cd $MEMBERWORK/abc123
+          cp $PROJWORK/abc123/RunData/Input.123 ./Input.123
+          date
+          jsrun -n 4092 -r 2 -a 12 -g 3 ./a.out
+          cp my_output_file /ccs/proj/abc123/Output.123
+
 listboxpopupwindows:
   - name:       listboxsampling
     label:      "Probes:"

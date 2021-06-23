@@ -26,6 +26,8 @@ from matplotlib.patches     import Rectangle
 import matplotlib.pyplot    as plt
 from matplotlib.lines       import Line2D
 import argparse
+import subprocess
+import signal
 
 # amrwind-frontend libraries
 import validateinputs
@@ -166,6 +168,9 @@ class MyApp(tkyg.App, object):
         self.fast_headers    = None
         self.fast_units      = None
 
+        # variables for local run
+        self.localrun_process= None
+
         # build the map going from AMR-Wind var --> amrwind_frontend var
         self.amrkeydict      = OrderedDict()
         for key, var in self.inputvars.items():
@@ -179,7 +184,8 @@ class MyApp(tkyg.App, object):
 
     @classmethod
     def init_nogui(cls, *args, **kwargs):
-        return cls(configyaml=scriptpath+'/config.yaml',localconfigdir='local',
+        return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
+                   localconfigdir=os.path.join(scriptpath,'local'), 
                    withdraw=True, **kwargs)
 
     def reloadconfig(self):
@@ -646,9 +652,13 @@ class MyApp(tkyg.App, object):
         runmenu = Tk.Menu(menubar, tearoff=0)
         runmenu.add_command(label="Check Inputs", 
                             command=self.validate)
-        runmenu.add_command(label="Run locally", 
+        runmenu.add_command(label="Local run", 
                              command=partial(self.launchpopupwin, 
                                              'localrun', savebutton=False))
+        runmenu.add_command(label="Job Submission", 
+                             command=partial(self.launchpopupwin, 
+                                             'submitscript', savebutton=True))
+
         menubar.add_cascade(label="Run", menu=runmenu)        
 
         # Help menu
@@ -1319,6 +1329,7 @@ class MyApp(tkyg.App, object):
         #self.figcanvas.show()
         return imvec
 
+    # ---- Turbine model stuff ----
     def turbinemodels_loadfromfile(self, filename, deleteprevious=False):
         """
         Load all of the turbine model from the yaml file filename
@@ -1376,6 +1387,56 @@ class MyApp(tkyg.App, object):
                 window.temp_inputvars[key].setval(item)
         return
 
+    # ---- Local run stuff ----
+    def localrun_constructrunstring(self, window=None):
+        localrunparams = self.popup_storteddata['localrun']
+        modulecmd      = localrunparams['localrun_modules']
+        mpicmd         = localrunparams['localrun_mpicmd']
+        amrwindexe     = localrunparams['localrun_exe']
+        logfile        = localrunparams['localrun_logfile']
+        nproc          = localrunparams['localrun_nproc']
+
+        # construct the execution command
+        exestring = ""
+        # Load the modules
+        if len(modulecmd)>0: 
+            exestring += modulecmd+"&& "
+        # MPI command
+        mpistring = "%s -np %i %s %s "%(mpicmd,nproc,amrwindexe,self.savefile)
+        exestring += mpistring
+        # Pipe to logfile
+        if len(logfile)>0:
+            exestring += "|tee %s"%logfile
+        #print(localrunparams)
+        return exestring
+
+    def localrun_execute(self):
+        # First save the file
+        if len(self.savefile)>0:
+            self.writeAMRWindInput(self.savefile)
+            print("Saved "+self.savefile)
+        else:
+            self.writeAMRWindInputGUI()
+
+        exestring = self.localrun_constructrunstring()
+        print("Running")
+        print(exestring)
+        self.localrun_process = subprocess.Popen(exestring, 
+                                                 preexec_fn=os.setsid,
+                                                 shell=True)
+        return
+
+    def localrun_kill(self):
+        if self.localrun_process is None:
+            print("No running job")
+            return
+        if self.localrun_process.poll() is not None:
+            print("Job completed with exit code %i"%self.localrun_process.poll())
+        else:
+            print("Terminating job")
+            #self.localrun_process.kill()
+            os.killpg(os.getpgid(self.localrun_process.pid), signal.SIGTERM)
+        return 
 
 if __name__ == "__main__":
     title='AMR-Wind'
@@ -1411,7 +1472,8 @@ if __name__ == "__main__":
         sys.exit()
 
     # Instantiate the app
-    mainapp=MyApp(configyaml=scriptpath+'/config.yaml', localconfigdir='local',\
+    mainapp=MyApp(configyaml=os.path.join(scriptpath,'config.yaml'), 
+                  localconfigdir=os.path.join(scriptpath,'local'),
                   title=title)
     mainapp.notebook.enable_traversal()
 
