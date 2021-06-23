@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, re
+import sys, os, re, shutil
 # import the tkyamlgui library
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath+'/tkyamlgui')
@@ -1349,8 +1349,6 @@ class MyApp(tkyg.App, object):
             else:  
                 # No turbines in YAML file
                 pass
-            
-            
         return 
 
     def turbinemodels_populate(self, deleteprevious=False):
@@ -1371,6 +1369,7 @@ class MyApp(tkyg.App, object):
     def turbinemodels_copytoturbine(self, window=None):
         # Get the selected turbine model
         use_turbine_type = window.temp_inputvars['use_turbine_type'].getval()
+        docopy           = window.temp_inputvars['copy_turb_files'].getval()
         
         if len(use_turbine_type)==0: 
             return  # No turbine type selected, return
@@ -1380,11 +1379,28 @@ class MyApp(tkyg.App, object):
         modelparams = allturbinemodels.dumpdict('AMR-Wind', 
                                                 subset=[use_turbine_type], 
                                                 keyfunc=keystr)
-        #print(modelparams)
+        modelfiles  = allturbinemodels.dumpdict('amrwind_frontend', 
+                                                subset=[use_turbine_type], 
+                                                keyfunc=keystr)
+        #print(modelfiles)
+        # Set all of the turbine parameters
         for key, item in modelparams.items():
             if (key in window.temp_inputvars) and (item is not None):
                 #print('%s: %s'%(key, repr(item)))
                 window.temp_inputvars[key].setval(item)
+
+        # Copy over the turbine files
+        copydir = modelfiles['turbinetype_filedir']
+        newdir  = window.temp_inputvars['Actuator_name'].getval()+'_'+copydir
+        origdir = modelfiles['turbinetype_filelocation']
+        if docopy and (copydir is not None) and (len(copydir)>0):
+            origdir = os.path.join(origdir, copydir)
+            #print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
+            shutil.copytree(origdir, newdir)
+
+            # Change any file references
+            # Do something here
+
         return
 
     # ---- Local run stuff ----

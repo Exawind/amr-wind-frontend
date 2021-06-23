@@ -2209,8 +2209,8 @@ popupwindow:
       inputtype:  str 
       optionlist: "self.parent.listboxpopupwindict['listboxturbinetype'].getitemlist()"
       defaultval: ""
-    - name:       copy_fast_files
-      label:      Copy FAST files
+    - name:       copy_turb_files
+      label:      Copy turbine files
       inputtype:  bool
       defaultval: 1
     - <<: *PREDEFINED_ACTUATORSELECTION
@@ -2274,11 +2274,19 @@ popupwindow:
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
     - <<: *PREDEFINED_NACELLE_AREA
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
-    - name:       turbinetype_filelocation
+    - name:       turbinetype_filelocation  # yaml file with the definitions
       label:      File location
       inputtype:  str
       defaultval: 
       visible:    False
+      outputdef:
+        amrwind_frontend: turbinetype_filelocation  # internal use
+    - name:       turbinetype_filedir   # dir with necessary files to copy
+      label:      file directory
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        amrwind_frontend: turbinetype_filedir
 
   # === Set up a local run ===
   localrun:
