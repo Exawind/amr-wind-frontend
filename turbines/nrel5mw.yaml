@@ -1,0 +1,54 @@
+turbines:
+  nre5mwALM:
+    turbinetype_name:    "NREL5MW ALM"
+    turbinetype_comment: 
+    Actuator_type:       TurbineFastLine
+    Actuator_openfast_input_file: OpenFAST_NREL5MW/nrel5mw.fst
+    rotor_diameter:      126
+    hub_height:          90
+    num_points_blade:    64
+    num_points_tower:    12
+    epsilon:             [10.0, 10.0, 10.0]
+    epsilon_tower:       [5.0, 5.0, 5.0]
+    openfast_start_time: 0.0
+    openfast_stop_time:  1000.0
+    nacelle_drag_coeff:  0.0
+    nacelle_area:        0.0
+    output_frequency:    10
+    turbinetype_filedir: OpenFAST_NREL5MW
+
+  nre5mwADM:
+    turbinetype_name:    "NREL5MW ADM"
+    turbinetype_comment: 
+    Actuator_type:       TurbineFastDisk
+    Actuator_openfast_input_file: OpenFAST_NREL5MW/nrel5mw.fst
+    rotor_diameter:      126
+    hub_height:          90
+    num_points_blade:    64
+    num_points_tower:    12
+    epsilon:             [10.0, 10.0, 10.0]
+    epsilon_tower:       [5.0, 5.0, 5.0]
+    openfast_start_time: 0.0
+    openfast_stop_time:  1000.0
+    nacelle_drag_coeff:  0.0
+    nacelle_area:        0.0
+    output_frequency:    10
+    turbinetype_filedir: OpenFAST_NREL5MW
+
+  nre5mwADM_noservo:
+    turbinetype_name:    "NREL5MW ADM NOSERVO"
+    turbinetype_comment: 
+    Actuator_type:       TurbineFastDisk
+    Actuator_openfast_input_file: OpenFAST_NREL5MW/nrel5mw_noservo.fst
+    rotor_diameter:      126
+    hub_height:          90
+    num_points_blade:    64
+    num_points_tower:    12
+    epsilon:             [10.0, 10.0, 10.0]
+    epsilon_tower:       [5.0, 5.0, 5.0]
+    openfast_start_time: 0.0
+    openfast_stop_time:  1000.0
+    nacelle_drag_coeff:  0.0
+    nacelle_area:        0.0
+    output_frequency:    10
+    turbinetype_filedir: OpenFAST_NREL5MW
