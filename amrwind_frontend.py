@@ -1512,7 +1512,8 @@ class MyApp(tkyg.App, object):
     # ---- submit script stuff ----
     def submitscript_makescript(self, submitscript_inputfile, window=None):
         submitparams   = self.popup_storteddata['submitscript']
-        scripttemplate = copy.copy(self.inputvars['submitscript_template'].getval())
+        scripttemplate = self.inputvars['submitscript_template'].getval()
+        scripttemplate = scripttemplate[scripttemplate.find('#'):]
 
         #submitscript_inputfile = self.savefile
         submitscript   = scripttemplate.replace('submitscript_inputfile', 
