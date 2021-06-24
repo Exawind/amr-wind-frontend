@@ -2422,7 +2422,7 @@ popupwindow:
         inputtype:  str
         # See https://learnxinyminutes.com/docs/yaml/ for YAML tricks
         # This is a default LSF scipt from summit
-        defaultval: >
+        defaultval: |
           #!/bin/bash
           # Begin LSF Directives
           #BSUB -P ABC123
