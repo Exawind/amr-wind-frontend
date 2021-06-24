@@ -246,15 +246,15 @@ predefinedlists:
     outputdef:
       AMR-Wind: output_frequency
   density: &PREDEFINED_DENSITY
-  - name:       density
+    name:       density
     label:      Density
     frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
     outputdef:
       AMR-Wind: density
-  density: &PREDEFINED_YAW
-  - name:       yaw
+  yaw: &PREDEFINED_YAW
+    name:       yaw
     label:      Nacelle Yaw
     frame:      frame_turbinefastlineglobals
     inputtype:  float
