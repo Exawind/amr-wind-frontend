@@ -657,7 +657,7 @@ class MyApp(tkyg.App, object):
                                              'localrun', savebutton=False))
         runmenu.add_command(label="Job Submission", 
                              command=partial(self.launchpopupwin, 
-                                             'submitscript', savebutton=True))
+                                             'submitscript', savebutton=False))
 
         menubar.add_cascade(label="Run", menu=runmenu)        
 
@@ -918,8 +918,8 @@ class MyApp(tkyg.App, object):
                                              subset=[turb], keyfunc=keystr)
                 turbtype = default_type if 'Actuator_type' not in tdict else tdict['Actuator_type']
                 turbtype = turbtype[0] if isinstance(turbtype, list) else turbtype
-                turbhh   = default_hh  if tdict['hub_height'] is None else tdict['hub_height']
-                turbD    = default_turbD if tdict['rotor_diameter'] is None else tdict['rotor_diameter']
+                turbhh   = default_hh  if tdict['Actuator_hub_height'] is None else tdict['Actuator_hub_height']
+                turbD    = default_turbD if tdict['Actuator_rotor_diameter'] is None else tdict['Actuator_rotor_diameter']
                 
                 basepos  = tdict['Actuator_base_position']
                 yaw      = winddir #270.0
@@ -1367,9 +1367,13 @@ class MyApp(tkyg.App, object):
         return
 
     def turbinemodels_copytoturbine(self, window=None):
+        """
+        Copy a turbine model to a specific turbine instance
+        """
         # Get the selected turbine model
         use_turbine_type = window.temp_inputvars['use_turbine_type'].getval()
         docopy           = window.temp_inputvars['copy_turb_files'].getval()
+        updatefast       = window.temp_inputvars['edit_fast_files'].getval()
         
         if len(use_turbine_type)==0: 
             return  # No turbine type selected, return
@@ -1382,12 +1386,11 @@ class MyApp(tkyg.App, object):
         modelfiles  = allturbinemodels.dumpdict('amrwind_frontend', 
                                                 subset=[use_turbine_type], 
                                                 keyfunc=keystr)
-        #print(modelfiles)
         # Set all of the turbine parameters
         for key, item in modelparams.items():
             if (key in window.temp_inputvars) and (item is not None):
-                #print('%s: %s'%(key, repr(item)))
                 window.temp_inputvars[key].setval(item)
+                #print('%s: %s'%(key, repr(item)))
 
         # Copy over the turbine files
         copydir = modelfiles['turbinetype_filedir']
@@ -1395,12 +1398,63 @@ class MyApp(tkyg.App, object):
         origdir = modelfiles['turbinetype_filelocation']
         if docopy and (copydir is not None) and (len(copydir)>0):
             origdir = os.path.join(origdir, copydir)
-            #print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
-            shutil.copytree(origdir, newdir)
+            print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
+            try:
+                shutil.copytree(origdir, newdir)
+            except:
+                print("copy failed")
 
             # Change any file references
-            # Do something here
+            for key, inputvar in window.temp_inputvars.items():
+                if inputvar.inputtype is tkyg.moretypes.filename:
+                    origval    = inputvar.getval()
+                    path, base = os.path.split(origval)
+                    pathsplit  = path.split(os.sep)
+                    if len(pathsplit)==0: continue
+                    # replace the filename
+                    pathsplit[0] = pathsplit[0].replace(copydir, newdir)
+                    # join it back together
+                    newval     = os.path.join(*pathsplit)
+                    newval     = os.path.join(newval, base)
+                    print(newval)
+                    inputvar.setval(newval)
+        if updatefast:
+            self.turbinemodels_checkupdateFAST(window=window)
+        return
 
+    def turbinemodels_checkupdateFAST(self, window=None):
+        Actuator_type = window.temp_inputvars['Actuator_type'].getval()
+        if Actuator_type not in ['TurbineFastLine', 'TurbineFastDisk']:
+            # Not a FAST model, do nothing
+            return
+
+        TOL = 1.0E-6
+        # Get the FAST file
+        fstfile  =window.temp_inputvars['Actuator_openfast_input_file'].getval()
+        # Check yaw
+        EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
+        EDdict   = OpenFAST.FASTfile2dict(EDfile)
+        EDyaw    = float(EDdict['NacYaw'])
+        yaw      = window.temp_inputvars['Actuator_yaw'].getval()
+
+        if (yaw is not None) and abs(yaw - (270.0-EDyaw))>TOL:
+            # Correct the yaw in Elastodyn
+            EDyaw = 270.0 - yaw
+            print("Fixing yaw in %s"%EDfile)
+            OpenFAST.editFASTfile(EDfile, {'NacYaw':EDyaw})
+
+        # Check aerodyn
+        density  = window.temp_inputvars['Actuator_density'].getval()
+        CompAero = OpenFAST.getFileFromFST(fstfile,'CompAero')
+        if (density is not None) and (CompAero != 0):
+            # Check density
+            AeroFile = OpenFAST.getFileFromFST(fstfile,'AeroFile')
+            print(AeroFile)
+            AeroDict = OpenFAST.FASTfile2dict(AeroFile)
+            AirDens  = float(AeroDict['AirDens'])
+            if abs(density - AirDens) > TOL:
+                OpenFAST.editFASTfile(AeroFile, {'AirDens':density})
+        
         return
 
     # ---- Local run stuff ----
@@ -1453,6 +1507,59 @@ class MyApp(tkyg.App, object):
             #self.localrun_process.kill()
             os.killpg(os.getpgid(self.localrun_process.pid), signal.SIGTERM)
         return 
+
+    # ---- submit script stuff ----
+    def submitscript_makescript(self, submitscript_inputfile, window=None):
+        submitparams   = self.popup_storteddata['submitscript']
+        scripttemplate = submitparams['submitscript_template']
+
+        #submitscript_inputfile = self.savefile
+        submitscript = scripttemplate.replace('submitscript_inputfile', 
+                                              submitscript_inputfile)
+
+        # get the list of variables to replace
+        for key, item in window.temp_inputvars.items():
+            if 'replacevar' in item.outputdef:
+                replacevar   = item.outputdef['replacevar']
+                replaceval   = item.getval()
+                submitscript = submitscript.replace(replacevar, str(replaceval))
+        return submitscript
+
+    def submitscript_previewscript(self, window=None):
+        self.saveAMRWindInputGUI()
+        submitscript = self.submitscript_makescript(self.savefile, 
+                                                    window=window)
+        if submitscript is None:
+            print("Error in submit script")
+            return
+        if sys.version_info[0] < 3:
+            formattedscript = submitscript.decode('string_escape')
+        else:
+            formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
+        # Show the script in a message window
+        tkyg.messagewindow(self,formattedscript, height=20, autowidth=True)
+        return
+
+    def submitscript_savescript(self, window=None):
+        self.saveAMRWindInputGUI()
+        submitscript = self.submitscript_makescript(self.savefile, 
+                                                    window=window)
+        if submitscript is None:
+            print("Error in submit script")
+            return
+        if sys.version_info[0] < 3:
+            formattedscript = submitscript.decode('string_escape')
+        else:
+            formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
+        # Save the script
+        submitparams   = self.popup_storteddata['submitscript']
+        filename       = submitparams['submitscript_filename']
+        if len(filename)>0:
+            f=open(filename, "w")
+            f.write(formattedscript)
+            f.close()
+            print("Saved "+filename)
+        return
 
 if __name__ == "__main__":
     title='AMR-Wind'

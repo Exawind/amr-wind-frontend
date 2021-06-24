@@ -3,6 +3,7 @@
 import sys, os, re
 from collections            import OrderedDict 
 import numpy as np
+import fileinput
 
 def is_number(s):
     try:
@@ -10,6 +11,47 @@ def is_number(s):
     except ValueError:
         return False
     return True
+
+def editFASTfile(FASTfile, replacedict):
+    commentchars = ['=', '#']
+    for line in fileinput.input(FASTfile, inplace=True, backup='.bak'):
+        #sys.stdout.write("# "+line)
+        linesplit=re.split('[, ;]+', line.strip())
+        outline=""
+        # Check to make sure the line doesn't start with comment char
+        firstchar = ""
+        if len(line.strip())>0: firstchar = line.strip()[0]
+        if firstchar in commentchars: 
+            outline=str(line)
+        # Ignore any lines with less than two items
+        if len(linesplit)<2:
+            outline=str(line)
+            
+        # Check to make sure line is not all numbers
+        allnums = [is_number(x) for x in linesplit]
+        if False not in allnums:
+            outline=str(line)
+
+        # Handle list of nodes
+        if outline=="":
+            idx = 1
+            if is_number(linesplit[idx]):
+                # Find the right keyword
+                idx = allnums.index(False)
+
+            keyword = linesplit[idx]
+        
+            if keyword in replacedict.keys():
+                outline  = '%10s '%repr(replacedict[keyword])
+                outline += ' '.join(linesplit[idx:])
+                outline += ' [EDITED]\n'
+                sys.stderr.write(outline)
+            else:
+                outline=line
+
+        # Write out the line
+        sys.stdout.write(outline)
+    return
 
 def FASTfile2dict(FASTfile):
     """
@@ -22,7 +64,8 @@ def FASTfile2dict(FASTfile):
         line=fp.readline()
         while line:
             # Check to make sure the line doesn't start with comment char
-            firstchar = line.strip()[0]
+            firstchar = ""
+            if len(line.strip())>0: firstchar = line.strip()[0]
             if firstchar in commentchars: 
                 line=fp.readline()
                 continue
@@ -40,7 +83,6 @@ def FASTfile2dict(FASTfile):
                 line=fp.readline()
                 continue          
                 
-
             # Handle the outlist
             if linesplit[0]=="OutList":
                 outlistline = fp.readline()

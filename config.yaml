@@ -150,7 +150,7 @@ predefinedlists:
     outputdef:
       AMR-Wind: type
   openfast_input_file: &PREDEFINED_OPENFAST_INPUT_FILE
-  - name:       Actuator_openfast_input_file
+    name:       Actuator_openfast_input_file
     label:      OpenFAST fst file
     inputtype:  filename
     defaultval:
@@ -253,6 +253,14 @@ predefinedlists:
     defaultval: 
     outputdef:
       AMR-Wind: density
+  density: &PREDEFINED_YAW
+  - name:       yaw
+    label:      Nacelle Yaw
+    frame:      frame_turbinefastlineglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: yaw
 
 
 # *********** INPUTWIDGET FORMAT ****************
@@ -939,18 +947,18 @@ inputwidgets:
     label:      add ABL Forcing
     frame:      frame_ABLforcing
     inputtype:  bool
-    defaultval: 1
+    defaultval: 0
     ctrlelem:  
-      - frame:   frame_ABLphysics
+#      - frame:   frame_ABLphysics
       - frame:   frame_ABLprop
       - frame:   frame_ABLTprof        
       - frame:   frame_ABLpeturb
-
+      - frame:   frame_ABLoutput
   - name:       CoriolisForcing
     label:      add Coriolis forces
     frame:      frame_ABLforcing
     inputtype:  bool
-    defaultval: 1
+    defaultval: 0
     ctrlelem:  
       - frame:  frame_Coriolis
 
@@ -958,7 +966,7 @@ inputwidgets:
     label:      add Boussinesq forcing
     frame:      frame_ABLforcing
     inputtype:  bool
-    defaultval: 1
+    defaultval: 0
     ctrlelem:  
       - frame:  frame_Boussinesq
 
@@ -1182,7 +1190,7 @@ inputwidgets:
     label:      Apply vel perturbations
     frame:      frame_ABLpeturb
     inputtype:  bool
-    defaultval: 1
+    defaultval: 0
     outputdef:
       AMR-Wind: ABL.perturb_velocity
     ctrlelem:
@@ -2213,6 +2221,10 @@ popupwindow:
       label:      Copy turbine files
       inputtype:  bool
       defaultval: 1
+    - name:       edit_fast_files
+      label:      Edit FAST files to match
+      inputtype:  bool
+      defaultval: 1
     - <<: *PREDEFINED_ACTUATORSELECTION
       #name:       actuator_individual_type
       outputdef:
@@ -2225,22 +2237,41 @@ popupwindow:
       outputdef:
         AMR-Wind: base_position
     - <<: *PREDEFINED_ROTOR_DIAMETER
+      name:       Actuator_rotor_diameter
     - <<: *PREDEFINED_HUB_HEIGHT
+      name:       Actuator_hub_height
     - <<: *PREDEFINED_NUM_POINTS_BLADE
+      name:       Actuator_num_points_blade
     - <<: *PREDEFINED_NUM_POINTS_TOWER
+      name:       Actuator_num_points_tower
     - <<: *PREDEFINED_EPSILON
+      name:       Actuator_epsilon
     - <<: *PREDEFINED_EPSILON_TOWER
+      name:       Actuator_epsilon_tower
     - <<: *PREDEFINED_OPENFAST_START_TIME
+      name:       Actuator_openfast_start_time
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
+      name:       Actuator_openfast_stop_time
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
+      name:       Actuator_nacelle_drag_coeff
     - <<: *PREDEFINED_NACELLE_AREA
+      name:       Actuator_nacelle_area
+    - <<: *PREDEFINED_YAW
+      name:       Actuator_yaw
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
+      name:       Actuator_output_frequency
     - <<: *PREDEFINED_DENSITY
+      name:       Actuator_density
     buttons:
       - name: preload_turbinetype
         text: Load
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_copytoturbine(window=self)')"
         row:  2
+        col:  2
+      - name: update_fast_files
+        text: Update FAST
+        command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
+        row:  4
         col:  2
 
 # === Turbine type window ===
@@ -2351,35 +2382,47 @@ popupwindow:
         defaultval: 
         fileopenopt:             
           selecttype: saveas       # open/saveas/directory [optional]
+        outputdef:
+          replacevar: submitscript_logfile
       - name:       submitscript_exe
         label:      amr_wind executable
         inputtype:  filename
         defaultval: 'amr_wind'
         fileopenopt:             
           selecttype: open       # open/saveas/directory [optional]          
+        outputdef:
+          replacevar: submitscript_exe
       - name:       submitscript_modules
         label:      modules to load
         inputtype:  str
         defaultval: 
+        outputdef:
+          replacevar: submitscript_modules
       - name:       submitscript_jobname
         label:      Job name
         inputtype:  str
-        defaultval: 
+        defaultval: amrwind1
+        outputdef:
+          replacevar: submitscript_jobname
       - name:       submitscript_numnodes
         label:      Number of nodes
         inputtype:  int
-        defaultval: 
+        defaultval: 1
+        outputdef:
+          replacevar: submitscript_numnodes
       - name:       submitscript_runtime
-        label:      Run time
+        label:      "Run time (HH:MM:SS)"
         inputtype:  str
-        defaultval: 
+        defaultval: "1:00:00"
+        outputdef:
+          replacevar: submitscript_runtime
       - name:       submitscript_template
         label:      Submit script template
         visible:    False
         inputtype:  str
         # See https://learnxinyminutes.com/docs/yaml/ for YAML tricks
         # This is a default LSF scipt from summit
-        defaultval: |
+        defaultval: >
           #!/bin/bash
           # Begin LSF Directives
           #BSUB -P ABC123
@@ -2394,6 +2437,17 @@ popupwindow:
           date
           jsrun -n 4092 -r 2 -a 12 -g 3 ./a.out
           cp my_output_file /ccs/proj/abc123/Output.123
+    buttons:
+      - name: preview_script
+        text: Preview script
+        command: "partial(self.savethenexec, 'self.master.submitscript_previewscript(window=self)')"
+      - name: save_and_run
+        text: Save script
+        command: "partial(self.savethenexec, 'self.master.submitscript_savescript(window=self)')"
+      #- name: save_and_submit
+      #  text: Submit script
+      #  command: "partial(self.savethenexec, 'self.master.submitscript_savescript(window=self)')"
+
 
 listboxpopupwindows:
   - name:       listboxsampling
