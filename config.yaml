@@ -1710,10 +1710,28 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.density
 
-#  - name:       turbine_stuff1
-#    label:      
-#    frame:      frame_turbinefastlineglobals
-#    labelonly:  True
+  - name:       submitscript_template
+    label:      Submit script template
+    tab:        Expert
+    visible:    False
+    inputtype:  str
+    # See https://learnxinyminutes.com/docs/yaml/ for YAML tricks
+    # This is a default LSF scipt from summit
+    defaultval: |
+      #!/bin/bash
+      # Begin LSF Directives
+      #BSUB -P ABC123
+      #BSUB -W 3:00
+      #BSUB -nnodes 2048
+      #BSUB -alloc_flags gpumps
+      #BSUB -J RunSim123
+      #BSUB -o RunSim123.%J
+      #BSUB -e RunSim123.%J
+      cd $MEMBERWORK/abc123
+      cp $PROJWORK/abc123/RunData/Input.123 ./Input.123
+      date
+      jsrun -n 4092 -r 2 -a 12 -g 3 ./a.out
+      cp my_output_file /ccs/proj/abc123/Output.123
 
 
   # # =========== Junk stuff here ========================
@@ -2387,14 +2405,14 @@ popupwindow:
         defaultval: 
         fileopenopt:             
           selecttype: saveas       # open/saveas/directory [optional]
-      - name:       submitscript_logfile
-        label:      Log filename
-        inputtype:  filename
-        defaultval: 
-        fileopenopt:             
-          selecttype: saveas       # open/saveas/directory [optional]
-        outputdef:
-          replacevar: submitscript_logfile
+      # - name:       submitscript_logfile
+      #   label:      Log filename
+      #   inputtype:  filename
+      #   defaultval: 
+      #   fileopenopt:             
+      #     selecttype: saveas       # open/saveas/directory [optional]
+      #   outputdef:
+      #     replacevar: submitscript_logfile
       - name:       submitscript_exe
         label:      amr_wind executable
         inputtype:  filename
@@ -2427,27 +2445,6 @@ popupwindow:
         defaultval: "1:00:00"
         outputdef:
           replacevar: submitscript_runtime
-      - name:       submitscript_template
-        label:      Submit script template
-        visible:    False
-        inputtype:  str
-        # See https://learnxinyminutes.com/docs/yaml/ for YAML tricks
-        # This is a default LSF scipt from summit
-        defaultval: |
-          #!/bin/bash
-          # Begin LSF Directives
-          #BSUB -P ABC123
-          #BSUB -W 3:00
-          #BSUB -nnodes 2048
-          #BSUB -alloc_flags gpumps
-          #BSUB -J RunSim123
-          #BSUB -o RunSim123.%J
-          #BSUB -e RunSim123.%J
-          cd $MEMBERWORK/abc123
-          cp $PROJWORK/abc123/RunData/Input.123 ./Input.123
-          date
-          jsrun -n 4092 -r 2 -a 12 -g 3 ./a.out
-          cp my_output_file /ccs/proj/abc123/Output.123
     buttons:
       - name: preview_script
         text: Preview script

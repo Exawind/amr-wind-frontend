@@ -28,6 +28,7 @@ from matplotlib.lines       import Line2D
 import argparse
 import subprocess
 import signal
+import copy
 
 # amrwind-frontend libraries
 import validateinputs
@@ -1511,18 +1512,20 @@ class MyApp(tkyg.App, object):
     # ---- submit script stuff ----
     def submitscript_makescript(self, submitscript_inputfile, window=None):
         submitparams   = self.popup_storteddata['submitscript']
-        scripttemplate = submitparams['submitscript_template']
+        scripttemplate = copy.copy(self.inputvars['submitscript_template'].getval())
 
         #submitscript_inputfile = self.savefile
-        submitscript = scripttemplate.replace('submitscript_inputfile', 
-                                              submitscript_inputfile)
+        submitscript   = scripttemplate.replace('submitscript_inputfile', 
+                                                submitscript_inputfile.strip())
 
         # get the list of variables to replace
         for key, item in window.temp_inputvars.items():
             if 'replacevar' in item.outputdef:
                 replacevar   = item.outputdef['replacevar']
                 replaceval   = item.getval()
-                submitscript = submitscript.replace(replacevar, str(replaceval))
+                if replaceval is not None and (len(str(replaceval))>0):
+                    replacestr = str(replaceval).strip()
+                    submitscript = submitscript.replace(replacevar, replacestr)
         return submitscript
 
     def submitscript_previewscript(self, window=None):
@@ -1532,10 +1535,11 @@ class MyApp(tkyg.App, object):
         if submitscript is None:
             print("Error in submit script")
             return
+        #formattedscript = copy.copy(submitscript).decode('string_escape')
         if sys.version_info[0] < 3:
-            formattedscript = submitscript.decode('string_escape')
+           formattedscript = submitscript.decode('string_escape')
         else:
-            formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
+           formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
         # Show the script in a message window
         tkyg.messagewindow(self,formattedscript, height=20, autowidth=True)
         return
@@ -1547,6 +1551,7 @@ class MyApp(tkyg.App, object):
         if submitscript is None:
             print("Error in submit script")
             return
+        formattedscript = copy.copy(submitscript)
         if sys.version_info[0] < 3:
             formattedscript = submitscript.decode('string_escape')
         else:
