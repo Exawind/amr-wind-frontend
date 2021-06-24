@@ -2295,16 +2295,27 @@ popupwindow:
     - <<: *PREDEFINED_ACTUATORSELECTION
     - <<: *PREDEFINED_OPENFAST_INPUT_FILE
     - <<: *PREDEFINED_ROTOR_DIAMETER
+      name:       Actuator_rotor_diameter
     - <<: *PREDEFINED_HUB_HEIGHT
+      name:       Actuator_hub_height
     - <<: *PREDEFINED_NUM_POINTS_BLADE
+      name:       Actuator_num_points_blade
     - <<: *PREDEFINED_NUM_POINTS_TOWER
+      name:       Actuator_num_points_tower
     - <<: *PREDEFINED_EPSILON
+      name:       Actuator_epsilon
     - <<: *PREDEFINED_EPSILON_TOWER
+      name:       Actuator_epsilon_tower
     - <<: *PREDEFINED_OPENFAST_START_TIME
+      name:       Actuator_openfast_start_time
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
+      name:       Actuator_openfast_stop_time
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
+      name:       Actuator_nacelle_drag_coeff
     - <<: *PREDEFINED_NACELLE_AREA
+      name:       Actuator_nacelle_area
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
+      name:       Actuator_output_frequency
     - name:       turbinetype_filelocation  # yaml file with the definitions
       label:      File location
       inputtype:  str

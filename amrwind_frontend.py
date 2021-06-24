@@ -1398,11 +1398,11 @@ class MyApp(tkyg.App, object):
         origdir = modelfiles['turbinetype_filelocation']
         if docopy and (copydir is not None) and (len(copydir)>0):
             origdir = os.path.join(origdir, copydir)
-            print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
+            #print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
             try:
                 shutil.copytree(origdir, newdir)
             except:
-                print("copy failed")
+                print("copy %s failed"%origdir)
 
             # Change any file references
             for key, inputvar in window.temp_inputvars.items():
