@@ -551,6 +551,7 @@ class MyApp(tkyg.App, object):
             l = '' #lmap[probetype.lower()]
             if probetype is None:
                 probetype = self.inputvars['Actuator_default_type'].getval()
+                probetype = str(probetype[0])
             else:
                 probekeys.remove(prefix+'type')
                 extradict.pop(prefix+'type')
