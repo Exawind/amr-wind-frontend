@@ -181,6 +181,17 @@ class MyApp(tkyg.App, object):
 
         # Load any turbines
         self.turbinemodels_populate()
+
+        # Define aliases
+        self.get_default_samplingdict = \
+            self.listboxpopupwindict['listboxsampling'].getdefaultdict
+        self.get_default_taggingdict = \
+            self.listboxpopupwindict['listboxtagging'].getdefaultdict
+        self.get_default_turbinetypedict = \
+            self.listboxpopupwindict['listboxturbinetype'].getdefaultdict
+        self.get_default_actuatordict = \
+            self.listboxpopupwindict['listboxactuator'].getdefaultdict
+
         return
 
     @classmethod
