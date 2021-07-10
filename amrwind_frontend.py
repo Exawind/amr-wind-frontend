@@ -1243,6 +1243,7 @@ class MyApp(tkyg.App, object):
 
 if __name__ == "__main__":
     title='AMR-Wind'
+    localconfigdir=os.path.join(scriptpath,'local')
 
     # Check the command line arguments
     parser = argparse.ArgumentParser(description=title)
@@ -1259,6 +1260,9 @@ if __name__ == "__main__":
     parser.add_argument('--validate',   
                         action='store_true',  
                         help="Check input file for errors and quit [default: False]")
+    parser.add_argument('--localconfigdir',   
+                        default=localconfigdir,  
+                        help="Local configuration directory [default: %s]"%localconfigdir)
 
     args         = parser.parse_args()
     inputfile    = args.inputfile
@@ -1266,17 +1270,19 @@ if __name__ == "__main__":
     samplefile   = args.samplefile
     outputfile   = args.outputfile
     validate     = args.validate
+    localconfigdir = args.localconfigdir
 
     # Validate the input file
     if validate:
-        mainapp=MyApp.init_nogui()
+        mainapp=MyApp.init_nogui(localconfigdir=localconfigdir)
         mainapp.loadAMRWindInput(inputfile, printunused=True)
         mainapp.validate()
         sys.exit()
 
     # Instantiate the app
     mainapp=MyApp(configyaml=os.path.join(scriptpath,'config.yaml'), 
-                  localconfigdir=os.path.join(scriptpath,'local'),
+                  localconfigdir=localconfigdir, 
+                  #os.path.join(scriptpath,'local'),
                   title=title)
     mainapp.notebook.enable_traversal()
 
