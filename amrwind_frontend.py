@@ -68,7 +68,7 @@ class MyApp(tkyg.App, object):
         # Load any turbines
         self.turbinemodels_populate()
 
-        # Define aliases
+        # Define alias functions for get_default_* dicts
         self.get_default_samplingdict = \
             self.listboxpopupwindict['listboxsampling'].getdefaultdict
         self.get_default_taggingdict = \
@@ -78,7 +78,34 @@ class MyApp(tkyg.App, object):
         self.get_default_actuatordict = \
             self.listboxpopupwindict['listboxactuator'].getdefaultdict
 
+        self.add_turbine  = partial(self.add_populatefromdict,'listboxactuator')
+        self.add_sampling = partial(self.add_populatefromdict,'listboxsampling')
+        self.add_tagging  = partial(self.add_populatefromdict,'listboxtagging')
+
         return
+
+    # Used to define alias for populatefromdict()
+    def add_populatefromdict(self, key, d, **kwargs):
+        deleteprevious = False
+        if 'deleteprevious' in kwargs:
+            deleteprevious = kwargs['deleteprevious']
+            del kwargs['deleteprevious']
+        self.listboxpopupwindict[key].populatefromdict({'x':d}, 
+                                                       deleteprevious=deleteprevious,
+                                                       **kwargs)
+        return
+
+    # # Define some aliases for populatefromdict
+    # def add_turbine(self, d, **kwargs):
+    #     deleteprevious = False
+    #     if 'deleteprevious' in kwargs:
+    #         deleteprevious = kwargs['deleteprevious']
+    #         del kwargs['deleteprevious']
+    #     self.listboxpopupwindict['listboxactuator'].populatefromdict({'x':d}, 
+    #                                                                  deleteprevious=deleteprevious,
+    #                                                                  **kwargs)
+    #     return
+    
 
     @classmethod
     def init_nogui(cls, *args, **kwargs):
@@ -123,6 +150,21 @@ class MyApp(tkyg.App, object):
         except:
             print("Cannot set "+name)
         return
+
+    def getAMRWindInput(self, name, **kwargs):
+        """
+        Use this function to get the value of an AMR-Wind keyword.
+        """
+        returnval = None
+        try:
+            if name in self.amrkeydict:
+                inputkey = self.amrkeydict[name]
+            if name in self.inputvars:
+                inputkey = name
+            returnval = self.inputvars[inputkey].getval(**kwargs)
+        except:
+            print("Cannot get value of "+name)
+        return returnval
 
     def getTaggingKey(self, keyname, listboxdict, datadict):
         keyheader = 'tagging.'
@@ -1041,6 +1083,87 @@ class MyApp(tkyg.App, object):
                                                 deleteprevious=deleteprevious)
         return
 
+    def turbinemodels_applyturbinemodel(self, inputdict, use_turbine_type, 
+                                        windowinputs=None, docopy=False,
+                                        updatefast=False):
+        if len(use_turbine_type)==0: 
+            return  # No turbine type selected, return
+        # Get the turbine model
+        allturbinemodels = self.listboxpopupwindict['listboxturbinetype']
+        keystr = lambda n, d1, d2: d2.name
+        modelparams = allturbinemodels.dumpdict('AMR-Wind', 
+                                                subset=[use_turbine_type], 
+                                                keyfunc=keystr)
+        modelfiles  = allturbinemodels.dumpdict('amrwind_frontend', 
+                                                subset=[use_turbine_type], 
+                                                keyfunc=keystr)
+
+        # -- Set all of the turbine parameters
+        # Apply window inputs
+        if windowinputs is not None:
+            for key, item in modelparams.items():
+                if (key in window.temp_inputvars) and (item is not None):
+                    windowinputs[key].setval(item)
+
+        # Apply dictionary inputs
+        outdict = inputdict.copy()
+        if len(inputdict)>0:
+            for key, item in modelparams.items():
+                if (key in inputdict) and (item is not None):
+                    outdict[key] = item
+
+        if docopy:
+            origdir = modelfiles['turbinetype_filelocation']
+            copydir = modelfiles['turbinetype_filedir']
+            if windowinputs is not None:
+                newdir = windowinputs['Actuator_name'].getval()
+            elif 'Actuator_name' in outdict:
+                newdir = outdict['Actuator_name']
+            
+            # Set up the copy paths
+            newdir  = newdir + '_'+copydir
+            origdir = os.path.join(origdir, copydir)
+            print("docopy = "+repr(docopy)+" from "+origdir+" to "+newdir)
+            try:
+                shutil.copytree(origdir, newdir)
+            except:
+                print("copy %s failed"%origdir)
+
+            # -- Change any file references --
+            # Change the window input stuff
+            if windowinputs is not None:
+                for key, inputvar in windowinputs.items():
+                    if inputvar.inputtype is tkyg.moretypes.filename:
+                        origval    = inputvar.getval()
+                        path, base = os.path.split(origval)
+                        pathsplit  = path.split(os.sep)
+                        if len(pathsplit)==0: continue
+                        # replace the filename
+                        pathsplit[0] = pathsplit[0].replace(copydir, newdir)
+                        # join it back together
+                        newval     = os.path.join(*pathsplit)
+                        newval     = os.path.join(newval, base)
+                        print(newval)
+                        inputvar.setval(newval)
+            # Change the outdict stuff
+            if len(inputdict)>0:
+                for key, item in outdict.items():
+                    if isinstance(item, str) and item.startswith(copydir):
+                        origval    = item
+                        path, base = os.path.split(origval)
+                        pathsplit  = path.split(os.sep)
+                        if len(pathsplit)==0: continue
+                        pathsplit[0] = pathsplit[0].replace(copydir, newdir)
+                        # join it back together
+                        newval     = os.path.join(*pathsplit)
+                        newval     = os.path.join(newval, base)
+                        print(newval)
+                        outdict[key] = newval
+
+        if updatefast:
+            self.turbinemodels_checkupdateFAST(window=windowinputs, inputdict=outdict)
+        return outdict
+
     def turbinemodels_copytoturbine(self, window=None):
         """
         Copy a turbine model to a specific turbine instance
@@ -1097,21 +1220,36 @@ class MyApp(tkyg.App, object):
             self.turbinemodels_checkupdateFAST(window=window)
         return
 
-    def turbinemodels_checkupdateFAST(self, window=None):
-        Actuator_type = window.temp_inputvars['Actuator_type'].getval()
+    def turbinemodels_checkupdateFAST(self, window=None, inputdict={}):
+        if (window is None) and (len(inputdict)==0):
+            return
+
+        # Get the actuator the
+        if window is not None:
+            Actuator_type = window.temp_inputvars['Actuator_type'].getval()
+        else:
+            Actuator_type = inputdict['Actuator_type']
         if Actuator_type not in ['TurbineFastLine', 'TurbineFastDisk']:
             # Not a FAST model, do nothing
             return
 
-        TOL = 1.0E-6
-        # Get the FAST file
-        fstfile  =window.temp_inputvars['Actuator_openfast_input_file'].getval()
+        # Get some FAST input values
+        if window is not None:
+            # Get the FAST file
+            fstfile  = window.temp_inputvars['Actuator_openfast_input_file'].getval()
+            yaw      = window.temp_inputvars['Actuator_yaw'].getval()
+            density  = window.temp_inputvars['Actuator_density'].getval()
+        else:
+            fstfile  = inputdict['Actuator_openfast_input_file']
+            yaw      = inputdict['Actuator_yaw']
+            density  = inputdict['Actuator_density']
+
         # Check yaw
         EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
         EDdict   = OpenFAST.FASTfile2dict(EDfile)
         EDyaw    = float(EDdict['NacYaw'])
-        yaw      = window.temp_inputvars['Actuator_yaw'].getval()
 
+        TOL = 1.0E-6
         if (yaw is not None) and abs(yaw - (270.0-EDyaw))>TOL:
             # Correct the yaw in Elastodyn
             EDyaw = 270.0 - yaw
@@ -1119,7 +1257,6 @@ class MyApp(tkyg.App, object):
             OpenFAST.editFASTfile(EDfile, {'NacYaw':EDyaw})
 
         # Check aerodyn
-        density  = window.temp_inputvars['Actuator_density'].getval()
         CompAero = OpenFAST.getFileFromFST(fstfile,'CompAero')
         if (density is not None) and (CompAero != 0):
             # Check density
@@ -1128,8 +1265,7 @@ class MyApp(tkyg.App, object):
             AeroDict = OpenFAST.FASTfile2dict(AeroFile)
             AirDens  = float(AeroDict['AirDens'])
             if abs(density - AirDens) > TOL:
-                OpenFAST.editFASTfile(AeroFile, {'AirDens':density})
-        
+                OpenFAST.editFASTfile(AeroFile, {'AirDens':density})        
         return
 
     # ---- Local run stuff ----
