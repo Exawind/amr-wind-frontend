@@ -326,6 +326,7 @@ inputwidgets:
     defaultval: 0.25
     outputdef:
       AMR-Wind: time.fixed_dt
+      help:     Fixed timestep size (in seconds). If negative, then time.cfl is used
 
   - name:       cfl
     label:      cfl
@@ -354,6 +355,7 @@ inputwidgets:
       selectmode: multiple
     outputdef:
       AMR-Wind: incflo.physics
+      help:     List of physics models to include in simulation.
   # ---------- Restart parameters -----------------------------
   - name:       verbose
     label:      Verbosity
