@@ -39,7 +39,6 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     checkstatus['mesg']        = ''
     checkstatus['result']      = status.PASS
 
-    print(pdict)
     Npts   = pdict['sampling_p_num_points']
     origin = np.array(pdict['sampling_p_origin'])
     axis1  = np.array(pdict['sampling_p_axis1'])
