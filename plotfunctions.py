@@ -213,12 +213,25 @@ def plotDomain(self, ax=None):
                 axis2  = np.array(pdict['sampling_p_axis2'])
                 dx1    = axis1/(Npts[0]-1.0)
                 dx2    = axis2/(Npts[1]-1.0)
+
+                # Construct the list of offsets
+                offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
+                offsetnormal = np.array(pdict['sampling_p_normal'])
+                offsetvec = []
+                if len(offsets)==0:
+                    offsetvec.append(np.zeros(3))
+                else:
+                    for dx in offsets:
+                        offsetvec.append(offsetnormal*dx)
+
                 pts    = []
-                # TODO: add offset
-                for i in range(Npts[0]):
-                    for j in range(Npts[1]):
-                        pt = origin + i*dx1 + j*dx2
-                        pts.append(pt)
+
+                # Construct the list of all plane points
+                for doffset in offsetvec:
+                    for i in range(Npts[0]):
+                        for j in range(Npts[1]):
+                            pt = origin + i*dx1 + j*dx2 + doffset
+                            pts.append(pt)
                 pts = np.array(pts)
                 ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
         legendprobes=ax.legend(title="Sampling probes", fontsize=10,

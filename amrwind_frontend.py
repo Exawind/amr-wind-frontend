@@ -109,8 +109,12 @@ class MyApp(tkyg.App, object):
 
     @classmethod
     def init_nogui(cls, *args, **kwargs):
+        localconfigdir=os.path.join(scriptpath,'local')
+        if 'localconfigdir' in kwargs:
+            localconfigdir=kwargs['localconfigdir']
+            del kwargs['localconfigdir']
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
-                   localconfigdir=os.path.join(scriptpath,'local'), 
+                   localconfigdir=localconfigdir,
                    withdraw=True, **kwargs)
 
     def reloadconfig(self):
@@ -1411,7 +1415,8 @@ if __name__ == "__main__":
     # Validate the input file
     if validate:
         mainapp=MyApp.init_nogui(localconfigdir=localconfigdir)
-        mainapp.loadAMRWindInput(inputfile, printunused=True)
+        if inputfile is not None:
+            mainapp.loadAMRWindInput(inputfile, printunused=True)
         mainapp.validate()
         sys.exit()
 
