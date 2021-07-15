@@ -52,12 +52,16 @@ frames:
   - name:  frame_xBC
     tab:   Domain
     title: X Boundary conditions
+    toggled: True
+    initstate: 1
   - name:  frame_yBC
     tab:   Domain
     title: Y Boundary conditions
+    toggled: True
   - name:  frame_zBC
     tab:   Domain
     title: Z Boundary conditions
+    toggled: True
 
   # ==== ABL frames ==== 
   - name:  frame_ABLforcing
@@ -577,6 +581,20 @@ inputwidgets:
     outputdef:
       AMR-Wind: '#comment_geommesh'
 
+  - name:       explanation_domain
+    frame:      frame_Mesh
+    labelonly:  True
+    label: |
+
+      Note on the domain orientation: By convention, X and Y 
+      are the horizontal directions, and Z is the vertical direction
+
+  - name:       explanation_domainxyz
+    label:      
+    frame:      frame_Mesh
+    inputtype:  [str, str, str]
+    defaultval: ['X limits','Y limits','Z limits']
+
   - name:       prob_lo
     label:      "Domain corner 1"
     frame:      frame_Mesh
@@ -592,6 +610,17 @@ inputwidgets:
     defaultval: [1000.0, 1000.0, 1000.0]
     outputdef:
       AMR-Wind: geometry.prob_hi
+
+  - name:       explanation_n_cell
+    frame:      frame_Mesh
+    labelonly:  True
+    label: "\n"
+
+  - name:       explanation_domainNxyz
+    label:      
+    frame:      frame_Mesh
+    inputtype:  [str, str, str]
+    defaultval: ['Nx','Ny','Nz']
 
   - name:       n_cell
     label:      "Mesh size"
@@ -1409,6 +1438,10 @@ inputwidgets:
       - input:  samplingprobe_timeinfolabel
         activewhen: ['', 1]
       - input:  samplingprobe_timeinfo
+        activewhen: ['', 1]
+      - input:  explanation_domainxyz
+        activewhen: ['', 1]
+      - input:  explanation_domainNxyz
         activewhen: ['', 1]
 
   - name:       sampling_file
