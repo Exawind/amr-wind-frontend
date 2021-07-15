@@ -51,15 +51,15 @@ frames:
     title: Periodic boundary conditions
   - name:  frame_xBC
     tab:   Domain
-    title: X Boundary conditions
+    title: Boundary conditions on X faces
     toggled: True
   - name:  frame_yBC
     tab:   Domain
-    title: Y Boundary conditions
+    title: Boundary conditions on Y faces
     toggled: True
   - name:  frame_zBC
     tab:   Domain
-    title: Z Boundary conditions
+    title: Boundary conditions on Z faces
     toggled: True
 
   # ==== ABL frames ==== 
@@ -688,7 +688,7 @@ inputwidgets:
       AMR-Wind: geometry.is_periodic
 
   - name:       xlo_type
-    label:      "Lower X velocity BC"
+    label:      "xlo velocity BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -697,7 +697,7 @@ inputwidgets:
       AMR-Wind: xlo.type
 
   - name:       xlo_temperature_type
-    label:      "Lower X temp BC"
+    label:      "xlo temp BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -706,28 +706,28 @@ inputwidgets:
       AMR-Wind: xlo.temperature_type
 
   - name:       xlo_density
-    label:      "Lower X density"
+    label:      "xlo X density"
     frame:      frame_xBC
     inputtype:  float
     outputdef:
       AMR-Wind: xlo.density
 
   - name:       xlo_velocity
-    label:      "Lower X velocity"
+    label:      "xlo face velocity (U,V,W)"
     frame:      frame_xBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: xlo.velocity
 
   - name:       xlo_temperature
-    label:      "Lower X temperature"
+    label:      "xlo temperature"
     frame:      frame_xBC
     inputtype:  float
     outputdef:
       AMR-Wind: xlo.temperature
 
   - name:       xlo_tke_type
-    label:      "Lower X TKE BC"
+    label:      "xlo TKE BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -736,7 +736,7 @@ inputwidgets:
       AMR-Wind: xlo.tke_type
 
   - name:       xhi_type
-    label:      "Upper X velocity BC"
+    label:      "xhi velocity BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -745,7 +745,7 @@ inputwidgets:
       AMR-Wind: xhi.type
 
   - name:       xhi_temperature_type
-    label:      "Upper X temp BC"
+    label:      "xhi temp BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -754,28 +754,28 @@ inputwidgets:
       AMR-Wind: xhi.temperature_type
 
   - name:       xhi_density
-    label:      "Upper X density"
+    label:      "xhi density"
     frame:      frame_xBC
     inputtype:  float
     outputdef:
       AMR-Wind: xhi.density
 
   - name:       xhi_velocity
-    label:      "Upper X velocity"
+    label:      "xhi face velocity (U,V,W)"
     frame:      frame_xBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: xhi.velocity
 
   - name:       xhi_temperature
-    label:      "Upper X temperature"
+    label:      "xhi temperature"
     frame:      frame_xBC
     inputtype:  float
     outputdef:
       AMR-Wind: xhi.temperature
 
   - name:       xhi_tke_type
-    label:      "Upper X TKE BC"
+    label:      "xhi TKE BC"
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -784,7 +784,7 @@ inputwidgets:
       AMR-Wind: xhi.tke_type
 
   - name:       ylo_type
-    label:      "Lower Y velocity BC"
+    label:      "ylo velocity BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -793,7 +793,7 @@ inputwidgets:
       AMR-Wind: ylo.type
 
   - name:       ylo_temperature_type
-    label:      "Lower Y temp BC"
+    label:      "ylo temp BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -802,28 +802,28 @@ inputwidgets:
       AMR-Wind: ylo.temperature_type
 
   - name:       ylo_density
-    label:      "Lower Y density"
+    label:      "ylo density"
     frame:      frame_yBC
     inputtype:  float
     outputdef:
       AMR-Wind: ylo.density
 
   - name:       ylo_velocity
-    label:      "Lower Y velocity"
+    label:      "ylo face velocity (U,V,W)"
     frame:      frame_yBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: ylo.velocity
 
   - name:       ylo_temperature
-    label:      "Lower Y temperature"
+    label:      "ylo temperature"
     frame:      frame_yBC
     inputtype:  float
     outputdef:
       AMR-Wind: ylo.temperature
 
   - name:       ylo_tke_type
-    label:      "Lower Y TKE BC"
+    label:      "ylo TKE BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -832,7 +832,7 @@ inputwidgets:
       AMR-Wind: ylo.tke_type
 
   - name:       yhi_type
-    label:      "Upper Y velocity BC"
+    label:      "yhi velocity BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -841,7 +841,7 @@ inputwidgets:
       AMR-Wind: yhi.type
 
   - name:       yhi_temperature_type
-    label:      "Upper Y temp BC"
+    label:      "yhi temp BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -850,28 +850,28 @@ inputwidgets:
       AMR-Wind: yhi.temperature_type
 
   - name:       yhi_density
-    label:      "Upper Y density"
+    label:      "yhi density"
     frame:      frame_yBC
     inputtype:  float
     outputdef:
       AMR-Wind: yhi.density
 
   - name:       yhi_velocity
-    label:      "Upper Y velocity"
+    label:      "yhi face velocity (U,V,W)"
     frame:      frame_yBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: yhi.velocity
 
   - name:       yhi_temperature
-    label:      "Upper Y temperature"
+    label:      "yhi temperature"
     frame:      frame_yBC
     inputtype:  float
     outputdef:
       AMR-Wind: yhi.temperature
 
   - name:       yhi_tke_type
-    label:      "Upper Y TKE BC"
+    label:      "yhi TKE BC"
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -880,7 +880,7 @@ inputwidgets:
       AMR-Wind: yhi.tke_type
 
   - name:       zlo_type
-    label:      "Lower Z velocity BC"
+    label:      "zlo velocity BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -889,7 +889,7 @@ inputwidgets:
       AMR-Wind: zlo.type
 
   - name:       zlo_temperature_type
-    label:      "Lower Z temp BC"
+    label:      "zlo temp BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -898,28 +898,28 @@ inputwidgets:
       AMR-Wind: zlo.temperature_type
 
   - name:       zlo_density
-    label:      "Lower Z density"
+    label:      "zlo density"
     frame:      frame_zBC
     inputtype:  float
     outputdef:
       AMR-Wind: zlo.density
 
   - name:       zlo_velocity
-    label:      "Lower Z velocity"
+    label:      "zlo face velocity (U,V,W)"
     frame:      frame_zBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: zlo.velocity
 
   - name:       zlo_temperature
-    label:      "Lower Z temperature"
+    label:      "zlo temperature"
     frame:      frame_zBC
     inputtype:  float
     outputdef:
       AMR-Wind: zlo.temperature
 
   - name:       zlo_tke_type
-    label:      "Lower Z TKE BC"
+    label:      "zlo TKE BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -928,7 +928,7 @@ inputwidgets:
       AMR-Wind: zlo.tke_type
 
   - name:       zhi_type
-    label:      "Upper Z velocity BC"
+    label:      "zhi velocity BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -937,7 +937,7 @@ inputwidgets:
       AMR-Wind: zhi.type
 
   - name:       zhi_temperature_type
-    label:      "Upper Z temp BC"
+    label:      "zhi temp BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -946,28 +946,28 @@ inputwidgets:
       AMR-Wind: zhi.temperature_type
 
   - name:       zhi_density
-    label:      "Upper Z density"
+    label:      "zhi density"
     frame:      frame_zBC
     inputtype:  float
     outputdef:
       AMR-Wind: zhi.density
 
   - name:       zhi_velocity
-    label:      "Upper Z velocity"
+    label:      "zhi face velocity (U,V,W)"
     frame:      frame_zBC
     inputtype:  [float, float, float]
     outputdef:
       AMR-Wind: zhi.velocity
 
   - name:       zhi_temperature
-    label:      "Upper Z temperature"
+    label:      "zhi temperature"
     frame:      frame_zBC
     inputtype:  float
     outputdef:
       AMR-Wind: zhi.temperature
 
   - name:       zhi_tke_type
-    label:      "Upper Z TKE BC"
+    label:      "zhi TKE BC"
     frame:      frame_zBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
@@ -2249,21 +2249,21 @@ popupwindow:
       outputdef:
         AMR-Wind: origin
     - name:       tagging_geom_xaxis
-      label:      Box X-axis
+      label:      Box axis 1
       inputtype:  [float, float, float]
       defaultval: 
       frame:      geom_frame
       outputdef:
         AMR-Wind: xaxis
     - name:       tagging_geom_yaxis
-      label:      Box Y-axis
+      label:      Box axis 2
       inputtype:  [float, float, float]
       defaultval: 
       frame:      geom_frame
       outputdef:
         AMR-Wind: yaxis
     - name:       tagging_geom_zaxis
-      label:      Box Z-axis
+      label:      Box axis 3
       inputtype:  [float, float, float]
       defaultval: 
       frame:      geom_frame
