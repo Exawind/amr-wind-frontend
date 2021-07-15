@@ -215,7 +215,11 @@ def plotDomain(self, ax=None):
                 dx2    = axis2/(Npts[1]-1.0)
 
                 # Construct the list of offsets
-                offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
+                if (pdict['sampling_p_offsets'] is not None) and \
+                   (pdict['sampling_p_offsets'] != 'None'):
+                    offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
+                else:
+                    offsets = [0.0]
                 offsetnormal = np.array(pdict['sampling_p_normal'])
                 offsetvec = []
                 if len(offsets)==0:

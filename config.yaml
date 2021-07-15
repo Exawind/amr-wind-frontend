@@ -48,12 +48,11 @@ frames:
     title: Domain and Mesh
   - name:  frame_BC
     tab:   Domain
-    title: Boundary conditions
+    title: Periodic boundary conditions
   - name:  frame_xBC
     tab:   Domain
     title: X Boundary conditions
     toggled: True
-    initstate: 1
   - name:  frame_yBC
     tab:   Domain
     title: Y Boundary conditions
@@ -143,6 +142,17 @@ predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes:      &PREDEFINED_BCTYPES [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
   turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
+
+  alwaysfalse:   &PREDEFINED_ALWAYSFALSE
+    name:       default_alwaysfalse
+    inputtype:  bool
+    defaultval: False
+    visible:    False
+
+  explanation_xyz: &PREDEFINED_XYZHEADER
+    label:      
+    inputtype:  [str, str, str]
+    defaultval: ['X','Y','Z']
 
   # ------- stuff used in turbine parameters ----
   actuatorselection: &PREDEFINED_ACTUATORSELECTION
@@ -1922,11 +1932,27 @@ popupwindow:
     width:        450
     height:       450
     frames:
+    - name:       probetype_frame
+      row:        1
+    - name:       probe_file_frame
+      title:      Probe_file specifications
+      row:        3
+      toggled:    True
     - name:       line_probe_frame
       title:      Line probe specifications
-      row:        6
+      row:        4
       toggled:    True
+    - name:       sample_plane_frame
+      title:      Sample plane specifications
+      row:        5
+      toggled:    True    
     inputwidgets:
+    - <<: *PREDEFINED_ALWAYSFALSE
+      ctrlelem:   
+        - input:  sample_plane_xyzheader
+          activewhen: ['', 1]
+        - input:  line_probe_xyzheader
+          activewhen: ['', 1]
     - name:       sampling_label
       label:      Sampling probe input
       labelonly:  True
@@ -1935,13 +1961,15 @@ popupwindow:
       label:      Name 
       inputtype:  str
       defaultval: newsample
-      row:        1
+      frame:      probetype_frame
+      # row:        1
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
       optionlist: [ProbeSampler, LineSampler, PlaneSampler]
       defaultval: LineSampler
-      row:        2
+      frame:      probetype_frame
+      # row:        2
       listboxopt:
         width:    12
       outputdef:
@@ -1969,21 +1997,23 @@ popupwindow:
           activewhen: ['PlaneSampler', 1]
     # -- sample file ---
     - name:       sampling_pf_label
-      label:      Probe file specifications
+      label:      Choose text file with (x,y,z) probe points
       labelonly:  True
-      row:        3
+      frame:      probe_file_frame
+      # row:        3
     - name:       sampling_pf_probe_location_file
       label:      Filename
       inputtype:  filename
       defaultval:
-      row:        4
+      frame:      probe_file_frame
+      # row:        4
       outputdef:
         AMR-Wind: probe_location_file
     # -- sample line ---
-    - name:       sampling_l_label
-      label:      Line probe specifications
-      labelonly:  True
-      row:        5
+    # - name:       sampling_l_label
+    #   label:      Line probe specifications
+    #   labelonly:  True
+    #   row:        5
     - name:       sampling_l_num_points
       label:      Line num points
       inputtype:  int
@@ -1991,6 +2021,10 @@ popupwindow:
       frame:      line_probe_frame
       outputdef:
         AMR-Wind: num_points
+    - <<: *PREDEFINED_XYZHEADER
+      name:       line_probe_xyzheader
+      frame:      line_probe_frame
+      row:        3
     - name:       sampling_l_start
       label:      Line start
       inputtype:  [float, float, float]
@@ -2006,45 +2040,54 @@ popupwindow:
       outputdef:
         AMR-Wind: end      
     # -- sample plane --
-    - name:       sampling_p_label
-      label:      Plane probe specifications
-      labelonly:  True
     - name:       sampling_p_num_points
       label:      Plane num points
       inputtype:  [int, int]
       defaultval: [2, 2]
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: num_points
+        help:     Number of points along axis1 and axis2 of the plane
+    - <<: *PREDEFINED_XYZHEADER
+      name:       sample_plane_xyzheader
+      frame:      sample_plane_frame
+      row:        3
     - name:       sampling_p_origin
       label:      Plane origin
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: origin
     - name:       sampling_p_axis1
       label:      Plane axis1
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: axis1
     - name:       sampling_p_axis2
       label:      Plane axis2
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: axis2    
     - name:       sampling_p_normal
       label:      Plane normal
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: normal
     - name:       sampling_p_offsets
       label:      Plane offsets
       inputtype:  str
-      defaultval: 0
+      defaultval: 
+      frame:      sample_plane_frame
       outputdef:
         AMR-Wind: offsets
+        help:     List containing the distances along the plane normal to offset each plane
   # === Tagging window ===
   tagging:
     title:        Refinement windows # optional
@@ -2052,21 +2095,45 @@ popupwindow:
     loadonstart:  False              # optional
     width:        500
     height:       550
+    frames:
+    - name:       header_frame
+      row:        2
+    - name:       cartbox_frame
+      title:      Cartesian box specifications
+      row:        3
+      toggled:    True
+    - name:       field_frame
+      title:      Field refinement details
+      row:        4
+      toggled:    True
+    - name:       geom_frame
+      title:      Geometry refinement details
+      row:        5
+      toggled:    True
+    - name:       qcrit_frame
+      title:      Q criteria refinement details
+      row:        6
+      toggled:    True
     inputwidgets:
     - name:       tagging_label
       label:      Refinement window specification
       labelonly:  True
+      row:        0
     - name:       tagging_name
       label:      Name 
       inputtype:  str
       defaultval: newrefinement
+      frame:      header_frame
+      #row:        1
     - name:       tagging_type
       label:      Type 
       inputtype:  listbox
       optionlist: [CartBoxRefinement, FieldRefinement, GeometryRefinement, QCriterionRefinement, VorticityRefinement]
       defaultval: CartBoxRefinement
+      frame:      header_frame
+      #row:        2
       listboxopt:
-        width:    20
+        width:    25
       outputdef:
         AMR-Wind: type
       ctrlelem:
@@ -2110,52 +2177,60 @@ popupwindow:
       label:      CartBox filename
       inputtype:  filename
       defaultval:
+      frame:      cartbox_frame
       outputdef:
         AMR-Wind: static_refinement_def
     - name:       tagging_field_name
       label:      Field name
       inputtype:  str
       defaultval:
+      frame:      field_frame
       outputdef:
         AMR-Wind: field_name
     - name:       tagging_field_error
       label:      Field error
       inputtype:  str
       defaultval:
+      frame:      field_frame
       outputdef:
         AMR-Wind: field_error
     - name:       tagging_grad_error
       label:      Gradient error
       inputtype:  str
       defaultval:
+      frame:      field_frame
       outputdef:
         AMR-Wind: grad_error
     - name:       tagging_qc_nondim
       label:      Nondim Q criteria
       inputtype:  bool
       defaultval: True
+      frame:      qcrit_frame
       outputdef:
         AMR-Wind: nondim
     - name:       tagging_qc_values
       label:      Q criteria values
       inputtype:  str
       defaultval: 
+      frame:      qcrit_frame
       outputdef:
         AMR-Wind: values
     # --- Geometry tagging ---
-    - name:       tagging_label_geom
-      label:      Geometric shape refinement
-      labelonly:  True
+    #- name:       tagging_label_geom
+    #  label:      Geometric shape refinement
+    #  labelonly:  True
     - name:       tagging_shapes
       label:      Geometry Names
       inputtype:  str
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: shapes
     - name:       tagging_level
       label:      Geometry level
       inputtype:  int
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: level
     - name:       tagging_geom_type
@@ -2163,54 +2238,63 @@ popupwindow:
       inputtype:  str
       optionlist: [cylinder, box]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: type
     - name:       tagging_geom_origin
       label:      Box corner
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: origin
     - name:       tagging_geom_xaxis
       label:      Box X-axis
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: xaxis
     - name:       tagging_geom_yaxis
       label:      Box Y-axis
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: yaxis
     - name:       tagging_geom_zaxis
       label:      Box Z-axis
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: zaxis
     - name:       tagging_geom_start
       label:      Cylinder start
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: start
     - name:       tagging_geom_end
       label:      Cylinder end
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: end
     - name:       tagging_geom_outer_radius
       label:      Cylinder Outer R
       inputtype:  float
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: outer_radius
     - name:       tagging_geom_inner_radius
       label:      Cylinder Inner R
       inputtype:  float
       defaultval: 
+      frame:      geom_frame
       outputdef:
         AMR-Wind: inner_radius
 
@@ -2219,78 +2303,123 @@ popupwindow:
     title:        New Turbine        # optional
     datakeyname:  Actuator_name      # optional
     loadonstart:  False              # optional
-    width:        500
-    height:       525
+    width:        500                # optional
+    height:       625                # optional
+    frames:
+    - name:       turbinename_frame
+#      title:      Expert options
+      row:        2
+    - name:       expert_frame
+      title:      Expert options
+      row:        3
+      toggled:    True
+    - name:       turbine_frame
+      title:      Turbine specifications
+      row:        4
     inputwidgets:
     - name:       actuator_label
       label:      Add a new turbine   
       labelonly:  True
+      row:        0
     - name:       Actuator_name
       label:      Name 
       inputtype:  str
       defaultval: turbine
+      frame:      turbinename_frame
+      #row:        1
     - name:       use_turbine_type
       label:      Use turbine type
       inputtype:  str 
       optionlist: "self.parent.listboxpopupwindict['listboxturbinetype'].getitemlist()"
       defaultval: ""
+      frame:      turbinename_frame
+      #row:        2
     - name:       copy_turb_files
       label:      Copy turbine files
       inputtype:  bool
       defaultval: 1
+      frame:      expert_frame
     - name:       edit_fast_files
       label:      Edit FAST files to match
       inputtype:  bool
       defaultval: 1
+      frame:      expert_frame
     - <<: *PREDEFINED_ACTUATORSELECTION
-      #name:       actuator_individual_type
+      frame:      turbine_frame
       outputdef:
         AMR-Wind: type
     - <<: *PREDEFINED_OPENFAST_INPUT_FILE
+      frame:      turbine_frame
     - name:       Actuator_base_position
-      label:      Base position
+      label:      Base position (x,y,z)
       inputtype:  [float, float, float]
       defaultval: 
+      frame:      turbine_frame
       outputdef:
         AMR-Wind: base_position
         help:     Where the bottom of the tower sits
     - <<: *PREDEFINED_ROTOR_DIAMETER
       name:       Actuator_rotor_diameter
+      frame:      turbine_frame
     - <<: *PREDEFINED_HUB_HEIGHT
       name:       Actuator_hub_height
+      frame:      turbine_frame
     - <<: *PREDEFINED_NUM_POINTS_BLADE
       name:       Actuator_num_points_blade
+      frame:      turbine_frame
     - <<: *PREDEFINED_NUM_POINTS_TOWER
       name:       Actuator_num_points_tower
+      frame:      turbine_frame
     - <<: *PREDEFINED_EPSILON
       name:       Actuator_epsilon
+      frame:      turbine_frame
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
+      frame:      turbine_frame
     - <<: *PREDEFINED_OPENFAST_START_TIME
       name:       Actuator_openfast_start_time
+      frame:      turbine_frame
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
       name:       Actuator_openfast_stop_time
+      frame:      turbine_frame
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
       name:       Actuator_nacelle_drag_coeff
+      frame:      turbine_frame
     - <<: *PREDEFINED_NACELLE_AREA
       name:       Actuator_nacelle_area
+      frame:      turbine_frame
     - <<: *PREDEFINED_YAW
       name:       Actuator_yaw
+      frame:      turbine_frame
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
       name:       Actuator_output_frequency
+      frame:      turbine_frame
     - <<: *PREDEFINED_DENSITY
       name:       Actuator_density
+      frame:      turbine_frame
     buttons:
       - name: preload_turbinetype
         text: Load
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_copytoturbine(window=self)')"
-        row:  2
+        frame:      turbinename_frame
+        row:  1
         col:  2
       - name: update_fast_files
-        text: Update FAST
+        text: Update FAST now
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
-        row:  4
-        col:  2
+        frame: expert_frame
+        # row:  4
+        # col:  2
+      - name: saveandupdatefast_files
+        text: Save & Update FAST
+        command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
+        row:  5
+        col:  0
+      - name: savenoupdatefast_files
+        text: Save, w/o FAST update
+        command: "self.savevals"
+        row:  5
+        col:  1
 
 # === Turbine type window ===
   turbinetype:
@@ -2490,6 +2619,8 @@ listboxpopupwindows:
     frame:      frame_turbineglobals
     row:        8
     popupinput: turbine
+    editsavebutton: False
+    closebuttontxt: Close
     outputprefix:                    # optional
       AMR-Wind: Actuator
     outputlist:                      # optional

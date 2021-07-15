@@ -46,7 +46,12 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     #dx1    = axis1/(Npts[0]-1.0)
     #dx2    = axis2/(Npts[1]-1.0)
 
-    offsets      = [float(x) for x in pdict['sampling_p_offsets'].split()]
+    if (pdict['sampling_p_offsets'] is not None) and \
+       (pdict['sampling_p_offsets'] != 'None'):
+        offsets = [float(x) for x in pdict['sampling_p_offsets'].split()]
+    else:
+        offsets = [0]
+    
     offsetnormal = np.array(pdict['sampling_p_normal'])
 
     # Construct the list of offsets
