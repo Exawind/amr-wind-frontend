@@ -706,7 +706,7 @@ inputwidgets:
       AMR-Wind: xlo.temperature_type
 
   - name:       xlo_density
-    label:      "xlo X density"
+    label:      "xlo density"
     frame:      frame_xBC
     inputtype:  float
     outputdef:
