@@ -1975,19 +1975,27 @@ popupwindow:
     title:        Sampling probe     # optional
     datakeyname:  sampling_name      # optional
     loadonstart:  False              # optional
+    frames:
+    - name:       line_probe_frame
+      title:      Line probe specifications
+      row:        6
+      toggled:    True
     inputwidgets:
     - name:       sampling_label
       label:      Sampling probe input
       labelonly:  True
+      row:        0
     - name:       sampling_name
       label:      Name 
       inputtype:  str
       defaultval: newsample
+      row:        1
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
       optionlist: [ProbeSampler, LineSampler, PlaneSampler]
       defaultval: LineSampler
+      row:        2
       listboxopt:
         width:    12
       outputdef:
@@ -2017,32 +2025,38 @@ popupwindow:
     - name:       sampling_pf_label
       label:      Probe file specifications
       labelonly:  True
+      row:        3
     - name:       sampling_pf_probe_location_file
       label:      Filename
       inputtype:  filename
       defaultval:
+      row:        4
       outputdef:
         AMR-Wind: probe_location_file
     # -- sample line ---
     - name:       sampling_l_label
       label:      Line probe specifications
       labelonly:  True
+      row:        5
     - name:       sampling_l_num_points
       label:      Line num points
       inputtype:  int
       defaultval: 2
+      frame:      line_probe_frame
       outputdef:
         AMR-Wind: num_points
     - name:       sampling_l_start
       label:      Line start
       inputtype:  [float, float, float]
       defaultval: [0, 0, 0]
+      frame:      line_probe_frame
       outputdef:
         AMR-Wind: start
     - name:       sampling_l_end
       label:      Line end
       inputtype:  [float, float, float]
       defaultval: [1, 1, 1]
+      frame:      line_probe_frame
       outputdef:
         AMR-Wind: end      
     # -- sample plane --
