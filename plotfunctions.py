@@ -294,6 +294,15 @@ def plotDomain(self, ax=None):
                     plot3DBox(ax, origin, xaxis, yaxis, zaxis, ix, iy,
                               lw=0.4, facecolor=color, alpha=0.90)
                 if pdict['tagging_geom_type']=='cylinder':
+                    cylstart  = pdict['tagging_geom_start']
+                    cylend    = pdict['tagging_geom_end']
+                    outerR    = pdict['tagging_geom_outer_radius']
+                    innerR    = pdict['tagging_geom_inner_radius']
+                    ilevel = pdict['tagging_level']
+                    if ilevel is not None: 
+                        color   = levelcolors[ilevel]
+                    else:
+                        color   = levelcolors[0]
                     print("cylinder geometry refinement plotting not supported")
 
         # Add a legend with the level labels

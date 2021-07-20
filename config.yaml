@@ -127,11 +127,17 @@ frames:
     tab:   Turbines
     row:   3
     title: OpenFAST ALM global parameters
+    toggled: True
   - name:  frame_turbinefastdiskglobals
     tab:   Turbines
     row:   4
     title: OpenFAST ADM global parameters
-
+    toggled: True
+  - name:  frame_uniformctglobals
+    tab:   Turbines
+    row:   5
+    title: Uniform Ct Disk global parameters
+    toggled: True
     
 # ********** PREDEFEINED ANCHORS ****************
 # Define things here which will be repeated later on
@@ -1694,6 +1700,35 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.density
 
+  # ------ Uniform Ct Globals -------------------
+  - <<: *PREDEFINED_ROTOR_DIAMETER
+    name:       Actuator_UniformCtDisk_rotor_diameter
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.rotor_diameter
+  - <<: *PREDEFINED_HUB_HEIGHT
+    name:       Actuator_UniformCtDisk_hub_height
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.hub_height
+  - <<: *PREDEFINED_EPSILON
+    name:       Actuator_UniformCtDisk_epsilon
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.epsilon
+  - <<: *PREDEFINED_OUTPUT_FREQUENCY
+    name:       Actuator_UniformCtDisk_output_frequency
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.output_frequency
+  - <<: *PREDEFINED_DENSITY
+    name:       Actuator_UniformCtDisk_density
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.density
+
+  # ------------ Submission script template -------------
+
   - name:       submitscript_template
     label:      Submit script template
     tab:        Expert
@@ -1835,9 +1870,46 @@ buttons:
     frame:   frame_postprosampling
     command: "self.Samplepostpro_getplot"
 
-  - name:     helpSampleprobe
+  # --- Help buttons ---
+  - name:     helpbutton_domain
     text:     "[?]"
-    frame:    frame_xBC header_frame #frame_postprosampling
+    frame:    frame_Mesh
+    help:     "Need help?"
+    row:      0
+    col:      3
+    command:  "partial(self.showyamlmesg, 'domain')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+  - name:     helpbutton_xBC
+    text:     "[?]"
+    frame:    frame_xBC header_frame 
+    help:     "Need help?"
+    row:      0
+    col:      3
+    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+  - name:     helpbutton_yBC
+    text:     "[?]"
+    frame:    frame_yBC header_frame 
+    help:     "Need help?"
+    row:      0
+    col:      3
+    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+  - name:     helpbutton_zBC
+    text:     "[?]"
+    frame:    frame_zBC header_frame 
     help:     "Need help?"
     row:      0
     col:      3
@@ -2639,7 +2711,22 @@ listboxpopupwindows:
 helpwindows:
   gotnothing: 
     mesg: |
-      I've got no help for you
+      I've got nothing.  Somebody add help 
+      here
     options:
       autowidth: False
+  domain: 
+    mesg: |
+      Add domain help here.
+      This is a schematic of the domain
+       y
+       |
+       |__________________________corner2
+       |                          |
+       |                          |
+       |__________________________|----> x 
+       corner1
+    options:
+      autowidth: False
+      height:    10
       
