@@ -716,7 +716,7 @@ class MyApp(tkyg.App, object):
             N = len(window.temp_inputvars['plotfastout_files'].tkentry.get(0, Tk.END))
             for i in range(N):
                 window.temp_inputvars['plotfastout_files'].tkentry.selection_set(i)
-        return
+        return headers
 
     def FAST_plotoutputs(self, window=None, ax=None):
         # Clear and resize figure
