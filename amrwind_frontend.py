@@ -283,6 +283,16 @@ class MyApp(tkyg.App, object):
                            height=40)
         return
 
+    def showyamlmesg(self, helpkey, category='helpwindows'):
+        """
+        Displays a help message in yamldict[category][helpkey]
+        """
+        mesg = self.yamldict[category][helpkey]['mesg']
+        opts = tkyg.getdictval(self.yamldict['helpwindows'][helpkey], 
+                               'options', {})
+        tkyg.messagewindow(self, mesg, **opts)
+        return
+
     def getInputHelp(self, search=''):
         for widget in self.yamldict['inputwidgets']:
             appname  = widget['name']

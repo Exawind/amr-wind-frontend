@@ -44,7 +44,6 @@ frames:
   # ==== Domain frames ==== 
   - name:  frame_Mesh
     tab:   Domain
-    #row:   0
     title: Domain and Mesh
   - name:  frame_BC
     tab:   Domain
@@ -1834,9 +1833,20 @@ buttons:
   - name:    plotSampleprobe
     text:    Plot Sample
     frame:   frame_postprosampling
-    #row:     14
     command: "self.Samplepostpro_getplot"
 
+  - name:     helpSampleprobe
+    text:     "[?]"
+    frame:    frame_xBC header_frame #frame_postprosampling
+    help:     "Need help?"
+    row:      0
+    col:      3
+    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
     
 popupwindow:
   # === Plot domain window ===
@@ -2625,3 +2635,11 @@ listboxpopupwindows:
       AMR-Wind: Actuator
     outputlist:                      # optional
       AMR-Wind: labels
+
+helpwindows:
+  gotnothing: 
+    mesg: |
+      I've got no help for you
+    options:
+      autowidth: False
+      
