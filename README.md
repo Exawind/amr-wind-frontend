@@ -21,6 +21,20 @@ $ cd amrwind-frontend
 $ git submodule init
 $ git submodule update --recursive
 ```
+### Dependencies
+
+Note that `amrwind-frontend` depends on the netCDF4 library for
+postprocessing sample probe data files.  To install the netCDF4
+libraries using `pip`, run the following:
+```bash
+$ pip install netCDF4
+```
+
+For ubuntu based systems, you can install it via
+```bash
+$ sudo apt-get install python3-netcdf4
+```
+
 ## Running
 Once you've downloaded it, you can launch the interactive GUI using
 the command:
