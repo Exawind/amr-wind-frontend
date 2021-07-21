@@ -96,7 +96,7 @@ frames:
   - name:  frame_IOplotting
     tab:   IO
     row:   1
-    title: Plot outputs
+    title: Plot Outputs
   - name:  frame_IOsampling
     tab:   IO
     row:   4
@@ -349,7 +349,7 @@ inputwidgets:
       help:     Fixed timestep size (in seconds). If negative, then time.cfl is used
 
   - name:       cfl
-    label:      cfl
+    label:      CFL
     frame:      frame_time
     inputtype:  float
     defaultval: 0.95
@@ -357,7 +357,7 @@ inputwidgets:
       AMR-Wind: time.cfl
 
   - name:       checkpoint_interval
-    label:      checkpoint interval
+    label:      Checkpoint interval
     frame:      frame_restart
     inputtype:  int
     defaultval: #10000
@@ -1316,7 +1316,7 @@ inputwidgets:
 
   # =========== Sampling stuff here ====================
   - name:       plot_label
-    label:      Plotting inputs
+    label:      Plotting and output parameters
     tab:        IO
     row:        0
     labelonly:  True
@@ -1345,7 +1345,7 @@ inputwidgets:
       AMR-Wind: io.outputs
 
   - name:       KE_int
-    label:      ouput KE interval
+    label:      Output KE interval
     frame:      frame_IOplotting
     inputtype:  int
     defaultval: -1
