@@ -415,7 +415,7 @@ def plotDomain(self, ax=None):
             turbD    = default_turbD if tdict['Actuator_rotor_diameter'] is None else tdict['Actuator_rotor_diameter']
 
             basepos  = tdict['Actuator_base_position']
-            yaw      = winddir #270.0
+            yaw      = winddir if tdict['Actuator_yaw'] is None else tdict['Actuator_yaw']  #270.0
 
             if turbtype in ['TurbineFastLine', 'TurbineFastDisk']:
                 fstfile  = tdict['Actuator_openfast_input_file']

@@ -146,7 +146,7 @@ frames:
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes:      &PREDEFINED_BCTYPES [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
-  turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, FlatPlateLine]
+  turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, UniformCtDisk, FlatPlateLine]
 
   alwaysfalse:   &PREDEFINED_ALWAYSFALSE
     name:       default_alwaysfalse
@@ -168,6 +168,8 @@ predefinedlists:
     defaultval: 
     outputdef:
       AMR-Wind: type
+    entryopt:
+      width:    10
   openfast_input_file: &PREDEFINED_OPENFAST_INPUT_FILE
     name:       Actuator_openfast_input_file
     label:      OpenFAST fst file
@@ -400,6 +402,8 @@ inputwidgets:
     defaultval: 
     outputdef:
       AMR-Wind: io.restart_file
+    entryopt:
+      width:    20
 
   # ---------- Godunov parameters -----------------------------
   - name:       use_godunov
@@ -1407,6 +1411,8 @@ inputwidgets:
     frame:      frame_postproABL
     row:        1
     inputtype:  filename
+    entryopt:
+      width:    20
     fileopenopt:
       kwargs:
         filetypes: 
@@ -1471,6 +1477,8 @@ inputwidgets:
     frame:      frame_postprosampling
     row:        1
     inputtype:  filename
+    entryopt:
+      width:    20
     fileopenopt:
       kwargs:
         filetypes: 
@@ -2622,6 +2630,8 @@ popupwindow:
         label:      submit script filename
         inputtype:  filename
         defaultval: 
+        entryopt:
+          width:    20
         fileopenopt:             
           selecttype: saveas       # open/saveas/directory [optional]
       # - name:       submitscript_logfile
@@ -2636,6 +2646,8 @@ popupwindow:
         label:      amr_wind executable
         inputtype:  filename
         defaultval: 'amr_wind'
+        entryopt:
+          width:    20
         fileopenopt:             
           selecttype: open       # open/saveas/directory [optional]          
         outputdef:
@@ -2644,6 +2656,8 @@ popupwindow:
         label:      modules to load
         inputtype:  str
         defaultval: 
+        entryopt:
+          width:    20
         outputdef:
           replacevar: submitscript_modules
       - name:       submitscript_jobname
