@@ -532,28 +532,31 @@ inputwidgets:
 
   # ---------- incflo fluid properties ------------------------
   - name:       gravity
-    label:      gravity
+    label:      Gravity
     frame:      frame_incflo
     inputtype:  [float, float, float]
     defaultval: [0.0, 0.0, -9.81]
     outputdef:
       AMR-Wind: incflo.gravity
+      help:     Gravitational acceleration vector (x,y,z) [m/s^2]
 
   - name:       density
-    label:      density
+    label:      Density
     frame:      frame_incflo
     inputtype:  float
     defaultval: 1.00
     outputdef:
       AMR-Wind: incflo.density
+      help:     Fluid density [kg/m^3]
 
   - name:       viscosity
-    label:      viscosity
+    label:      Dynamic viscosity
     frame:      frame_incflo
     inputtype:  float
     defaultval: 1.872e-5
     outputdef:
       AMR-Wind: transport.viscosity
+      help:     Fluid dynamic viscosity [kg/m-s]
 
   - name:       laminar_prandtl
     label:      Laminar prandtl
@@ -562,6 +565,7 @@ inputwidgets:
     defaultval: 0.7
     outputdef:
       AMR-Wind: transport.laminar_prandtl
+      help:     Laminar prandtl number
 
   - name:       turbulent_prandtl
     label:      Turb. prandtl
@@ -570,6 +574,7 @@ inputwidgets:
     defaultval: 0.3333
     outputdef:
       AMR-Wind: transport.turbulent_prandtl
+      help:     Turbulent prandtl number
 
   # ---------- Constant values --------------------------------
   - name:       ConstValue_density
