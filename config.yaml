@@ -645,6 +645,7 @@ inputwidgets:
     defaultval: [48, 48, 48]
     outputdef:
       AMR-Wind: amr.n_cell
+      help:     Number of cells in x, y, and z directions
 
   - name:       max_level
     label:      Max refinement level
@@ -2715,6 +2716,7 @@ helpwindows:
       here
     options:
       autowidth: False
+      title: Help
   domain: 
     mesg: |
       Add domain help here.
@@ -2729,4 +2731,4 @@ helpwindows:
     options:
       autowidth: False
       height:    10
-      
+      title:     Domain help      

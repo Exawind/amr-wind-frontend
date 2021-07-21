@@ -264,7 +264,9 @@ class MyApp(tkyg.App, object):
 
     def writeAMRWindInputGUI(self):
         filename  = filedialog.asksaveasfilename(initialdir = "./",
-                                                 title = "Save AMR-Wind file")
+                                                 title = "Save AMR-Wind file",
+                                                 filetypes=[("input files","*.inp"),
+                                                            ("all files","*.*")])
         if len(filename)>0:
             self.writeAMRWindInput(filename)
             self.savefile = filename
