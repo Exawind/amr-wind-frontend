@@ -615,7 +615,7 @@ class MyApp(tkyg.App, object):
         # Validate menu
         runmenu = Tk.Menu(menubar, tearoff=0)
         runmenu.add_command(label="Check Inputs", 
-                            command=self.validate)
+                            command=self.validateGUI)
         runmenu.add_command(label="Local run", 
                              command=partial(self.launchpopupwin, 
                                              'localrun', savebutton=False))
@@ -638,11 +638,18 @@ class MyApp(tkyg.App, object):
         root.config(menu=menubar)
         return
 
+    def validateGUI(self, **kwargs):
+        result = self.validate(**kwargs)
+        tkyg.messagewindow(self, result, height=25)
+        return
+
     def validate(self, printeverything=True):
         # Load validateinputs plugins
         num_nonactive = 0
         num_active    = 0
-        print("-- Checking inputs --")
+        outputstr     = ""
+        def printcat(x): print(x); return x+"\n"
+        outputstr += printcat("-- Checking inputs --")
         resultclass = OrderedDict()
         for c in validateinputs.CheckStatus: resultclass[c.name] = []
         for p in validateinputs.pluginlist:
@@ -653,16 +660,17 @@ class MyApp(tkyg.App, object):
                 for r in results:
                     resultclass[r['result'].name].append(r)
                     if printeverything:
-                        print("[%5s] %-20s %s"%(r['result'].name,
-                                                p.name+":"+r['subname'],
-                                                r['mesg']))
+                        outputstr += \
+                            printcat("[%5s] %-20s %s"%(r['result'].name,
+                                                       p.name+":"+r['subname'],
+                                                       r['mesg']))
             else:
                 num_nonactive = num_nonactive+1            
-        print('')
-        print("Results: ")
+        outputstr += printcat('')
+        outputstr += printcat("Results: ")
         for k, g in resultclass.items():
-            print(' %i %s'%(len(g), k))
-        return
+            outputstr += printcat(' %i %s'%(len(g), k))
+        return outputstr
     
     def setupfigax(self, clear=True, subplot=111):
         # Clear and resize figure

@@ -69,6 +69,59 @@ def plot3DBox(figax, origin, xaxis, yaxis, zaxis, ix, iy, **kwargs):
         figax.fill(xlist, ylist, **kwargs)
     return
 
+def getCirclePts(inputorigin, inputnormal, R, Npts=10):
+    origin = np.array(inputorigin)
+    # Normalize
+    normal = np.array(inputnormal)/np.linalg.norm(np.array(inputnormal))
+    # Get the rhat vector
+    v     = np.array([1,1,1])   # Arbitrary point
+    dist  = np.dot(v, normal)
+    dr    = v - dist*normal
+    rhat  = dr/np.linalg.norm(dr)
+    # Get the dtheta vector
+    theta = 2.0*np.pi/Npts
+    #ds    = 2.0*R*np.sin(theta/2)
+    ds    = R*np.tan(theta)
+    ptlist = [origin+rhat*R]
+    for i in range(Npts):
+        rhat  = ptlist[-1]-origin
+        rhat  = rhat/np.linalg.norm(rhat)
+        thhat = np.cross(rhat, normal)
+        newpt = ptlist[-1]+ds*thhat
+        newrhat = newpt - origin
+        newrhat = newrhat/np.linalg.norm(newrhat)
+        newpt   = origin + R*newrhat
+        ptlist.append(newpt)
+    return ptlist
+
+def plotPtList(figax, ptlist, ix, iy, **kwargs):
+    xlist = [p[ix] for p in ptlist]
+    ylist = [p[iy] for p in ptlist]
+    figax.fill(xlist, ylist, **kwargs)    
+    return
+
+def plotCylinderSurface(figax, circle1, circle2, ix, iy, **kwargs):
+    Nsegs = len(circle1)
+    if (len(circle2) != Nsegs):
+        print("Circles have different edge counts!  Can't plot")
+        return
+    for i in range(Nsegs):
+        ip1 = i+1 if i<Nsegs-1 else 0
+        ptlist = [circle1[i], circle1[ip1], circle2[ip1], circle2[i]]
+        plotPtList(figax, ptlist, ix, iy, **kwargs)
+    return
+
+def plotCylinder(figax, startpt, endpt, R1, R2, ix, iy, Npts=20, **kwargs):
+    normal = np.array(endpt)-np.array(startpt)
+    startR2 = getCirclePts(startpt, normal, R2, Npts=Npts)
+    endR2   = getCirclePts(endpt, normal, R2, Npts=Npts)
+    plotPtList(figax, startR2, ix, iy, **kwargs)
+    plotPtList(figax, endR2,   ix, iy, **kwargs)
+    plotCylinderSurface(figax, startR2, endR2, ix, iy, **kwargs)
+    if R1 is not None:
+        print("Cannot plot the inner radius of cylinders")
+    return
+
 def rotatepoint(pt, orig, theta):
     """
     Rotates a point pt about origin orig
@@ -303,7 +356,10 @@ def plotDomain(self, ax=None):
                         color   = levelcolors[ilevel]
                     else:
                         color   = levelcolors[0]
-                    print("cylinder geometry refinement plotting not supported")
+                    #print("cylinder geometry refinement plotting not supported")
+                    print("plotting cylinder")
+                    plotCylinder(ax, cylstart, cylend, innerR, outerR, ix, iy,
+                                 facecolor=color)
 
         # Add a legend with the level labels
         legend_el = []
