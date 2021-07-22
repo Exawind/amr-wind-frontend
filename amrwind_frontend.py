@@ -1109,7 +1109,7 @@ class MyApp(tkyg.App, object):
 
     def turbinemodels_applyturbinemodel(self, inputdict, use_turbine_type, 
                                         windowinputs=None, docopy=False,
-                                        updatefast=False):
+                                        updatefast=False, window=None):
         if len(use_turbine_type)==0: 
             return  # No turbine type selected, return
         # Get the turbine model
@@ -1344,53 +1344,72 @@ class MyApp(tkyg.App, object):
         return 
 
     # ---- submit script stuff ----
-    def submitscript_makescript(self, submitscript_inputfile, window=None):
+    def submitscript_makescript(self, submitscript_inputfile, 
+                                window=None):
         submitparams   = self.popup_storteddata['submitscript']
         scripttemplate = self.inputvars['submitscript_template'].getval()
         scripttemplate = scripttemplate[scripttemplate.find('#'):]
 
-        #submitscript_inputfile = self.savefile
-        submitscript   = scripttemplate.replace('submitscript_inputfile', 
-                                                submitscript_inputfile.strip())
+        # Replace the input file with the input filename
+        replacevar     = submitparams['submitscript_replaceinputfilestring']
+        submitscript   = scripttemplate.replace(replacevar, submitscript_inputfile.strip())
 
-        # get the list of variables to replace
-        for key, item in window.temp_inputvars.items():
-            if 'replacevar' in item.outputdef:
-                replacevar   = item.outputdef['replacevar']
-                replaceval   = item.getval()
-                if replaceval is not None and (len(str(replaceval))>0):
-                    replacestr = str(replaceval).strip()
-                    submitscript = submitscript.replace(replacevar, replacestr)
-        return submitscript
-
-    def submitscript_previewscript(self, window=None):
-        self.saveAMRWindInputGUI()
-        submitscript = self.submitscript_makescript(self.savefile, 
-                                                    window=window)
-        if submitscript is None:
-            print("Error in submit script")
-            return
-        #formattedscript = copy.copy(submitscript).decode('string_escape')
+        if window is None:
+            inputvars = self.yamldict['popupwindow']['submitscript']['inputwidgets']
+            for inputitem in inputvars:
+                if ('outputdef' in inputitem):
+                    if 'replacevar' in inputitem['outputdef']:
+                        replacevar = inputitem['outputdef']['replacevar']
+                        name       = inputitem['name']
+                        if (name in submitparams):
+                            replacestr = str(submitparams[name]).strip()
+                            if replacestr != 'None':
+                                submitscript = submitscript.replace(replacevar, 
+                                                                    replacestr)
+        else:
+            # get the list of variables to replace
+            for key, item in window.temp_inputvars.items():
+                if 'replacevar' in item.outputdef:
+                    replacevar   = item.outputdef['replacevar']
+                    replaceval   = item.getval()
+                    if (replaceval is not None) and \
+                       (str(replaceval) != 'None') and \
+                       (len(str(replaceval))>0):
+                        replacestr = str(replaceval).strip()
+                        submitscript = submitscript.replace(replacevar, 
+                                                            replacestr)
         if sys.version_info[0] < 3:
            formattedscript = submitscript.decode('string_escape')
         else:
            formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
-        # Show the script in a message window
-        tkyg.messagewindow(self,formattedscript, height=20, autowidth=True)
-        return
+        #return submitscript
+        return formattedscript
 
-    def submitscript_savescript(self, window=None):
-        self.saveAMRWindInputGUI()
+
+    def submitscript_previewscript(self, window=None):
+        # Save the file first
+        if len(self.savefile)==0: self.saveAMRWindInputGUI()
         submitscript = self.submitscript_makescript(self.savefile, 
                                                     window=window)
         if submitscript is None:
             print("Error in submit script")
             return
         formattedscript = copy.copy(submitscript)
-        if sys.version_info[0] < 3:
-            formattedscript = submitscript.decode('string_escape')
-        else:
-            formattedscript = bytes(submitscript, "utf-8").decode("unicode_escape")
+
+        # Show the script in a message window
+        tkyg.messagewindow(self,formattedscript, height=20, autowidth=True, 
+                           title='Preview submit script')
+        return
+
+    def submitscript_savescript(self, window=None, submit=False, guimesg=False):
+        if len(self.savefile)==0: self.saveAMRWindInputGUI()
+        submitscript = self.submitscript_makescript(self.savefile, 
+                                                    window=window)
+        if submitscript is None:
+            print("Error in submit script")
+            return
+        formattedscript = copy.copy(submitscript)
+
         # Save the script
         submitparams   = self.popup_storteddata['submitscript']
         filename       = submitparams['submitscript_filename']
@@ -1399,6 +1418,31 @@ class MyApp(tkyg.App, object):
             f.write(formattedscript)
             f.close()
             print("Saved "+filename)
+        else:
+            errormesg="ERROR: Need to specify submission script filename. "
+            print(errormesg)
+            if guimesg:
+                tkyg.messagewindow(self, errormesg, autowidth=True, 
+                                   title='ERROR')    
+            return
+
+        # Submit the job if asked
+        if submit:
+            exestring = submitparams['submitscript_submitcmd']
+            exestring += " "+filename
+            print("Executing: "+exestring)
+            try:
+                joboutput = subprocess.check_output([exestring],
+                                                    stderr=subprocess.STDOUT, 
+                                                    shell=True)
+                title='JOB SUBMITTED'
+            except subprocess.CalledProcessError as e:
+                joboutput = '%s'%(e.output)
+                title='ERROR'
+            print(joboutput)
+            if guimesg:
+                tkyg.messagewindow(self, str(joboutput.strip()), autowidth=True,
+                                   title='ERROR')    
         return
 
 if __name__ == "__main__":
