@@ -331,7 +331,7 @@ inputwidgets:
     defaultval: 100.0
     outputdef:
       AMR-Wind: time.stop_time
-      help:     Max (simulated) time to evolve
+      help:     Max (simulated) time to evolve [s]
 
   - name:       max_step
     label:      Max steps
@@ -2490,7 +2490,7 @@ popupwindow:
     datakeyname:  Actuator_name      # optional
     loadonstart:  False              # optional
     width:        500                # optional
-    height:       625                # optional
+    height:       660                # optional
     frames:
     - name:       turbinename_frame
 #      title:      Expert options
@@ -2536,6 +2536,10 @@ popupwindow:
         AMR-Wind: type
     - <<: *PREDEFINED_OPENFAST_INPUT_FILE
       frame:      turbine_frame
+
+    - name:       spacer
+      frame:      turbine_frame
+      labelonly:  True
     - name:       Actuator_base_position
       label:      Base position (x,y,z)
       inputtype:  [float, float, float]
