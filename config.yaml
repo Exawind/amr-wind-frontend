@@ -1736,6 +1736,7 @@ inputwidgets:
   - <<: *PREDEFINED_EPSILON
     name:       Actuator_UniformCtDisk_epsilon
     frame:      frame_uniformctglobals
+    inputtype:  float
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.epsilon
   - <<: *PREDEFINED_OUTPUT_FREQUENCY
