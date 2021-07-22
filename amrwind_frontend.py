@@ -1442,7 +1442,7 @@ class MyApp(tkyg.App, object):
             print(joboutput)
             if guimesg:
                 tkyg.messagewindow(self, str(joboutput.strip()), autowidth=True,
-                                   title='ERROR')    
+                                   title=title)    
         return
 
 if __name__ == "__main__":

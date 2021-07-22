@@ -2400,12 +2400,32 @@ popupwindow:
         AMR-Wind: level
     - name:       tagging_geom_type
       label:      Geometry type
-      inputtype:  str
+      inputtype:  listbox #str
       optionlist: [cylinder, box]
       defaultval: 
       frame:      geom_frame
       outputdef:
         AMR-Wind: type
+      listboxopt:
+        height:   2
+        width:    12
+      ctrlelem:
+        - input:  tagging_geom_origin
+          activewhen: ['box', 1]
+        - input:  tagging_geom_xaxis
+          activewhen: ['box', 1]
+        - input:  tagging_geom_yaxis
+          activewhen: ['box', 1]
+        - input:  tagging_geom_zaxis
+          activewhen: ['box', 1]
+        - input:  tagging_geom_start
+          activewhen: ['cylinder', 1]
+        - input:  tagging_geom_end
+          activewhen: ['cylinder', 1]
+        - input:  tagging_geom_inner_radius
+          activewhen: ['cylinder', 1]
+        - input:  tagging_geom_outer_radius
+          activewhen: ['cylinder', 1]
     - name:       tagging_geom_origin
       label:      Box corner
       inputtype:  [float, float, float]
@@ -2462,6 +2482,7 @@ popupwindow:
       frame:      geom_frame
       outputdef:
         AMR-Wind: inner_radius
+        help:     Inner radius of cylinder (optional)
 
 # === Turbine window ===
   turbine:
@@ -2815,16 +2836,17 @@ helpwindows:
       title: Help
   domain: 
     mesg: |
-      Add domain help here.
-      This is a schematic of the domain
-       y
-       |
-       |__________________________corner2
-       |                          |
-       |                          |
-       |__________________________|----> x 
-       corner1
+      Domain orientation and configuration
+
+      This is an ASCII-art schematic of the domain
+         y
+         |
+         |__________________________corner2
+         |                          |
+         |                          |
+         |__________________________|----> x 
+      corner1
     options:
-      autowidth: False
+      autowidth: True
       height:    10
       title:     Domain help      
