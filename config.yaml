@@ -277,7 +277,7 @@ predefinedlists:
       AMR-Wind: density
   yaw: &PREDEFINED_YAW
     name:       yaw
-    label:      Nacelle Yaw
+    label:      Nacelle yaw
     #frame:      frame_turbinefastlineglobals
     inputtype:  float
     defaultval: 
@@ -1720,6 +1720,14 @@ inputwidgets:
     frame:      frame_uniformctglobals
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.rotor_diameter
+  - name:       Actuator_UniformCtDisk_base_position
+    label:      Base position (x,y,z)
+    inputtype:  [float, float, float]
+    defaultval: 
+    frame:    frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.base_position
+      help:     Where the bottom of the tower sits
   - <<: *PREDEFINED_HUB_HEIGHT
     name:       Actuator_UniformCtDisk_hub_height
     frame:      frame_uniformctglobals
@@ -1732,6 +1740,7 @@ inputwidgets:
       AMR-Wind: Actuator.UniformCtDisk.epsilon
   - <<: *PREDEFINED_OUTPUT_FREQUENCY
     name:       Actuator_UniformCtDisk_output_frequency
+    label:      Output frequency
     frame:      frame_uniformctglobals
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.output_frequency
@@ -1740,6 +1749,67 @@ inputwidgets:
     frame:      frame_uniformctglobals
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.density
+  - <<: *PREDEFINED_YAW
+    name:       Actuator_UniformCtDisk_yaw
+    frame:      frame_uniformctglobals
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.yaw
+  - name:       sample_yaw
+    label:      Sample yaw
+    frame:      frame_uniformctglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.sample_yaw
+      help:     Turbine sampling yaw direction [deg]
+  - name:       diameters_to_sample
+    label:      Sample distance
+    frame:      frame_uniformctglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.diameters_to_sample
+      help:     Number of rotor diameters to sample upstream for velocity
+  - name:       num_force_points
+    label:      Num force points
+    frame:      frame_uniformctglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.num_force_points
+      help:     Number of radial force points to apply disk loading
+  - name:       num_vel_points_r
+    label:      Num vel r pts sample
+    frame:      frame_uniformctglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_r
+      help:     Number of radial force points to sample for velocity
+  - name:       num_vel_points_t
+    label:      Num vel theta pts sample
+    frame:      frame_uniformctglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
+      help:     Number of theta force points to sample for velocity
+  - name:       num_vel_points_t
+    label:      Num vel theta pts sample
+    frame:      frame_uniformctglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
+      help:     Number of theta force points to sample for velocity
+  - name:       thrust_coeff
+    label:      Thrust coefficient
+    frame:      frame_uniformctglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.thrust_coeff
+      help:     Constant thrust coefficient
 
   # ------------ Submission script template -------------
 
