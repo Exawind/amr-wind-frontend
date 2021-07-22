@@ -334,7 +334,7 @@ def plotDomain(self, ax=None):
                                       alpha=0.90)
             # Plot the Geometry Refinements
             if pdict['tagging_type'][0]=='GeometryRefinement':
-                if pdict['tagging_geom_type']=='box':
+                if pdict['tagging_geom_type'][0]=='box':
                     origin = pdict['tagging_geom_origin']
                     xaxis  = pdict['tagging_geom_xaxis']
                     yaxis  = pdict['tagging_geom_yaxis']
@@ -346,7 +346,7 @@ def plotDomain(self, ax=None):
                         color   = levelcolors[0]
                     plot3DBox(ax, origin, xaxis, yaxis, zaxis, ix, iy,
                               lw=0.4, facecolor=color, alpha=0.90)
-                if pdict['tagging_geom_type']=='cylinder':
+                if pdict['tagging_geom_type'][0]=='cylinder':
                     cylstart  = pdict['tagging_geom_start']
                     cylend    = pdict['tagging_geom_end']
                     outerR    = pdict['tagging_geom_outer_radius']
