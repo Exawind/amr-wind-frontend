@@ -282,7 +282,7 @@ class MyApp(tkyg.App, object):
 
     def dumpAMRWindInputGUI(self):
         tkyg.messagewindow(self, self.writeAMRWindInput(''), 
-                           height=40)
+                           height=40, title='Preview Input File')
         return
 
     def showyamlmesg(self, helpkey, category='helpwindows'):
@@ -537,7 +537,13 @@ class MyApp(tkyg.App, object):
 
         #print(samplingdict)
         return actuatordict, extradict
-        
+
+    def setInternalVars(self):
+        if self.inputvars['fixed_dt'].getval() > 0.0:
+            self.inputvars['time_control'].setval(['const dt'])
+        else:
+            self.inputvars['time_control'].setval(['max cfl'])            
+
     def loadAMRWindInput(self, filename, string=False, printunused=False):
         if string:
             amrdict=self.AMRWindStringToDict(filename)
@@ -566,6 +572,9 @@ class MyApp(tkyg.App, object):
             print("# -- Unused variables: -- ")
             for key, data in extradict.items():
                 print("%-40s= %s"%(key, data))
+
+        # Set the internal variables
+        self.setInternalVars()
 
         # link any widgets necessary
         for key,  inputvar in self.inputvars.items():
@@ -618,7 +627,9 @@ class MyApp(tkyg.App, object):
         runmenu = Tk.Menu(menubar, tearoff=0)
         runmenu.add_command(label="Check Inputs", 
                             command=self.validateGUI)
-        runmenu.add_command(label="Local run", 
+        runmenu.add_command(label="Preview Input File", 
+                            command=self.dumpAMRWindInputGUI)
+        runmenu.add_command(label="Local Run", 
                              command=partial(self.launchpopupwin, 
                                              'localrun', savebutton=False))
         runmenu.add_command(label="Job Submission", 

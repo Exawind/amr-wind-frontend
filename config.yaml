@@ -10,6 +10,10 @@ tabs:
 
 frames:
   # ==== Simulation frames ==== 
+  - name:  frame_simulation
+    tab:   Simulation
+    row:   1
+    title: Simulation type
   - name:  frame_time
     tab:   Simulation
     row:   2
@@ -341,22 +345,42 @@ inputwidgets:
     outputdef:
       AMR-Wind: time.max_step
 
+  - name:       spacer
+    frame:      frame_time
+    labelonly:  True
+
+  - name:       time_control
+    label:      March with
+    frame:      frame_time
+    inputtype:  listbox
+    optionlist: ['const dt', 'max cfl']
+    defaultval: 'const dt'
+    listboxopt:
+      width:    12
+      height:   2
+    ctrlelem:
+      - input:  fixed_dt
+        activewhen: ['const dt', 1]
+      - input:  cfl
+        activewhen: ['max cfl', 1]
+
   - name:       fixed_dt
     label:      dt
     frame:      frame_time
     inputtype:  float
-    defaultval: 0.25
+    defaultval: -1 #0.25
     outputdef:
       AMR-Wind: time.fixed_dt
       help:     Fixed timestep size (in seconds). If negative, then time.cfl is used
 
   - name:       cfl
-    label:      CFL
+    label:      Max CFL
     frame:      frame_time
     inputtype:  float
-    defaultval: 0.95
+    defaultval: 0.50
     outputdef:
       AMR-Wind: time.cfl
+      help:     Limit timesteps to maximum CFL 
 
   - name:       checkpoint_interval
     label:      Checkpoint interval
@@ -367,8 +391,10 @@ inputwidgets:
       AMR-Wind: time.checkpoint_interval
 
   - name:       physics
-    label:      Simulation type
-    tab:        Simulation
+    #label:      Simulation type
+    #tab:        Simulation
+    label:      Physics models
+    frame:      frame_simulation
     row:        1
     inputtype:  listbox
     optionlist: [FreeStream, ABL, RayleighTaylor, BoussinesqBubble, TaylorGreenVortex, Actuator]
@@ -1869,16 +1895,6 @@ buttons:
     col:     2
     command: self.ABL_calculateWDirWS
 
-  - name: reloadconfig
-    text: reload yaml
-    tab:  Expert
-    command: "self.reloadconfig"
-
-  - name: pullvars
-    text: pull vars
-    tab:  Expert
-    command: "partial(pullvals, self.inputvars, statuslabel=self.statusbar)"
-
   - name: writeInput
     text: dump input file
     tab:  Expert
@@ -1972,7 +1988,7 @@ buttons:
     help:     "Need help?"
     row:      0
     col:      3
-    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    command:  "partial(self.showyamlmesg, 'domainbchelp')"
     buttonoptions:
       pady:   0
       padx:   1
@@ -1984,7 +2000,7 @@ buttons:
     help:     "Need help?"
     row:      0
     col:      3
-    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    command:  "partial(self.showyamlmesg, 'domainbchelp')"
     buttonoptions:
       pady:   0
       padx:   1
@@ -1996,7 +2012,7 @@ buttons:
     help:     "Need help?"
     row:      0
     col:      3
-    command:  "partial(self.showyamlmesg, 'gotnothing')"
+    command:  "partial(self.showyamlmesg, 'domainbchelp')"
     buttonoptions:
       pady:   0
       padx:   1
@@ -2009,7 +2025,7 @@ popupwindow:
     title:        Plot domain     # optional
     loadonstart:  True            # optional
     width:        350
-    height:       280
+    height:       320
     inputwidgets:
       - name:       plot_chooseview
         label:      "Choose plot view"
@@ -2020,6 +2036,11 @@ popupwindow:
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
+      - name:       spacer1
+        labelonly:  True
+      - name:       spacer2
+        label:      Click on objects below to include in plot
+        labelonly:  True
       - name:       plot_sampleprobes
         label:      Plot sample probes
         inputtype:  listbox
@@ -2840,17 +2861,67 @@ helpwindows:
       title: Help
   domain: 
     mesg: |
-      Domain orientation and configuration
+      DOMAIN ORIENTATION AND CONFIGURATION
 
-      This is an ASCII-art schematic of the domain
+      Orientation 
+      ----------------
+      This is an ASCII-art schematic of the domain:        
          y
          |
-         |__________________________corner2
+         |__________________________corner2 (x,y,z)
          |                          |
          |                          |
          |__________________________|----> x 
-      corner1
+      corner1 (x,y,z)
+
+      Boundary names
+      ----------------
+
+      The boundaries of the domain are called 
+      xlo, xhi, ylo, yhi, zlo, zhi:
+
+          y
+          |
+          |________YHI________________
+          |                          |
+      XLO |                          |XHI
+          |__________________________|----> x 
+                   YLO
     options:
       autowidth: True
-      height:    10
+      height:    30
       title:     Domain help      
+  # -----------------------------------------------------
+  domainbchelp: 
+    mesg: |
+      Boundary names
+      ----------------
+
+      The boundaries of the domain are called     
+      xlo, xhi, ylo, yhi, zlo, zhi:
+
+          y
+          |
+          |________YHI________________
+          |                          |
+      XLO |                          |XHI
+          |__________________________|----> x 
+                   YLO
+
+      BC types
+      ----------------
+      [WRITE SOMETHING IN HERE]
+      pressure_inflow
+      pressure_outflow
+      mass_inflow
+      zero_gradient
+      no_slip_wall
+      slip_wall
+      wall_model
+      fixed_gradient
+    
+
+    options:
+      autowidth: True
+      height: 30
+      title: Domain BC Help
