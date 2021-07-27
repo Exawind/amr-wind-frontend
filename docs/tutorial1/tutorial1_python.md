@@ -1,7 +1,7 @@
 # Tutorial 1: Setting up a turbine run
 ## Using python interface of `amrwind_frontend`
 
-This tutorial shows how the python interface to `amrwind_frontend` can be used to used to accomplish the same actions as the GUI interface demonstrated in [runturbine](runturbine.md).
+This tutorial shows how the python interface to `amrwind_frontend` can be used to used to accomplish the same actions as the GUI interface demonstrated in [tutorial1](tutorial1.md).
 
 For the jupyter notebook version of this tutorial, see [tutorial1_python.ipynb](tutorial1_python.ipynb).  In fact, this markdown was created using the command
 ```bash
