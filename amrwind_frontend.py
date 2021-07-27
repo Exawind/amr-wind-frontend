@@ -889,13 +889,18 @@ class MyApp(tkyg.App, object):
             self.abl_profiledata = prof.allvardata.copy()
         return
 
-    def ABLpostpro_printreport(self):
-        avgt         = self.inputvars['ablstats_avgt'].getval()
-        ablstats_avgz= self.inputvars['ablstats_avgz'].getval()
+    def ABLpostpro_printreport(self, avgt=None, avgz=None):
+        if avgt is None:
+            avgt         = self.inputvars['ablstats_avgt'].getval()
+        if avgz is None:
+            ablstats_avgz= self.inputvars['ablstats_avgz'].getval()
+        else:
+            ablstats_avgz= avgz
         if (ablstats_avgz is None) or (ablstats_avgz=='None') or (ablstats_avgz==''): 
             print('Error ablstats_avgz=%s is not valid.'%ablstats_avgz)
             return
-        avgz         = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
+        if isinstance(ablstats_avgz, str):
+            avgz  = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
         report = postpro.printReport(self.abl_stats, avgz, avgt, verbose=True)
         return
 
