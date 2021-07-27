@@ -1,0 +1,84 @@
+# --- Simulation time control parameters ---
+time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
+time.max_step                            = -1                  
+time.fixed_dt                            = 0.1                 # Fixed timestep size (in seconds). If negative, then time.cfl is used
+time.cfl                                 = 0.95                
+incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
+incflo.verbose                           = 0                   
+io.check_file                            = chk                 
+incflo.use_godunov                       = true                
+incflo.godunov_type                      = ppm                 
+turbulence.model                         = Laminar             
+incflo.gravity                           = 0.0 0.0 -9.81       # Gravitational acceleration vector (x,y,z) [m/s^2]
+incflo.density                           = 1.0                 # Fluid density [kg/m^3]
+transport.viscosity                      = 1.872e-05           # Fluid dynamic viscosity [kg/m-s]
+transport.laminar_prandtl                = 0.7                 # Laminar prandtl number
+transport.turbulent_prandtl              = 0.3333              # Turbulent prandtl number
+ConstValue.density.value                 = 1.0                 
+ConstValue.velocity.value                = 10.0 0.0 0.0        
+
+# --- Geometry and Mesh ---
+geometry.prob_lo                         = -1000.0 -500.0 -500.0
+geometry.prob_hi                         = 1000.0 500.0 500.0  
+amr.n_cell                               = 128 64 64           # Number of cells in x, y, and z directions
+amr.max_level                            = 1                   
+geometry.is_periodic                     = 0 1 1               
+xlo.type                                 = mass_inflow         
+xlo.density                              = 1.0                 
+xlo.velocity                             = 10.0 0.0 0.0        
+xhi.type                                 = pressure_outflow    
+
+# --- ABL parameters ---
+ICNS.source_terms                        =    ActuatorForcing  
+incflo.velocity                          = 10.0 0.0 0.0        
+ABLForcing.abl_forcing_height            = 0.0                 
+time.plot_interval                       = 1000                
+io.plot_file                             = plt                 
+io.KE_int                                = -1                  
+incflo.post_processing                   = sampling            
+
+# --- Sampling parameters ---
+sampling.output_frequency                = 100                 
+sampling.fields                          = velocity            
+
+#---- sample defs ----
+sampling.labels                          = xyplane             
+sampling.xyplane.type                    = PlaneSampler        
+sampling.xyplane.num_points              = 101 51              
+sampling.xyplane.origin                  = -1000.0 -500.0 0.0  
+sampling.xyplane.axis1                   = 2000.0 0.0 0.0      
+sampling.xyplane.axis2                   = 0.0 1000.0 0.0      
+sampling.xyplane.normal                  = 0.0 0.0 0.0         
+
+#---- tagging defs ----
+tagging.labels                           = box1                
+tagging.box1.type                        = GeometryRefinement  
+tagging.box1.shapes                      = box1                
+tagging.box1.level                       = 0                   
+tagging.box1.box1.type                   = box                 
+tagging.box1.box1.origin                 = -200.0 -200.0 -200.0
+tagging.box1.box1.xaxis                  = 400.0 0.0 0.0       
+tagging.box1.box1.yaxis                  = 0.0 400.0 0.0       
+tagging.box1.box1.zaxis                  = 0.0 0.0 400.0       
+
+#---- actuator defs ----
+Actuator.labels                          = turbine0            
+Actuator.turbine0.type                   = TurbineFastDisk     
+Actuator.turbine0.openfast_input_file    = turbine0_OpenFAST_NREL5MW/nrel5mw_noservo.fst
+Actuator.turbine0.base_position          = 0.0 0.0 -90.0       
+Actuator.turbine0.rotor_diameter         = 126.0               
+Actuator.turbine0.hub_height             = 90.0                
+Actuator.turbine0.num_points_blade       = 64                  
+Actuator.turbine0.num_points_tower       = 12                  
+Actuator.turbine0.epsilon                = 10.0 10.0 10.0      
+Actuator.turbine0.epsilon_tower          = 5.0 5.0 5.0         
+Actuator.turbine0.openfast_start_time    = 0.0                 
+Actuator.turbine0.openfast_stop_time     = 1000.0              
+Actuator.turbine0.nacelle_drag_coeff     = 0.0                 
+Actuator.turbine0.nacelle_area           = 0.0                 
+Actuator.turbine0.yaw                    = 270.0               
+Actuator.turbine0.output_frequency       = 10                  
+Actuator.turbine0.density                = 1.0                 
+
+#---- extra params ----
+#== END AMR-WIND INPUT ==
