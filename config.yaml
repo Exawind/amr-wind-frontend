@@ -1213,6 +1213,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABL.surface_temp_rate
 
+  - name:       surface_temp_flux
+    label:      surf temp flux
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.surface_temp_flux
+      help:     Surface temperature flux [K-m/s]
+
   - name:       latitude
     label:      Latitude
     frame:      frame_Coriolis
