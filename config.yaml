@@ -1874,8 +1874,8 @@ inputwidgets:
       AMR-Wind: Actuator.UniformCtDisk.thrust_coeff
       help:     Constant thrust coefficient
 
+  # =========== Local preferences here =================
   # ------------ Submission script template -------------
-
   - name:       submitscript_template
     label:      Submit script template
     tab:        Expert
@@ -1896,6 +1896,12 @@ inputwidgets:
 
       mpirun -np submitscript_numnodes submitscript_exe 
 
+  - name:       preferences_turbinedir
+    label:      Turbine template directory
+    tab:        Expert
+    visible:    False
+    inputtype:  str
+    defaultval: turbines
 
 
   # # =========== Junk stuff here ========================

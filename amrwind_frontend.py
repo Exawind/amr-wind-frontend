@@ -1122,8 +1122,9 @@ class MyApp(tkyg.App, object):
                 pass
         return 
 
-    def turbinemodels_populate(self, deleteprevious=False):
-        turbinedir = 'turbines'
+    def turbinemodels_populate(self, deleteprevious=False, turbinedir=None):
+        if turbinedir is None:
+            turbinedir = self.inputvars['preferences_turbinedir'].getval()
         # Check if we need to prepend any paths
         if turbinedir.startswith('/'):
             loadpath = turbinedir
