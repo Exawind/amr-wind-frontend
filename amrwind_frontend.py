@@ -19,6 +19,17 @@ else:
     import tkinter as Tk
     from tkinter import filedialog as filedialog
 
+# Try the loading the Xvfb package
+import platform
+hasxvfb=False
+if platform.system()=='Linux':
+    try:
+        from xvfbwrapper import Xvfb
+        hasxvfb=True
+    except:
+        hasxvfb=False
+        
+    
 import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
@@ -113,6 +124,9 @@ class MyApp(tkyg.App, object):
         if 'localconfigdir' in kwargs:
             localconfigdir=kwargs['localconfigdir']
             del kwargs['localconfigdir']
+        if hasxvfb:
+            vdisplay = Xvfb()
+            vdisplay.start()
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
                    localconfigdir=localconfigdir,
                    withdraw=True, **kwargs)
