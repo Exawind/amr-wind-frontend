@@ -1222,6 +1222,33 @@ inputwidgets:
       AMR-Wind: ABL.surface_temp_flux
       help:     Surface temperature flux [K-m/s]
 
+  - name:       mo_beta_m
+    label:      M.O. beta_m
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.mo_beta_m 
+      help:     Monin-Obukhov Beta m parameter
+
+  - name:       mo_gamma_m
+    label:      M.O. gamma_m
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.mo_gamma_m 
+      help:     Monin-Obukhov Gamma m parameter
+
+  - name:       mo_gamma_h
+    label:      M.O. gamma_h
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.mo_gamma_h
+      help:     Monin-Obukhov Gamma h parameter
+
   - name:       latitude
     label:      Latitude
     frame:      frame_Coriolis
