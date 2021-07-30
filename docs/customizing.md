@@ -176,7 +176,7 @@ inputwidgets:
 ```
 
 Note that there's now a `submitscript_project` and a
-`submitscript_ncpu` keywords that have been added.  These can be added
+`submitscript_ncpu` keyword that have been added.  These can be added
 to the form by having this yaml file included in the `local`
 subdirectory.
 
@@ -197,3 +197,9 @@ popupwindow:
         outputdef:
           replacevar: submitscript_ncpu
 ```
+
+Now when the job submission form is pulled up, the two new fields can
+be seen:  
+
+![](images/jobsubmission_customized.png)
+
