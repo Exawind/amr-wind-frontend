@@ -38,10 +38,11 @@ $ ./amrwind_frontend.py
 
 This is what it should look like:
 
-![screenshot](docs/amrwind_frontend_splash.png)
+![screenshot](docs/tutorial1/images/amrwind_frontend_startup.png)
 
-## User guide
+## Documentation
 
-See the [user guide](docs/README.md) for details on how to use
-`amrwind-frontend`.
+See the [documentation](docs/README.md) for details on how to install,
+configure, and use `amrwind-frontend`.  There are also tutorial and
+example cases to explain how to set up and run AMR-Wind cases.
 
