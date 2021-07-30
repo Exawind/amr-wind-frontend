@@ -71,10 +71,87 @@ popupwindow:
         defaultval: "module load cde/prod/gcc/7.2.0/openmpi/3.1.6 cde/prod/gcc/7.2.0/hdf5 cde/prod/gcc/7.2.0/netcdf-c/4.7.3"
 ```
 
+## Customizing the submission script
+
+The submission script process can also be customized using the
+approprate yaml entries in `local` preferences folder.  By default,
+the `amrwind-frontend` contains a very basic LSF script which looks
+like this:
+
+```bash
+#!/bin/bash
+# Begin LSF Directives
+#BSUB -W submitscript_runtime
+#BSUB -n submitscript_numnodes
+#BSUB -J submitscript_jobname
+#BSUB -o %J.out
+#BSUB -e %J.err
+
+submitscript_modules 
+
+mpirun -np submitscript_numnodes submitscript_exe submitscript_inputfile
+```
+
+This is connected to the submission script window that appears when
+you select **"Run -> Job submission"** from the menu bar:  
+
+![](tutorial1/images/submitscript_basic_filledout.png)
+
+The entries in the fields above get inserted into the submission
+script template and saved into a new submission.  
+
+### How it works
+
+Note that there are certain keywords like `submitscript_runtime`,
+`submitscript_numnodes`, `submitscript_jobname`, etc., in the template
+script above.  Those are placeholders for values which will come from
+the inputfields.  All of the input fields are defined in the
+`submitscript` section of the `popupwindow` definitions in
+[`config.yaml`](../config.yaml).
+
+For instance, the `submitscript_runtime` input is defined by this widget:
+```yaml
+popupwindow:
+  submitscript:
+    inputwidgets:
+      - name:       submitscript_runtime   # Internal name to amrwind-frontend
+        label:      "Run time (HH:MM:SS)"  # Description next to input field
+        inputtype:  str
+        defaultval: "1:00:00"              # Default value
+        outputdef:
+          replacevar: submitscript_runtime # Keyword that's replaced in template script
+```
+
+The structure of this yaml input is governed by the specifics of the
+[TK yaml](https://github.com/lawrenceccheung/tkyamlgui) library, but
+the important things to note are:
+
+- The `defaultval` field is the default value that shows up in the
+  input form.  You can change this to anything you'd like
+  
+- The `replacevar` parameter under `outputdef` controls what keyword
+  is replaced in the template script.  You can change this to match
+  anything in the script.
+
+For instance, if you wanted to change the default run time for all
+scripts to `24:00:00`, create a yaml file in the `local` directory
+with the following:
+
+```yaml
+popupwindow:
+  submitscript:
+    inputwidgets:
+      - name:       submitscript_runtime   # Internal name to amrwind-frontend
+        defaultval: "24:00:00"             # Default value now 24hrs
+```
+
+and `defaultval` will get updated (all other parameters will remain
+unchanged.)
+
 ### Setting the submission script template
 
-Similarly, the default submission script is a somewhat basic LSF
-script. This can be customized for specific platforms via the
+Obviously the default submission script listed above is insufficient
+for many platforms.  We can customize it for specific uses via the
 `submitscript_template` variable:
 
 ```yaml
@@ -85,16 +162,38 @@ inputwidgets:
     defaultval: |
       #!/bin/bash
       # Begin LSF Directives
-      #BSUB -P ABC123
-      #BSUB -W 3:00
-      #BSUB -nnodes 2048
+      #BSUB -P submitscript_project
+      #BSUB -W submitscript_runtime
+      #BSUB -nnodes submitscript_numnodes
       #BSUB -alloc_flags gpumps
-      #BSUB -J RunSim123
-      #BSUB -o RunSim123.%J
-      #BSUB -e RunSim123.%J
-      cd $MEMBERWORK/abc123
-      cp $PROJWORK/abc123/RunData/Input.123 ./Input.123
-      date
-      jsrun -n 4092 -r 2 -a 12 -g 3 ./a.out
-      cp my_output_file /ccs/proj/abc123/Output.123
+      #BSUB -J submitscript_jobname
+      #BSUB -o submitscript_jobname.%J
+      #BSUB -e submitscript_jobname.%J
+
+      submitscript_modules 
+
+      jsrun -n submitscript_ncpu submitscript_exe submitscript_inputfile
+```
+
+Note that there's now a `submitscript_project` and a
+`submitscript_ncpu` keywords that have been added.  These can be added
+to the form by having this yaml file included in the `local`
+subdirectory.
+
+```yaml
+popupwindow:
+  submitscript:
+    inputwidgets:
+      - name:       submitscript_project
+        label:      Project name
+        inputtype:  str
+        defaultval: MYPROJECT
+        outputdef:
+          replacevar: submitscript_project
+      - name:       submitscript_ncpu
+        label:      Total number of cpu's
+        inputtype:  int
+        defaultval: 16
+        outputdef:
+          replacevar: submitscript_ncpu
 ```

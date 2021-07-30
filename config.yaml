@@ -1894,7 +1894,7 @@ inputwidgets:
 
       submitscript_modules 
 
-      mpirun -np submitscript_numnodes submitscript_exe 
+      mpirun -np submitscript_numnodes submitscript_exe submitscript_inputfile
 
   - name:       preferences_turbinedir
     label:      Turbine template directory
