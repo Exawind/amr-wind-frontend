@@ -25,7 +25,6 @@
         -   [Plotting the FAST output](#plotting-the-fast-output)
         -   [Plotting the sample plane](#plotting-the-sample-plane)
 
-
 ## Introduction
 
 This tutorial will demonstrate how to set up a simple AMR-Wind case
@@ -453,7 +452,7 @@ Select `xyplane` and press **[Load variables]**
 
 This should load the available variables to plot.  Select `velocityx`
 in the **NetCDF vars** list, and choose `X` and `Y` as **Plot axis 1**
-and **Plot axis 2**, respectively.  (`S` is the automatic option.)
+and **Plot axis 2**, respectively.  (`AUTO` is the automatic option.)
 Under `Set current time`, put `10` (the last data sample).
 
 ![](images/plotsample_loadvars.png)

@@ -1576,15 +1576,15 @@ inputwidgets:
     label:      Plot axis 1
     frame:      frame_postprosampling
     inputtype:  str
-    optionlist: [X, Y, Z, S]
-    defaultval: S
+    optionlist: [X, Y, Z, AUTO]
+    defaultval: AUTO
 
   - name:       samplingprobe_plotaxis2
     label:      Plot axis 2
     frame:      frame_postprosampling
     inputtype:  str
-    optionlist: [X, Y, Z, S]
-    defaultval: S
+    optionlist: [X, Y, Z, AUTO]
+    defaultval: AUTO
 
   - name:       samplingprobe_kindex
     frame:      frame_postprosampling
@@ -2114,7 +2114,7 @@ popupwindow:
     title:        Plot FAST output # optional
     loadonstart:  True             # optional
     width:        350
-    height:       325
+    height:       350
     inputwidgets:
       - name:       plotfastout_files
         label:      FAST Files
