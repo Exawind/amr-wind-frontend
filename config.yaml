@@ -1798,9 +1798,11 @@ inputwidgets:
   - <<: *PREDEFINED_EPSILON
     name:       Actuator_UniformCtDisk_epsilon
     frame:      frame_uniformctglobals
-    inputtype:  float
+    #inputtype:  float
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.epsilon
+    entryopt:
+      varlenlist:  True
   - <<: *PREDEFINED_OUTPUT_FREQUENCY
     name:       Actuator_UniformCtDisk_output_frequency
     label:      Output frequency
@@ -1868,7 +1870,7 @@ inputwidgets:
   - name:       thrust_coeff
     label:      Thrust coefficient
     frame:      frame_uniformctglobals
-    inputtype:  float
+    inputtype:  str
     defaultval: 
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.thrust_coeff
@@ -2565,6 +2567,10 @@ popupwindow:
     - name:       turbine_frame
       title:      Turbine specifications
       row:        4
+    # - name:       uniformCt_frame
+    #   title:      Uniform Ct turbine specifications
+    #   toggled:    True
+    #   row:        5
     inputwidgets:
     - name:       actuator_label
       label:      Add a new turbine   
@@ -2626,6 +2632,8 @@ popupwindow:
     - <<: *PREDEFINED_EPSILON
       name:       Actuator_epsilon
       frame:      turbine_frame
+      entryopt:
+        varlenlist:  True
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
       frame:      turbine_frame
@@ -2666,12 +2674,12 @@ popupwindow:
       - name: saveandupdatefast_files
         text: Save & Update FAST
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
-        row:  5
+        row:  6
         col:  0
       - name: savenoupdatefast_files
         text: Save, w/o FAST update
         command: "self.savevals"
-        row:  5
+        row:  6
         col:  1
 
 # === Turbine type window ===
