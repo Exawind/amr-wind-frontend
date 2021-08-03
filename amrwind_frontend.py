@@ -19,6 +19,17 @@ else:
     import tkinter as Tk
     from tkinter import filedialog as filedialog
 
+# Try the loading the Xvfb package
+import platform
+hasxvfb=False
+if platform.system()=='Linux':
+    try:
+        from xvfbwrapper import Xvfb
+        hasxvfb=True
+    except:
+        hasxvfb=False
+        
+    
 import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
@@ -113,6 +124,9 @@ class MyApp(tkyg.App, object):
         if 'localconfigdir' in kwargs:
             localconfigdir=kwargs['localconfigdir']
             del kwargs['localconfigdir']
+        if hasxvfb:
+            vdisplay = Xvfb()
+            vdisplay.start()
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
                    localconfigdir=localconfigdir,
                    withdraw=True, **kwargs)
@@ -258,7 +272,9 @@ class MyApp(tkyg.App, object):
                 if verbose: print(writestr)
                 if len(filename)>0: f.write(writestr+"\n")
                 returnstr += writestr+"\n"
-        if len(filename)>0:     f.close()
+        if len(filename)>0:     
+            f.close()
+            self.savefile = filename
         
         return returnstr
 
@@ -1063,11 +1079,11 @@ class MyApp(tkyg.App, object):
             if plotaxis1=='X': plotx = x
             if plotaxis1=='Y': plotx = y
             if plotaxis1=='Z': plotx = z
-            if plotaxis1=='S': plotx = s1
+            if plotaxis1=='AUTO': plotx = s1
             if plotaxis2=='X': ploty = x
             if plotaxis2=='Y': ploty = y
             if plotaxis2=='Z': ploty = z
-            if plotaxis2=='S': ploty = s2
+            if plotaxis2=='AUTO': ploty = s2
 
             # plot the mesh
             im = ax.contourf(plotx, ploty, v, levels, **contourfargs)
@@ -1075,8 +1091,8 @@ class MyApp(tkyg.App, object):
             #im.autoscale()
         if colorbar: self.fig.colorbar(im, ax=ax)
 
-        xlabel = 'Axis1' if plotaxis1=='S' else plotaxis1
-        ylabel = 'Axis2' if plotaxis2=='S' else plotaxis2
+        xlabel = 'Axis1' if plotaxis1=='AUTO' else plotaxis1
+        ylabel = 'Axis2' if plotaxis2=='AUTO' else plotaxis2
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
@@ -1112,8 +1128,9 @@ class MyApp(tkyg.App, object):
                 pass
         return 
 
-    def turbinemodels_populate(self, deleteprevious=False):
-        turbinedir = 'turbines'
+    def turbinemodels_populate(self, deleteprevious=False, turbinedir=None):
+        if turbinedir is None:
+            turbinedir = self.inputvars['preferences_turbinedir'].getval()
         # Check if we need to prepend any paths
         if turbinedir.startswith('/'):
             loadpath = turbinedir

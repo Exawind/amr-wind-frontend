@@ -1576,15 +1576,15 @@ inputwidgets:
     label:      Plot axis 1
     frame:      frame_postprosampling
     inputtype:  str
-    optionlist: [X, Y, Z, S]
-    defaultval: S
+    optionlist: [X, Y, Z, AUTO]
+    defaultval: AUTO
 
   - name:       samplingprobe_plotaxis2
     label:      Plot axis 2
     frame:      frame_postprosampling
     inputtype:  str
-    optionlist: [X, Y, Z, S]
-    defaultval: S
+    optionlist: [X, Y, Z, AUTO]
+    defaultval: AUTO
 
   - name:       samplingprobe_kindex
     frame:      frame_postprosampling
@@ -1874,8 +1874,8 @@ inputwidgets:
       AMR-Wind: Actuator.UniformCtDisk.thrust_coeff
       help:     Constant thrust coefficient
 
+  # =========== Local preferences here =================
   # ------------ Submission script template -------------
-
   - name:       submitscript_template
     label:      Submit script template
     tab:        Expert
@@ -1894,8 +1894,14 @@ inputwidgets:
 
       submitscript_modules 
 
-      mpirun -np submitscript_numnodes submitscript_exe 
+      mpirun -np submitscript_numnodes submitscript_exe submitscript_inputfile
 
+  - name:       preferences_turbinedir
+    label:      Turbine template directory
+    tab:        Expert
+    visible:    False
+    inputtype:  str
+    defaultval: turbines
 
 
   # # =========== Junk stuff here ========================
@@ -2108,7 +2114,7 @@ popupwindow:
     title:        Plot FAST output # optional
     loadonstart:  True             # optional
     width:        350
-    height:       325
+    height:       350
     inputwidgets:
       - name:       plotfastout_files
         label:      FAST Files

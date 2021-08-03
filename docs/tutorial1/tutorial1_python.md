@@ -407,7 +407,6 @@ print(outstr)
     time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
     time.max_step                            = -1                  
     time.fixed_dt                            = 0.1                 # Fixed timestep size (in seconds). If negative, then time.cfl is used
-    time.cfl                                 = 0.95                
     incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
     incflo.verbose                           = 0                   
     io.check_file                            = chk                 
@@ -499,6 +498,41 @@ outstr=tutorial1.writeAMRWindInput('tutorial1.inp')
 
 That's it!  Now we are ready to run the case.
 
+## Submitting the job
+We can also have `amrwind_frontend` create a submission script and submit it to the queue.  To do this, edit the `submitscript` dictionary like this:
+
+
+```python
+# Set some of the submission script parameters
+tutorial1.popup_storteddata['submitscript']['submitscript_filename'] = 'submit.sh'
+tutorial1.popup_storteddata['submitscript']['submitscript_jobname']  = 'amrwind_test1'
+tutorial1.popup_storteddata['submitscript']['submitscript_numnodes'] = 1
+tutorial1.popup_storteddata['submitscript']['submitscript_runtime']  = '1:00:00'
+tutorial1.popup_storteddata['submitscript']['submitscript_wcid']     = 'FY190020'
+```
+
+To print out what the submission script would look like use `submitscript_makescript()`.  Note that the argument is the AMR-Wind input filename (`savefile` is the filename that was set in `writeAMRWindInput()` above).
+
+
+```python
+# Preview what the submission script looks like
+print(tutorial1.submitscript_makescript(tutorial1.savefile))
+```
+
+To save the job, use `submitscript_savescript()`.  Add the keyword `submit=True` to actually submit the job to the queue:
+
+
+```python
+tutorial1.submitscript_savescript(submit=True)
+```
+
+    Saved submit.sh
+    Executing: sbatch submit.sh
+    sbatch: INFO: Adding filesystem licenses to job: gpfs1:1,nscratch:1,pscratch:1
+    Submitted batch job 24540970
+    
+
+
 ## Postprocessing
 ### Plotting the FAST outputs
 
@@ -540,7 +574,7 @@ tutorial1.FAST_plotoutputs(ax=ax)
 
 
     
-![png](tutorial1_python_files/tutorial1_python_53_0.png)
+![png](tutorial1_python_files/tutorial1_python_59_0.png)
     
 
 
@@ -578,7 +612,7 @@ ax1.set_xlim([-750, 750]);
 
 
     
-![png](tutorial1_python_files/tutorial1_python_56_0.png)
+![png](tutorial1_python_files/tutorial1_python_62_0.png)
     
 
 
