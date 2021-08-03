@@ -296,6 +296,10 @@ class MyApp(tkyg.App, object):
         return
 
     def getInputHelp(self, search=''):
+        # Print the header
+        print("%-40s %-40s %-10s %s"%("INTERNAL NAME", "AMRWIND PARAMETER",
+                                      "DEFAULT VAL", "/ DESCRIPTION"))
+        # Print each widget
         for widget in self.yamldict['inputwidgets']:
             appname  = widget['name']
             amrname  = '' 
