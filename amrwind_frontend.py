@@ -272,7 +272,9 @@ class MyApp(tkyg.App, object):
                 if verbose: print(writestr)
                 if len(filename)>0: f.write(writestr+"\n")
                 returnstr += writestr+"\n"
-        if len(filename)>0:     f.close()
+        if len(filename)>0:     
+            f.close()
+            self.savefile = filename
         
         return returnstr
 
