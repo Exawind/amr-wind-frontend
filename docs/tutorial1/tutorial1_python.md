@@ -84,14 +84,11 @@ We'll first set some basic properties of the simulation, like the simulation tim
 
 
 ```python
-tutorial1.setAMRWindInput('time_control',['const_dt'])
+tutorial1.setAMRWindInput('time_control',['const dt'])
 tutorial1.setAMRWindInput('time.stop_time',100)
 tutorial1.setAMRWindInput('time.fixed_dt', 0.1)
 tutorial1.setAMRWindInput('incflo.physics', ['FreeStream', 'Actuator'])
 ```
-
-    Cannot set time_control
-
 
 Note that the values of any of these inputs can be queried through the `getAMRWindInput()` command:
 
@@ -234,7 +231,7 @@ tutorial1.add_turbine(turbine, verbose=True)
 
     docopy = True from /projects/wind_uq/lcheung/amrwind-frontend/turbines/OpenFAST_NREL5MW to turbine0_OpenFAST_NREL5MW
     turbine0_OpenFAST_NREL5MW/nrel5mw_noservo.fst
-    /home/lcheung/hpc_home/local/Git/amrwindnotes/runturbine/tutorial1run/turbine0_OpenFAST_NREL5MW/./5MW_Baseline/NRELOffshrBsline5MW_Onshore_AeroDyn15.dat
+    /gpfs1/lcheung/TCF/TurbineCheckout/test/tutorial1run/turbine0_OpenFAST_NREL5MW/./5MW_Baseline/NRELOffshrBsline5MW_Onshore_AeroDyn15.dat
     Actuator_name: 'turbine0'
     use_turbine_type: ''
     copy_turb_files: 1
@@ -506,7 +503,7 @@ We can also have `amrwind_frontend` create a submission script and submit it to 
 # Set some of the submission script parameters
 tutorial1.popup_storteddata['submitscript']['submitscript_filename'] = 'submit.sh'
 tutorial1.popup_storteddata['submitscript']['submitscript_jobname']  = 'amrwind_test1'
-tutorial1.popup_storteddata['submitscript']['submitscript_numnodes'] = 1
+tutorial1.popup_storteddata['submitscript']['submitscript_numnodes'] = 2
 tutorial1.popup_storteddata['submitscript']['submitscript_runtime']  = '1:00:00'
 tutorial1.popup_storteddata['submitscript']['submitscript_wcid']     = 'FY190020'
 ```
@@ -529,7 +526,7 @@ tutorial1.submitscript_savescript(submit=True)
     Saved submit.sh
     Executing: sbatch submit.sh
     sbatch: INFO: Adding filesystem licenses to job: gpfs1:1,nscratch:1,pscratch:1
-    Submitted batch job 24540970
+    Submitted batch job 24558098
     
 
 
