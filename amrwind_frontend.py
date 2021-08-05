@@ -89,9 +89,15 @@ class MyApp(tkyg.App, object):
         self.get_default_actuatordict = \
             self.listboxpopupwindict['listboxactuator'].getdefaultdict
 
+        # Shorthand aliases to add things
         self.add_turbine  = partial(self.add_populatefromdict,'listboxactuator')
         self.add_sampling = partial(self.add_populatefromdict,'listboxsampling')
         self.add_tagging  = partial(self.add_populatefromdict,'listboxtagging')
+
+        # Shorthand aliases to edit things
+        self.edit_turbine  = partial(self.edit_entryval, 'listboxactuator')
+        self.edit_sampling = partial(self.edit_entryval, 'listboxsampling')
+        self.edit_tagging  = partial(self.edit_entryval, 'listboxtagging')
 
         return
 
@@ -106,17 +112,11 @@ class MyApp(tkyg.App, object):
                                                        **kwargs)
         return
 
-    # # Define some aliases for populatefromdict
-    # def add_turbine(self, d, **kwargs):
-    #     deleteprevious = False
-    #     if 'deleteprevious' in kwargs:
-    #         deleteprevious = kwargs['deleteprevious']
-    #         del kwargs['deleteprevious']
-    #     self.listboxpopupwindict['listboxactuator'].populatefromdict({'x':d}, 
-    #                                                                  deleteprevious=deleteprevious,
-    #                                                                  **kwargs)
-    #     return
-    
+    # Used to define alias for populatefromdict()
+    def edit_entryval(self, listboxkey, entry, key, val):
+        self.listboxpopupwindict[listboxkey].setentryval(entry, key, val,
+                                                         outputtag='AMR-Wind')
+        return    
 
     @classmethod
     def init_nogui(cls, *args, **kwargs):
@@ -125,6 +125,7 @@ class MyApp(tkyg.App, object):
             localconfigdir=kwargs['localconfigdir']
             del kwargs['localconfigdir']
         if hasxvfb:
+            print()
             vdisplay = Xvfb()
             vdisplay.start()
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
