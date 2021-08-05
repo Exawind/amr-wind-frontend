@@ -3,7 +3,7 @@
 ## Contents
 - [Installing `amrwind-frontend`](installing.md)
 - [Customizing `amrwind-frontend`](customizing.md)
-- Basics: Loading, saving, and working with input files
+- [Basics](basics.md): Loading, saving, and working with input files
 - [Plotting the domain](userguide_plotdomain.md)
 - Other stuff to be written.
 
