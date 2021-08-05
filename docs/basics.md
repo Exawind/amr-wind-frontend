@@ -2,17 +2,121 @@
 
 **Contents**
 - [Using the GUI](#using-the-gui)
+  - [Starting amrwind_frontend](#starting-amrwind_frontend)
 - [Using the python interface](#using-the-python-interface)
 
 ## Using the GUI
 
+### Starting `amrwind_frontend`
+
+After installing `amrwind_frontend`, you can launch the GUI frontend
+using the command
+
+```bash
+$ python amrwind_frontend.py
+```
+
+or directly with 
+```bash
+$ ./amrwind_frontend.py
+```
+
+If there is an input file you'd like to load immediately, you can add
+that as an argument to the command line
+
+```bash
+$ ./amrwind_frontend.py INPUTFILE
+```
+
+The other command line arguments that are possible can be displayed
+using the `--help` argument:
+
+```bash
+$ ./amrwind_frontend.py  --help
+usage: amrwind_frontend.py [-h] [--ablstatsfile ABLSTATSFILE]
+                           [--samplefile SAMPLEFILE] [--outputfile OUTPUTFILE]
+                           [--validate] [--localconfigdir LOCALCONFIGDIR]
+                           [inputfile]
+
+AMR-Wind
+
+positional arguments:
+  inputfile
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --ablstatsfile ABLSTATSFILE
+                        Load the ABL statistics file [default: None]
+  --samplefile SAMPLEFILE
+                        Load the sample probe file [default: None]
+  --outputfile OUTPUTFILE
+                        Write the output file [default: None]
+  --validate            Check input file for errors and quit [default: False]
+  --localconfigdir LOCALCONFIGDIR
+                        Local configuration directory [default:
+                        /home/lcheung/hpc_home/local/Git/amrwind-
+                        frontend/local]
+```
+
+When you start `amrwind_frontend`, you should see a startup screen
+similar to below:
+
+![](images/startup_screen.PNG)
+
+The left side of the window contains all of the inputs and parameters
+required for AMR-Wind, and the right side is a plotting window used to
+display images or any output required.
+
+### Tabs
+
+All of the various input parameters are grouped into several tabs
+which span the top of the left frame.  A brief description of each tab
+is below:
+
+| Tab        | Description |
+| ---        | ---         |
+| Simulation | Simulation types, time-stepping, fluid and turbulence parameters |
+| Domain     | Domain & mesh size, boundary conditions                          |
+| ABL        | All parameters related to the ABL physics and configuration      |
+| Refinement | Specifying domain refinement windows                             |
+| Turbines   | Adding turbines, turbine model types, etc.                       |
+| IO         | Plotting and output parameters                                   |
+| Postpro    | Postprocessing the ABL statistics and sample planes              |
+| Expert     | Solver tolerances and any other expert parameters                |
+
+
+### Menu options
+
+**File**
+- Save input file/Save input file as: 
+- Import AMR-Wind file:
+
+**Plot**
+- Plot domain
+- FAST outputs
+
+**Run**
+- Check inputs
+- Preview input file
+- Local run
+- Job submission
+
+**Help**
+- [_Help menu items are a work in progress_]
+
 ## Using the python interface
 
+Instead of using `amrwind_frontend` interactively through the GUI, a
+python interface is also available.  
 
 ### Loading the module
+
+The python interface can be accessed by loading `amrwind_frontend` as
+a library:
+
 ```python
 >>> import sys
->>> sys.path.insert(1, 'amrwind-frontend')
+>>> sys.path.insert(1, 'amrwind-frontend')  # Add the location where it's installed.
 >>> import amrwind_frontend as amrwind
 ```
 
