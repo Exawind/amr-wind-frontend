@@ -1819,7 +1819,7 @@ inputwidgets:
     frame:      frame_uniformctglobals
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.yaw
-  - name:       sample_yaw
+  - name:       Actuator_UniformCtDisk_sample_yaw
     label:      Sample yaw
     frame:      frame_uniformctglobals
     inputtype:  float
@@ -1827,7 +1827,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.sample_yaw
       help:     Turbine sampling yaw direction [deg]
-  - name:       diameters_to_sample
+  - name:       Actuator_UniformCtDisk_diameters_to_sample
     label:      Sample distance
     frame:      frame_uniformctglobals
     inputtype:  float
@@ -1835,7 +1835,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.diameters_to_sample
       help:     Number of rotor diameters to sample upstream for velocity
-  - name:       num_force_points
+  - name:       Actuator_UniformCtDisk_num_force_points
     label:      Num force points
     frame:      frame_uniformctglobals
     inputtype:  int
@@ -1843,7 +1843,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.num_force_points
       help:     Number of radial force points to apply disk loading
-  - name:       num_vel_points_r
+  - name:       Actuator_UniformCtDisk_num_vel_points_r
     label:      Num vel r pts sample
     frame:      frame_uniformctglobals
     inputtype:  int
@@ -1851,7 +1851,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.num_vel_points_r
       help:     Number of radial force points to sample for velocity
-  - name:       num_vel_points_t
+  - name:       Actuator_UniformCtDisk_num_vel_points_t
     label:      Num vel theta pts sample
     frame:      frame_uniformctglobals
     inputtype:  int
@@ -1859,7 +1859,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
       help:     Number of theta force points to sample for velocity
-  - name:       num_vel_points_t
+  - name:       Actuator_UniformCtDisk_num_vel_points_t
     label:      Num vel theta pts sample
     frame:      frame_uniformctglobals
     inputtype:  int
@@ -1867,7 +1867,7 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
       help:     Number of theta force points to sample for velocity
-  - name:       thrust_coeff
+  - name:       Actuator_UniformCtDisk_thrust_coeff
     label:      Thrust coefficient
     frame:      frame_uniformctglobals
     inputtype:  str
@@ -1875,6 +1875,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.thrust_coeff
       help:     Constant thrust coefficient
+  - name:       Actuator_UniformCtDisk_wind_speed
+    label:      Wind speed table
+    frame:      frame_uniformctglobals
+    inputtype:  str
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.UniformCtDisk.wind_speed
+      help:     Wind speed table
 
   # =========== Local preferences here =================
   # ------------ Submission script template -------------

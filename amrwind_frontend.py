@@ -125,7 +125,6 @@ class MyApp(tkyg.App, object):
             localconfigdir=kwargs['localconfigdir']
             del kwargs['localconfigdir']
         if hasxvfb:
-            print()
             vdisplay = Xvfb()
             vdisplay.start()
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
