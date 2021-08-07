@@ -3,8 +3,17 @@
 **Contents**
 - [Using the GUI](#using-the-gui)
   - [Starting amrwind_frontend](#starting-amrwind_frontend)
+  - [Tabs](#tabs)
+  - [Menu options](#menu-options)
+  
 - [Using the python interface](#using-the-python-interface)
-
+  - [Loading the module](#loading-the-module)
+  - [Start a case](#start-a-case)
+  - [Loading a case](#loading-a-case)
+  - [Setting and retrieving parameters](#setting-and-retrieving-parameters)
+  - [Internal versus AMR-Wind parameters](#internal-versus-amr-wind-parameters)
+  - [Getting Help](#getting-help)
+  
 ## Using the GUI
 
 ### Starting `amrwind_frontend`
@@ -88,18 +97,32 @@ is below:
 ### Menu options
 
 **File**
-- Save input file/Save input file as: 
-- Import AMR-Wind file:
+
+- **Save input file/Save input file as**: Save the current set of
+  parameters into an AMR-Wind input file, or as a differently named
+  input file.
+
+- **Import AMR-Wind file**: Load all of the inputs from an AMR-Wind
+  input file.  See [important note](#loading-a-case) below about
+  loading parameters.
 
 **Plot**
-- Plot domain
-- FAST outputs
+- **Plot domain**: Plot the domain, refinement zones, sampling planes,
+  and turbines.
+
+- **FAST outputs**: Load and plot FAST turbine outputs.
 
 **Run**
-- Check inputs
-- Preview input file
-- Local run
-- Job submission
+- **Check inputs**: Validate the current AMR-Wind inputs and check for
+  anything missing, inconsistencies, or incorrect parameters.
+
+- **Preview input file**: Show what the current AMR-Wind input file
+  would look like.
+
+- **Local run**: Run the current AMR-Wind inputs on the local machine.
+
+- **Job submission**: Create a submission script and submit the job to
+  a queue.
 
 **Help**
 - [_Help menu items are a work in progress_]
@@ -120,7 +143,15 @@ a library:
 >>> import amrwind_frontend as amrwind
 ```
 
+Here `sys.path.insert()` is used to point to wherever
+`amrwind-frontend` is downloaded (it doesn't have to be in the current
+directory).
+
 ### Start a case
+
+To start a case in the python terminal, use the `MyApp.init_nogui()`
+command.
+
 ```python
 >>> case1=amrwind.MyApp.init_nogui()
 ```
@@ -130,13 +161,19 @@ Note that multiple cases can be initiated simultaneously:
 >>> case1=amrwind.MyApp.init_nogui()
 >>> case2=amrwind.MyApp.init_nogui()
 ```
-The inputs and parameters for `case1` and `case2` will be completely independent.
+
+The inputs and parameters for `case1` and `case2` will be completely
+independent.
 
 If you want to see what the current setup looks like, we can print the
 input file using `writeAMRWindInput()`:
 
 ```python
 >>> print(case1.writeAMRWindInput(''))
+```
+<details>
+  <summary>Expand command output</summary>
+<pre>
 # --- Simulation time control parameters ---
 time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
 time.max_step                            = -1
@@ -150,7 +187,6 @@ incflo.density                           = 1.0                 # Fluid density [
 transport.viscosity                      = 1.872e-05           # Fluid dynamic viscosity [kg/m-s]
 transport.laminar_prandtl                = 0.7                 # Laminar prandtl number
 transport.turbulent_prandtl              = 0.3333              # Turbulent prandtl number
-
 # --- Geometry and Mesh ---
 geometry.prob_lo                         = 0.0 0.0 0.0
 geometry.prob_hi                         = 1000.0 1000.0 1000.0
@@ -159,7 +195,6 @@ amr.max_level                            = 0
 geometry.is_periodic                     = 1 1 0
 zlo.type                                 = no_slip_wall
 zhi.type                                 = no_slip_wall
-
 # --- ABL parameters ---
 ICNS.source_terms                        =
 incflo.velocity                          = 10.0 0.0 0.0
@@ -167,20 +202,55 @@ ABLForcing.abl_forcing_height            = 0.0
 time.plot_interval                       = 1000
 io.plot_file                             = plt
 io.KE_int                                = -1
-
 #---- extra params ----
 #== END AMR-WIND INPUT ==
-```
+</pre>
+</details>
 
 #### Loading a case
+
+If you want to load the inputs from a previous AMR-Wind input, use
+`loadAMRWindInput()`:
+
 
 ```python
 case1.loadAMRWindInput(filename)
 ```
 
-### Setting parameters
+**Important reminder**: Note that the inputs in `filename` are applied
+_additively_, and the previous inputs are not cleared or reset.  This
+means that if there is a parameter that is currently set to a
+particular value, but is not mentioned in `filename`, it will still
+persist after `filename` is loaded.
+
+### Setting and retrieving parameters
+
+There are multiple ways to set parameters using the amrwind-frontend
+python interface.  Listed below are two of the most common
+user-friendly approaches.
 
 #### Using `loadAMRWindInput`
+
+Although `loadAMRWindInput()` was used to load an entire AMR-Wind
+input file above, it can also load a single parameter, or sections of
+parameters.  This can be done by providing a string, and specifying
+the `string=True`, keyword input.
+
+```python
+strinput="""
+time.fixed_dt                            = 0.1 
+time.cfl                                 = 0.95
+"""
+case1.loadAMRWindInput(strinput, string=True)
+```
+
+Here `strinput` should be in the same format as the AMR-Wind input
+file, i.e., it should be a string with AMR-Wind inputs on each line,
+followed by equals sign and values.  
+
+**Important note**: Note that it does not make sense to input some
+parameters on a line-by-line basis through `loadAMRWindInput()`.  
+
 
 #### Using `setAMRWindInput`
 
@@ -188,7 +258,7 @@ case1.loadAMRWindInput(filename)
 
 ### Internal versus AMR-Wind parameters
 
-- AMR-Wind Input file parameters: 
+- AMR-Wind Input file parameters:
 
 - amrwind-frontend internal parameters: 
 
