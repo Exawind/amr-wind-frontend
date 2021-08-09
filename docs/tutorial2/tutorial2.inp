@@ -49,6 +49,11 @@ ABL.surface_roughness_z0                 = 0.0001
 ABL.reference_temperature                = 288.15              
 ABL.surface_temp_rate                    = 0.0                 
 ABL.surface_temp_flux                    = 0.0122096146646     # Surface temperature flux [K-m/s]
+ABL.mo_beta_m                            = 16.0                # Monin-Obukhov Beta m parameter
+ABL.mo_gamma_m                           = 5.0                 # Monin-Obukhov Gamma m parameter
+ABL.mo_gamma_h                           = 5.0                 # Monin-Obukhov Gamma h parameter
+ABL.random_gauss_mean                    = 0.0                 
+ABL.random_gauss_var                     = 1.0                 
 CoriolisForcing.latitude                 = 55.49               
 CoriolisForcing.rotational_time_period   = 86164.0900027       
 CoriolisForcing.north_vector             = 0.0 1.0 0.0         
@@ -92,9 +97,4 @@ sampling.ybc.normal                      = 0.0 1.0 0.0
 sampling.ybc.offsets                     = 0.0 1536            
 
 #---- extra params ----
-ABL.random_gauss_mean                    = 0.0                 
-ABL.random_gauss_var                     = 1.0                 
-ABL.mo_beta_m                            = 16.0                
-ABL.mo_gamma_m                           = 5.0                 
-ABL.mo_gamma_h                           = 5.0                 
 #== END AMR-WIND INPUT ==

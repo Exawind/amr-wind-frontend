@@ -1249,6 +1249,22 @@ inputwidgets:
       AMR-Wind: ABL.mo_gamma_h
       help:     Monin-Obukhov Gamma h parameter
 
+  - name:       random_gauss_mean
+    label:      Random Gauss mean
+    frame:      frame_numerics
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.random_gauss_mean
+
+  - name:       random_gauss_var
+    label:      Random Gauss Variance
+    frame:      frame_numerics
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.random_gauss_var      
+
   - name:       latitude
     label:      Latitude
     frame:      frame_Coriolis
