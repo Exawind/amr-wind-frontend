@@ -2575,10 +2575,10 @@ popupwindow:
     - name:       turbine_frame
       title:      Turbine specifications
       row:        4
-    # - name:       uniformCt_frame
-    #   title:      Uniform Ct turbine specifications
-    #   toggled:    True
-    #   row:        5
+    - name:       uniformCt_frame
+      title:      Uniform Ct disk parameters
+      toggled:    True
+      row:        5
     inputwidgets:
     - name:       actuator_label
       label:      Add a new turbine   
@@ -2666,6 +2666,72 @@ popupwindow:
     - <<: *PREDEFINED_DENSITY
       name:       Actuator_density
       frame:      turbine_frame
+    # --- Uniform Ct parameters ---
+    - name:       Actuator_sample_yaw
+      label:      Sample yaw
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: sample_yaw
+        help:     Turbine sampling yaw direction [deg]
+    - name:       Actuator_diameters_to_sample
+      label:      Sample distance
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: diameters_to_sample
+        help:     Number of rotor diameters to sample upstream for velocity
+    - name:       Actuator_num_force_points
+      label:      Number of force points
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_force_points
+        help:     Number of radial force points to apply disk loading
+    - name:       Actuator_num_vel_points_r
+      label:      Num vel r pts sample
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_vel_points_r
+        help:     Number of radial force points to sample for velocity
+    - name:       Actuator_num_vel_points_t
+      label:      Num vel theta pts sample
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_vel_points_t
+        help:     Number of theta force points to sample for velocity
+    - name:       Actuator_num_vel_points_t
+      label:      Num vel theta pts sample
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_vel_points_t
+        help:     Number of theta force points to sample for velocity
+    - name:       Actuator_thrust_coeff
+      label:      Thrust coefficient table
+      frame:      uniformCt_frame
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: thrust_coeff
+        help:     "Thrust coefficient table: single Ct value, or list of values for a table"
+    - name:       Actuator_wind_speed
+      label:      Wind speed table
+      frame:      uniformCt_frame
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: wind_speed
+        help:     "Wind speed table: if Ct is not a single value, list of wind speeds corresponding to Ct values"
+
     buttons:
       - name: preload_turbinetype
         text: Load
