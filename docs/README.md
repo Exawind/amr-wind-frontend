@@ -5,6 +5,7 @@
 - [Customizing `amrwind-frontend`](customizing.md)
 - [Basics](basics.md): Loading, saving, and working with input files
 - [Plotting the domain](userguide_plotdomain.md)
+- [Configuring Turbine repository](turbinerepo.md)
 - Other stuff to be written.
 
 ## Tutorial cases
