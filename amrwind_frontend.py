@@ -184,6 +184,22 @@ class MyApp(tkyg.App, object):
             print("Cannot get value of "+name)
         return returnval
 
+    def getAMRWindInputType(self, name):
+        """
+        Use this function to get the input type of an AMR-Wind keyword.
+        """
+        returnval = None
+        try:
+            if name in self.amrkeydict:
+                inputkey = self.amrkeydict[name]
+            if name in self.inputvars:
+                inputkey = name
+            returnval = self.inputvars[inputkey].inputtype
+        except:
+            print("Cannot get inputtype of "+name)
+        return returnval
+
+
     def getTaggingKey(self, keyname, listboxdict, datadict):
         keyheader = 'tagging.'
         intername = ''
