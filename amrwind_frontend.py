@@ -851,7 +851,8 @@ class MyApp(tkyg.App, object):
         print("Done.")
         return
 
-    def ABLpostpro_plotprofiles(self, ax=None, plotvars=None, avgt=None):
+    def ABLpostpro_plotprofiles(self, ax=None, plotvars=None, avgt=None, 
+                                doplot=True):
         # Get the list of selected quantities
         if plotvars is None:
             plotvars = self.inputvars['ablstats_profileplot'].getval()
@@ -859,10 +860,10 @@ class MyApp(tkyg.App, object):
             avgt         = self.inputvars['ablstats_avgt'].getval()
         if ax is None: ax=self.setupfigax()
 
-        if len(plotvars)<1: return
+        returndict = {}
+
+        if len(plotvars)<1: return returndict
         for var in plotvars:
-            #print(var)
-            # initialize the profile
             prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
                                                     self.abl_stats,
                                                     self.abl_profiledata, avgt)
@@ -873,35 +874,46 @@ class MyApp(tkyg.App, object):
                 # Break the header labels
                 varlabels = postpro.statsprofiles[var]['header'].split()
                 for i in range(N[1]):
-                    ax.plot(plotdat[:,i], z, label=var+': '+varlabels[i])
+                    if doplot: 
+                        ax.plot(plotdat[:,i], z, label=var+': '+varlabels[i])
+                    returndict[varlabels[i]] = {'z':z, 'data':plotdat[:,i]}
             else:
-                ax.plot(plotdat, z, label=postpro.statsprofiles[var]['header'])
-        # Format the plot
-        ax.set_ylabel('z [m]')
-        ax.legend()
-        # Draw the figure
-        self.figcanvas.draw()
-        return
+                if doplot:
+                    ax.plot(plotdat, z, label=postpro.statsprofiles[var]['header'])
+                returndict[postpro.statsprofiles[var]['header']] = {'z':z, 'data':plotdat}
+        if doplot:
+            # Format the plot
+            ax.set_ylabel('z [m]')
+            ax.legend()
+            # Draw the figure
+            self.figcanvas.draw()
+        return returndict
 
-    def ABLpostpro_plotscalars(self, ax=None, plotvars=None, avgt=None):
+    def ABLpostpro_plotscalars(self, ax=None, plotvars=None, avgt=None,
+                               doplot=True):
         # Get the list of selected quantities
         if plotvars is None:
             plotvars     = self.inputvars['ablstats_scalarplot'].getval()
         if avgt is None:
             avgt         = self.inputvars['ablstats_avgt'].getval()
         if ax is None: ax=self.setupfigax()
-        
-        if len(plotvars)<1: return
+
+        returndict = {}
+
+        if len(plotvars)<1: return returndict
         for var in plotvars:
             print(var)
             t, v = postpro.extractScalarTimeHistory(self.abl_stats, var)
-            ax.plot(t, v, label=var)
-        # Format the plot
-        ax.set_xlabel('t [s]')
-        ax.legend()
-        # Draw the figure
-        self.figcanvas.draw()
-        return
+            if doplot: ax.plot(t, v, label=var)
+            returndict[var] = {'t':t, 'data':v}
+
+        if doplot:
+            # Format the plot
+            ax.set_xlabel('t [s]')
+            ax.legend()
+            # Draw the figure
+            self.figcanvas.draw()
+        return returndict
 
     def ABLpostpro_exportprofiles(self):
         # Get the list of selected quantities
