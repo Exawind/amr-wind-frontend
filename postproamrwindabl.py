@@ -122,6 +122,24 @@ def calculateExpr(expr, allvars, avgt, ncdat):
     # compute U horizontal
     return var['z'], np.array(vec)
 
+statsprofiles_ = OrderedDict()
+def registerstatsprofile(f):
+    defdict = {'requiredvars':f.requiredvars,
+                'header':f.header,
+                'expr':f.expr, 
+                'funcstring':f.funcstring}
+    statsprofiles_[f.key] = defdict
+    print("Added "+f.key+" profile")
+    return f
+
+@registerstatsprofile
+class velocityprof():
+    key          = 'velocity'
+    requiredvars = ['u', 'v', 'w']
+    header       = 'u v w'
+    expr         = '[[u], [v], [w]]'
+    funcstring   = False
+    
 # A dictionary with all of the variables you can plot
 statsprofiles=OrderedDict([
     ('velocity', {'requiredvars':['u', 'v', 'w'],     
