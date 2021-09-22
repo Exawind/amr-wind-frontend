@@ -1067,11 +1067,15 @@ class MyApp(tkyg.App, object):
         # Clear and resize figure
         if ax is None: ax=self.setupfigax()
         if ncdat is None: ncdat = self.sample_ncdat
+        
+        # Dictionary to hold return stuff
+        returndat = {}
 
         # Get the plot data
         for group in groups:
             xyz,linedat=ppsample.getLineSampleAtTime(ncdat, group, var, tindex)
             plotx = ppsample.getPlotAxis(xyz, plotaxis)
+            returndat[group] = {'plotx': plotx, 'dat': linedat}
             for v in var:
                 ax.plot(plotx, linedat[v], label=group+':'+v)            
         ax.set_xlabel(plotaxis)
@@ -1082,8 +1086,8 @@ class MyApp(tkyg.App, object):
         ax.set_title('Time: %f'%(timevec[curindex]))        
 
         self.figcanvas.draw()
-        #self.figcanvas.show()
-        return
+
+        return returndat
 
     def plotSamplePlane(self, groups, varselect, tindex, kindex, 
                         plotaxis1, plotaxis2, ax=None, ncdat=None,
