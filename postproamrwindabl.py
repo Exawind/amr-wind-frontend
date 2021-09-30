@@ -129,7 +129,7 @@ def registerstatsprofile(f):
                 'expr':f.expr, 
                 'funcstring':f.funcstring}
     statsprofiles_[f.key] = defdict
-    print("Added "+f.key+" profile")
+    #print("Added "+f.key+" profile")
     return f
 
 @registerstatsprofile
@@ -160,15 +160,15 @@ statsprofiles=OrderedDict([
                      'funcstring':False}),
     ('TI_TKE',   {'requiredvars':['u', 'v', u"u'u'_r", u"v'v'_r", u"w'w'_r",], 
                   'header':'TI_TKE',
-                  'expr':'np.sqrt(([uu]**2+[vv]**2+[ww]**2)/3.0)/np.sqrt([u]**2 + [v]**2)', 
+                  'expr':'np.sqrt(([uu]+[vv]+[ww])/3.0)/np.sqrt([u]**2 + [v]**2)', 
                   'funcstring':False}),
     ('TI_horiz', {'requiredvars':['u', 'v', u"u'u'_r", u"v'v'_r"], 
                   'header':'TI_horiz',
-                  'expr':'np.sqrt([uu]**2+[vv]**2)/np.sqrt([u]**2 + [v]**2)', 
+                  'expr':'np.sqrt([uu]+[vv])/np.sqrt([u]**2 + [v]**2)', 
                   'funcstring':False}),
     ('TKE',      {'requiredvars':[u"u'u'_r", u"v'v'_r", u"w'w'_r",], 
                   'header':'TKE',
-                  'expr':'0.5*([uu]**2+[vv]**2+[ww]**2)', 
+                  'expr':'0.5*([uu]+[vv]+[ww])', 
                   'funcstring':False}),
     ('ReStresses',{'requiredvars':[u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
                                    u"v'v'_r",  u"v'w'_r", u"w'w'_r",], 
