@@ -662,10 +662,12 @@ class MyApp(tkyg.App, object):
                                              'plotfastout', savebutton=False))
         menubar.add_cascade(label="Plot", menu=plotmenu)
 
-        # Validate menu
+        # run menu
         runmenu = Tk.Menu(menubar, tearoff=0)
         runmenu.add_command(label="Check Inputs", 
                             command=self.validateGUI)
+        runmenu.add_command(label="Estimate mesh size", 
+                            command=self.estimateMeshSize)
         runmenu.add_command(label="Preview Input File", 
                             command=self.dumpAMRWindInputGUI)
         runmenu.add_command(label="Local Run", 
@@ -734,7 +736,117 @@ class MyApp(tkyg.App, object):
         if clear: ax.clear()
         return ax
 
-    from plotfunctions import plotDomain
+    from plotfunctions import plotDomain, readCartBoxFile
+
+    def estimateMeshSize(self, **kwargs):
+        # Get the domain size
+        prob_lo   = self.inputvars['prob_lo'].getval()
+        prob_hi   = self.inputvars['prob_hi'].getval()
+
+        # Get the level 0 mesh size/dx
+        max_level = self.inputvars['max_level'].getval()
+        n_cell    = self.inputvars['n_cell'].getval()
+        
+        # Get the level 0 volume and dx
+        level0_Lx = np.array(prob_hi) - np.array(prob_lo)
+
+        # Calculate the cell dimensions at every level
+        level_dx = []
+        level_dx.append(np.array([level0_Lx[0]/n_cell[0],
+                                  level0_Lx[1]/n_cell[1], 
+                                  level0_Lx[2]/n_cell[2],
+                                  ]))
+        for l in range(max_level):
+            prevdx = level_dx[-1]
+            level_dx.append(prevdx/2)
+
+        #for dx in level_dx: print(dx)
+
+        # Calculate the cell volumes at every level
+        level_cellv=[dx[0]*dx[1]*dx[2] for dx in level_dx]            
+
+        # -- Calculate the number of cells at every level --
+        level_ncells = np.zeros(max_level+1)
+        # At level 0
+        level_ncells[0] = n_cell[0]*n_cell[1]*n_cell[2]
+
+        # Search refinement levels
+        allrefinements = self.listboxpopupwindict['listboxtagging']
+        alltags        = allrefinements.getitemlist()
+
+        #print(alltags)
+        for tag in alltags:
+            pdict = allrefinements.dumpdict('AMR-Wind',
+                                            subset=[tag],
+                                            keyfunc=lambda n, d1, d2: d2.name)
+            #print(pdict)
+            if pdict['tagging_type'][0]=='GeometryRefinement':
+                if pdict['tagging_geom_type'][0]=='box':
+                    origin = pdict['tagging_geom_origin']
+                    xaxis  = pdict['tagging_geom_xaxis']
+                    yaxis  = pdict['tagging_geom_yaxis']
+                    zaxis  = pdict['tagging_geom_zaxis']
+                    ilevel = pdict['tagging_level']
+                    if ilevel+1 <= max_level:
+                        # Calculate the volume
+                        vol    = np.abs(np.dot(np.cross(xaxis, yaxis), zaxis))
+                        ncells = int(vol/level_cellv[ilevel+1])
+                        level_ncells[ilevel+1] += ncells
+                        print("Refinement %s: level %i: %i cells"%(tag, 
+                                                                   ilevel+1,
+                                                                   ncells))
+                    else:
+                        # Refinement not applied
+                        print("Refinement %s ignored. Level %i cells, max level %i"%(tag, ilevel+1, max_level)) 
+
+                if pdict['tagging_geom_type'][0]=='cylinder':
+                    cylstart  = pdict['tagging_geom_start']
+                    cylend    = pdict['tagging_geom_end']
+                    outerR    = pdict['tagging_geom_outer_radius']
+                    innerR    = pdict['tagging_geom_inner_radius']
+                    ilevel    = pdict['tagging_level']
+                    if ilevel+1 <= max_level:
+                        # Calculate the volume
+                        cylL   = np.linalg.norm(np.array(cylend) - 
+                                                np.array(cylstart))
+                        vol    = np.pi*(outerR**2 - innerR**2)*cylL
+                        ncells = int(vol/level_cellv[ilevel+1])
+                        level_ncells[ilevel+1] += ncells
+                        print("Refinement %s: level %i: %i cells"%(tag, 
+                                                                   ilevel+1,
+                                                                   ncells))
+                    else:
+                        # Refinement not applied
+                        print("Refinement %s ignored. Level %i cells, max level %i"%(tag, ilevel+1, max_level)) 
+
+                        
+            # Handle the Cartesian Box Refinements
+            if pdict['tagging_type'][0]=='CartBoxRefinement':
+                filename = pdict['tagging_static_refinement_def']
+                # Load the boxes
+                allboxes = self.readCartBoxFile(filename)
+                for ilevel, boxlevel in enumerate(allboxes):
+                    for ibox, box in enumerate(boxlevel):
+                        corner1 = np.array(box[0:3])
+                        corner2 = np.array(box[3:6])
+                        # Calculate the volume
+                        boxdL   = corner2-corner1
+                        boxV    = boxdL[0]*boxdL[1]*boxdL[2]
+                        ncells  = int(boxV/level_cellv[ilevel+1])
+                        level_ncells[ilevel+1] += ncells
+                        print(" box %i level %i: %i cells"%(ibox, ilevel+1,
+                                                            ncells))
+
+        #for k, g in allrefinedicts.items(): print(k)
+        # Print a summary of Ncells at each level
+        print("ESTIMATED MESH SIZE")
+        print("%8s %12s %30s"%("Level", "Ncells", "Cell Size"))
+        for l, ncells in enumerate(level_ncells):
+            print("%8i %12i %30s"%(l, ncells, 
+                                   " x ".join([str(x) for x in level_dx[l]])))
+        print("  TOTAL: %12i"%(sum(level_ncells)))
+
+        return
 
     # ---- plot FAST outputs ---
     def FAST_addoutfilesGUI(self, window):
@@ -1536,6 +1648,9 @@ if __name__ == "__main__":
     parser.add_argument('--validate',   
                         action='store_true',  
                         help="Check input file for errors and quit [default: False]")
+    parser.add_argument('--calcmeshsize',   
+                        action='store_true',  
+                        help="Estimate the meshsize [default: False]")
     parser.add_argument('--localconfigdir',   
                         default=localconfigdir,  
                         help="Local configuration directory [default: %s]"%localconfigdir)
@@ -1546,6 +1661,7 @@ if __name__ == "__main__":
     samplefile   = args.samplefile
     outputfile   = args.outputfile
     validate     = args.validate
+    calcmesh     = args.calcmeshsize
     localconfigdir = args.localconfigdir
 
     # Validate the input file
@@ -1554,6 +1670,13 @@ if __name__ == "__main__":
         if inputfile is not None:
             mainapp.loadAMRWindInput(inputfile, printunused=True)
         mainapp.validate()
+        sys.exit()
+
+    if calcmesh:
+        mainapp=MyApp.init_nogui(localconfigdir=localconfigdir)
+        if inputfile is not None:
+            mainapp.loadAMRWindInput(inputfile, printunused=True)
+        mainapp.estimateMeshSize()
         sys.exit()
 
     # Instantiate the app
