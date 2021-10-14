@@ -1,0 +1,35 @@
+tabs:
+  - Farm
+
+frames:
+  # ==== Simulation frames ==== 
+  - name:  frame_farmsetup
+    tab:   Farm
+    title: Wind farm setup
+
+  - name:  frame_farmrefinement
+    tab:   Farm
+    title: Farm refinement zones
+    toggled: True
+
+    
+
+inputwidgets:
+  - name:       refine_csvfile
+    frame:      frame_farmrefinement
+    label:      
+    inputtype:  filename
+    defaultval:
+    entryopt:
+      width:    25
+
+  - name:       refine_textbox
+    frame:      frame_farmrefinement
+    inputtype:  textbox
+    defaultval: ''
+    entryopt:
+      width:    30
+      height:   10
+    outputdef:
+      help:     Refine inputs
+
