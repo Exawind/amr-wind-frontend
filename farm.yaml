@@ -1,0 +1,58 @@
+tabs:
+  - Farm
+
+frames:
+  # ==== Simulation frames ==== 
+  - name:  frame_farmsetup
+    tab:   Farm
+    title: Wind farm setup
+
+  - name:  frame_farmrefinement
+    tab:   Farm
+    title: Farm refinement zones
+    toggled: True
+
+  - name:  frame_farmrefinement1
+    frame: frame_farmrefinement
+    title: CSV Contents
+    row:   1
+    kwargs:
+      borderwidth: 0
+    
+
+inputwidgets:
+  - name:       refine_csvfile
+    frame:      frame_farmrefinement
+    label:      CSV file
+    inputtype:  filename
+    row:        0
+    defaultval:
+    entryopt:
+      width:    25
+    fileopenopt:
+      kwargs:
+        filetypes: 
+          - ["CSV files", "*.csv"]
+          - ["all files", "*.*"]
+
+  - name:       refine_csvtextbox
+    frame:      frame_farmrefinement1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # upstream, downstream, lateral, below, above, options
+    entryopt:
+      width:    60
+      height:   10
+    outputdef:
+      help:     Refine inputs
+
+
+buttons:
+  - name:    farmbutton_loadrefine
+    text:    Load/Reload
+    frame:   frame_farmrefinement
+    row:     0
+    col:     3
+    command: "partial(self.button_loadcsv, 'refine_csvfile', 'refine_csvtextbox')"
+

@@ -738,6 +738,8 @@ class MyApp(tkyg.App, object):
 
     from plotfunctions import plotDomain, readCartBoxFile
 
+    from farmfunctions import button_loadcsv
+
     def estimateMeshSize(self, **kwargs):
         # Get the domain size
         prob_lo   = self.inputvars['prob_lo'].getval()
