@@ -18,7 +18,30 @@ frames:
     row:   1
     kwargs:
       borderwidth: 0
-    
+
+  - name:  frame_farmsampling
+    tab:   Farm
+    title: Farm sampling
+    toggled: True
+
+  - name:  frame_farmsampling1
+    frame: frame_farmsampling
+    title: CSV Contents
+    row:   1
+    kwargs:
+      borderwidth: 0
+      
+  - name:       refine_csvtextbox
+    frame:      frame_farmrefinement1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # level, upstream, downstream, lateral, below, above, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     Refine inputs
 
 inputwidgets:
   - name:       refine_csvfile
@@ -40,13 +63,24 @@ inputwidgets:
     inputtype:  textbox
     defaultval: |
       # CSV file should have columns with
-      # upstream, downstream, lateral, below, above, options
+      # level, upstream, downstream, lateral, below, above, options
     entryopt:
       width:    55
       height:   10
     outputdef:
       help:     Refine inputs
 
+  - name:       sampling_csvtextbox
+    frame:      frame_farmsampling1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # upstream, downstream, lateral, below, above, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     Sampling inputs
 
 buttons:
   - name:    farmbutton_loadrefine

@@ -396,7 +396,7 @@ def plotDomain(self, ax=None):
         if 'Actuator_%s_rotor_diameter'%default_type in self.inputvars:
             default_turbD  = self.inputvars['Actuator_%s_rotor_diameter'%default_type].getval()
         else:
-            default_turbD  = None
+            default_turbD  = 100.0
         if 'Actuator_%s_hub_height'%default_type in self.inputvars:
             default_hh     = self.inputvars['Actuator_%s_hub_height'%default_type].getval()
         else:
