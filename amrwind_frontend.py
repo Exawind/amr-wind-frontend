@@ -131,7 +131,7 @@ class MyApp(tkyg.App, object):
             except:
                 pass
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
-                   localconfigdir=localconfigdir,
+                   localconfigdir=localconfigdir, scriptpath=scriptpath,
                    withdraw=True, **kwargs)
 
     def reloadconfig(self):
@@ -739,6 +739,9 @@ class MyApp(tkyg.App, object):
     from plotfunctions import plotDomain, readCartBoxFile
 
     from farmfunctions import button_loadcsv
+    from farmfunctions import button_saveFarmSetupYAML, button_loadFarmSetupYAML
+    from farmfunctions import resetFarmSetup
+    from farmfunctions import writeFarmSetupYAML, loadFarmSetupYAML
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size
@@ -1684,6 +1687,7 @@ if __name__ == "__main__":
     # Instantiate the app
     mainapp=MyApp(configyaml=os.path.join(scriptpath,'config.yaml'), 
                   localconfigdir=localconfigdir, 
+                  scriptpath=scriptpath,
                   #os.path.join(scriptpath,'local'),
                   title=title)
     mainapp.notebook.enable_traversal()

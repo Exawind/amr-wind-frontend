@@ -3,7 +3,7 @@ Wind farm functions
 """
 import numpy as np
 import pandas as pd
-import sys, csv
+import sys, os, csv
 import re
 from collections            import OrderedDict 
 
@@ -12,6 +12,20 @@ if sys.version_info[0] < 3:
     from StringIO import StringIO
 else:
     from io import StringIO
+
+# Load ruamel or pyyaml as needed
+try:
+    import ruamel.yaml as yaml
+    #print("# Loaded ruamel.yaml")
+    useruamel=True
+    loaderkwargs = {'Loader':yaml.RoundTripLoader}
+    dumperkwargs = {'Dumper':yaml.RoundTripDumper, 'indent':4} # 'block_seq_indent':2, 'line_break':0, 'explicit_start':True, 
+except:
+    import yaml as yaml
+    #print("# Loaded yaml")
+    useruamel=False
+    loaderkwargs = {}
+    dumperkwargs = {}
 
 def loadcsv(f, stringinput=False, reqheaders=None, optheaders=None,
             **kwargs):
@@ -99,11 +113,95 @@ def button_loadcsv(self, filenameinput, csvtextbox):
     """
     # Get the filename to load
     csvfile  = self.inputvars[filenameinput].getval()
-    # Need to double check file exists
+
+    # Check if file exists
+    if not os.path.isfile(csvfile):
+        print("ERROR: %s does not exist"%csvfile)
+        return
 
     # Load the filename and display it in the text box    
     csvstr = open(csvfile, 'r').read().lstrip()
     self.inputvars[csvtextbox].setval(csvstr)
+    return
+
+def resetFarmSetup(self):
+    """
+    Resets all variables with 'farmsetup' in outputdef to their defaults
+    """
+    for key, var in self.inputvars.items():
+        outputkey = 'farmsetup'
+        if outputkey in var.outputdef:
+            var.setdefault()
+    return
+
+def writeFarmSetupYAML(self, filename, verbose=True):
+    """
+    Write out the farm setup parameters into a YAML file
+    """
+    inputdict = dict(self.getDictFromInputs('farmsetup', onlyactive=False))
+
+    if useruamel: yaml.scalarstring.walk_tree(inputdict)
+
+    outfile = sys.stdout if filename == sys.stdout else open(filename, 'w')
+    yaml.dump(inputdict, outfile, default_flow_style=False, 
+              **dumperkwargs)
+    if filename != sys.stdout: 
+        outfile.close()
+        print("Saved farm setup to %s"%filename)
+    return
+
+def loadFarmSetupYAML(self, loadfile, stringinput=False):
+    """
+    Load the farm setup from a YAML file
+    """
+    if useruamel: Loader=yaml.load
+    else:         Loader=yaml.safe_load
+    if stringinput:
+        yamldict = Loader(loadfile, **loaderkwargs)
+    else:
+        # Check if file exists
+        if not os.path.isfile(loadfile):
+            print("ERROR: %s does not exist"%loadfile)
+            return
+        # Load the file
+        with open(loadfile, 'r') as fp:
+            yamldict = Loader(fp, **loaderkwargs)
+        print("Loaded farm setup from %s"%loadfile)
+
+    print(yamldict)
+
+    # Set the values of each variable
+    for key, val in yamldict.items():
+        self.inputvars[key].setval(val, forcechange=True)
+    return
+
+def button_saveFarmSetupYAML(self):
+    """
+    Button to save the farm setup
+    """
+    farmfile  = self.inputvars['farm_setupfile'].getval()
+    if len(farmfile)==0:
+        print('Blank farm setup file provided.  Cannot save.')
+        return
+    if farmfile=='sys.stdout': farmfile=sys.stdout
+
+    self.writeFarmSetupYAML(farmfile)
+    return
+
+def button_loadFarmSetupYAML(self):
+    """
+    Button to load the farm setup
+    """
+    farmfile  = self.inputvars['farm_setupfile'].getval()
+    if len(farmfile)==0:
+        print('Blank farm setup file provided.  Cannot load.')
+        return
+    # Check if file exists
+    if not os.path.isfile(farmfile):
+        print("ERROR: %s does not exist"%farmfile)
+        return
+    self.loadFarmSetupYAML(farmfile, stringinput=False)
+
     return
 
 def runtest1():
@@ -137,5 +235,10 @@ def runtest1():
     for k in dataframe2dict(df, reqheaders, optheaders, dictkeys=['e']):
         print(k)
 
+    loadFarmSetupYAML(testinp, stringinput=True)    
+
 if __name__ == "__main__":
     runtest1()
+    #runtest2()
+    #inputdict = {'a':'apple', 'b':'boy'}
+    #yaml.dump(dict(inputdict), sys.stdout, default_flow_style=False)

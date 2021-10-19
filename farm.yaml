@@ -34,7 +34,7 @@ frames:
   - name:       refine_csvtextbox
     frame:      frame_farmrefinement1
     inputtype:  textbox
-    defaultval: |
+    defaultval: |-
       # CSV file should have columns with
       # level, upstream, downstream, lateral, below, above, options
     entryopt:
@@ -44,12 +44,29 @@ frames:
       help:     Refine inputs
 
 inputwidgets:
+  - name:       farm_setupfile
+    frame:      frame_farmsetup
+    label:      Farm setup file
+    inputtype:  filename
+    #row:        2
+    defaultval: ''
+    entryopt:
+      width:    25
+    fileopenopt:
+      selecttype: saveas       
+      kwargs:
+        filetypes: 
+          - ["YAML files", "*.yaml"]
+          - ["all files", "*.*"]
+    outputdef:
+      help:     YAML file with all farm inputs
+
   - name:       refine_csvfile
     frame:      frame_farmrefinement
     label:      CSV file
     inputtype:  filename
     row:        0
-    defaultval:
+    defaultval: ''
     entryopt:
       width:    25
     fileopenopt:
@@ -57,6 +74,9 @@ inputwidgets:
         filetypes: 
           - ["CSV files", "*.csv"]
           - ["all files", "*.*"]
+    outputdef:
+      help:      CSV input file
+      farmsetup: refine_csvfile
 
   - name:       refine_csvtextbox
     frame:      frame_farmrefinement1
@@ -69,6 +89,7 @@ inputwidgets:
       height:   10
     outputdef:
       help:     Refine inputs
+      farmsetup: refine_csvtextbox
 
   - name:       sampling_csvtextbox
     frame:      frame_farmsampling1
@@ -89,4 +110,25 @@ buttons:
     row:     0
     col:     3
     command: "partial(self.button_loadcsv, 'refine_csvfile', 'refine_csvtextbox')"
+
+  - name:    farmbutton_saveyaml
+    row:     2
+    col:     0
+    text:    Save YAML
+    frame:   frame_farmsetup
+    command: "self.button_saveFarmSetupYAML"
+
+  - name:    farmbutton_loadyaml
+    row:     2
+    col:     1
+    text:    Load YAML
+    frame:   frame_farmsetup
+    command: "self.button_loadFarmSetupYAML"
+
+  - name:    farmbutton_clearyaml
+    row:     2
+    col:     2
+    text:    Reset inputs
+    frame:   frame_farmsetup
+    command: "self.resetFarmSetup"
 

@@ -16,7 +16,8 @@ scalarvars=[u'time', u'Q', u'Tsurf', u'ustar', u'wstar', u'L', u'zi', u'abl_forc
 stdvars = ['u',         'v',      'w',        'theta', 
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
            u"v'v'_r",  u"v'w'_r", u"w'w'_r",
-           u"u'theta'_r", u"v'theta'_r", u"w'theta'_r",]
+           u"u'theta'_r", u"v'theta'_r", u"w'theta'_r", 
+           'k_sgs']
 
 exprvars = { "u":'[u]',
              "v":'[v]',
@@ -31,6 +32,7 @@ exprvars = { "u":'[u]',
              u"u'theta'_r":'[uT]',
              u"v'theta'_r":'[vT]',
              u"w'theta'_r":'[wT]',
+             'k_sgs':'[k_sgs]',
            }
 
 def timeaverage(t, dat, t1, t2):
@@ -169,6 +171,10 @@ statsprofiles=OrderedDict([
     ('TKE',      {'requiredvars':[u"u'u'_r", u"v'v'_r", u"w'w'_r",], 
                   'header':'TKE',
                   'expr':'0.5*([uu]+[vv]+[ww])', 
+                  'funcstring':False}),
+    ('KSGS',      {'requiredvars':['k_sgs'], 
+                   'header':'k_sgs',
+                   'expr':'[k_sgs]', 
                   'funcstring':False}),
     ('ReStresses',{'requiredvars':[u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
                                    u"v'v'_r",  u"v'w'_r", u"w'w'_r",], 
