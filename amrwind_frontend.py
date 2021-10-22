@@ -920,6 +920,48 @@ class MyApp(tkyg.App, object):
         self.figcanvas.draw()
         return
 
+    # ---- Check North/East orientations ---
+    def check_NE_orthogonal(self, tol=1.0E-6):
+        north   = self.inputvars['north_vector'].getval()
+        east    = self.inputvars['east_vector'].getval()
+        NdotE   = np.dot(np.array(north), np.array(east))
+        result  = True if np.abs(NdotE)<tol else False
+        return result
+
+    def check_NE_onXYplane(self, tol=1.0E-6):
+        north   = self.inputvars['north_vector'].getval()
+        east    = self.inputvars['east_vector'].getval()
+        Z       = np.array([0, 0, 1.0])
+        NdotZ   = np.dot(np.array(north), Z)
+        EdotZ   = np.dot(np.array(east), Z)
+        if np.abs(NdotZ)<tol and np.abs(EdotZ)<tol:
+            return True
+        else:
+            return False
+    
+    def get_N_angle_to_Y(self, tol=1.0E-10):
+        north   = np.array(self.inputvars['north_vector'].getval())
+        Y       = np.array([0, 1, 0])
+        Z       = np.array([0, 0, 1])
+        costheta = np.dot(north, Y)/(np.linalg.norm(north)*np.linalg.norm(Y))
+        theta   = np.arccos(costheta)*180.0/np.pi
+        if np.abs(np.dot(np.cross(north, Y), Z) < tol):
+            sign = 1.0
+        else:
+            sign    = -np.sign(np.dot(np.cross(north, Y), Z))
+        return sign*theta
+
+    def convert_winddir_to_xy(self, winddir):
+        # Check for North/East vector
+        thetaoffset = self.get_N_angle_to_Y()
+        # Calculate Wind Vector
+        theta = (270.0+thetaoffset-winddir)*np.pi/180.0
+        nx    = np.cos(theta)
+        ny    = np.sin(theta)
+        vertical    = np.array([0, 0, 1.0])
+        streamwise  = np.array([nx, ny, 0.0])
+        crossstream = np.cross(streamwise, vertical)
+        return streamwise, crossstream, vertical
 
     # ---- ABL wind calculation ----------
     def ABL_calculateWindVector(self):
@@ -930,9 +972,9 @@ class MyApp(tkyg.App, object):
             print("Error in WS = "+repr(WS)+" or Wdir = "+repr(Wdir))
             return
         # Check for North/East vector
-        # TODO
+        thetaoffset = self.get_N_angle_to_Y()
         # Calculate Wind Vector
-        theta = (270.0-Wdir)*np.pi/180.0
+        theta = (270.0+thetaoffset-Wdir)*np.pi/180.0
         Ux    = WS*np.cos(theta)
         Uy    = WS*np.sin(theta)
         Uz    = 0.0
@@ -944,8 +986,8 @@ class MyApp(tkyg.App, object):
         Wvec   = self.inputvars['ABL_velocity'].getval()
         Uhoriz = np.sqrt(Wvec[0]**2 + Wvec[1]**2)
         # Check for North/East vector
-        # TODO
-        theta  = 270.0-np.arctan2(Wvec[1], Wvec[0])*180.0/np.pi
+        thetaoffset = self.get_N_angle_to_Y()
+        theta  = 270.0+thetaoffset-np.arctan2(Wvec[1], Wvec[0])*180.0/np.pi
         self.inputvars['ABL_windspeed'].setval(Uhoriz, forcechange=True)
         self.inputvars['ABL_winddir'].setval(theta, forcechange=True)
         return

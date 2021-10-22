@@ -135,7 +135,8 @@ def rotatepoint(pt, orig, theta):
     p2[2] = pt[2]
     return p2
 
-def plotTurbine(figax, basexyz, hubheight, turbD, nacelledir, ix, iy, **kwargs):
+def plotTurbine(figax, basexyz, hubheight, turbD, nacelledir, ix, iy,
+                thetaoffset=0.0, **kwargs):
     """
     Plot turbine on figax
     """
@@ -149,7 +150,7 @@ def plotTurbine(figax, basexyz, hubheight, turbD, nacelledir, ix, iy, **kwargs):
         z = turbR*np.sin(theta*np.pi/180.0)
         rotorpts.append([x,y,z])
     # Rotate the rotor ring to the right orientation
-    rotatetheta = (270.0-nacelledir)*np.pi/180.0
+    rotatetheta = (270.0+thetaoffset-nacelledir)*np.pi/180.0
     rotatedring = [rotatepoint(p, [0.0,0.0,0.0], rotatetheta) for p in rotorpts]
     # Translate the right to the right location
     hhpt     = np.array([0.0, 0.0, hubheight])
@@ -406,6 +407,9 @@ def plotDomain(self, ax=None):
         self.ABL_calculateWDirWS()
         winddir = self.inputvars['ABL_winddir'].getval()
 
+        # Get any north offset
+        thetaoffset = self.get_N_angle_to_Y()
+
         for turb in plotparams['plot_turbines']:
             tdict = allturbines.dumpdict('AMR-Wind',
                                          subset=[turb], keyfunc=keystr)
@@ -422,7 +426,7 @@ def plotDomain(self, ax=None):
                 EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
                 EDdict   = OpenFAST.FASTfile2dict(EDfile)
                 EDyaw    = float(EDdict['NacYaw'])
-                yaw      = 270.0-EDyaw
+                yaw      = 270.0+thetaoffset-EDyaw
 
             plotTurbine(ax, basepos, turbhh, turbD, yaw, ix, iy,
                         lw=1, color='k', alpha=0.75)
