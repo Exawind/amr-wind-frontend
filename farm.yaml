@@ -7,6 +7,32 @@ frames:
     tab:   Farm
     title: Wind farm setup
 
+  - name:  frame_farmturbines
+    tab:   Farm
+    title: Wind farm turbine layout
+    toggled: True
+
+  - name:  frame_farmturbines1
+    frame: frame_farmturbines
+    title: CSV Contents
+    row:   1
+    kwargs:
+      borderwidth: 0
+
+  - name:  frame_farmturbines2
+    frame: frame_farmturbines
+    title: Layout options
+    row:   2
+    kwargs:
+      borderwidth: 0
+
+  - name:  frame_farmturbines3
+    frame: frame_farmturbines
+    title: Actions
+    row:   3
+    kwargs:
+      borderwidth: 0
+
   - name:  frame_farmrefinement
     tab:   Farm
     title: Farm refinement zones
@@ -16,6 +42,18 @@ frames:
     frame: frame_farmrefinement
     title: CSV Contents
     row:   1
+    kwargs:
+      borderwidth: 0
+  - name:  frame_farmrefinement2
+    frame: frame_farmrefinement
+    title: Refinement options
+    row:   2
+    kwargs:
+      borderwidth: 0
+  - name:  frame_farmrefinement3
+    frame: frame_farmrefinement
+    title: Actions
+    row:   3
     kwargs:
       borderwidth: 0
 
@@ -30,19 +68,12 @@ frames:
     row:   1
     kwargs:
       borderwidth: 0
-      
-  - name:       refine_csvtextbox
-    frame:      frame_farmrefinement1
-    inputtype:  textbox
-    defaultval: |-
-      # CSV file should have columns with
-      # level, upstream, downstream, lateral, below, above, options
-    entryopt:
-      width:    55
-      height:   10
-    outputdef:
-      help:     Refine inputs
 
+  - name:  frame_runsweeps
+    tab:   Farm
+    title: Run parameter sweep
+    toggled: True
+      
 inputwidgets:
   - name:       farm_setupfile
     frame:      frame_farmsetup
@@ -60,7 +91,87 @@ inputwidgets:
           - ["all files", "*.*"]
     outputdef:
       help:     YAML file with all farm inputs
+      
+  # -------- Turbine layout inputs -------------------
+  - name:       turbines_csvfile
+    frame:      frame_farmturbines
+    label:      CSV file
+    inputtype:  filename
+    row:        0
+    defaultval: ''
+    entryopt:
+      width:    25
+    fileopenopt:
+      kwargs:
+        filetypes: 
+          - ["CSV files", "*.csv"]
+          - ["all files", "*.*"]
+    outputdef:
+      help:      CSV input file
+      farmsetup: turbines_csvfile
 
+  - name:       turbines_csvtextbox
+    frame:      frame_farmturbines1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # name, x, y, type, yaw, hubheight, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     Turbine layout
+      farmsetup: turbines_csvtextbox
+
+  - name:       turbines_deleteprev
+    frame:      frame_farmturbines2
+    label:      Delete existing turbines
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Remove all existing turbines before adding these
+      farmsetup: turbines_deleteprev
+
+  - name:       turbines_coordsys
+    frame:      frame_farmturbines2
+    label:      Turbine coordinate sys
+    inputtype:  str
+    optionlist: ['xy', 'utm', 'latlong']
+    defaultval: 'xy'
+    outputdef:
+      farmsetup: turbines_coordsys
+
+  - name:       turbines_autocalccenter
+    frame:      frame_farmturbines2
+    label:      Auto calculate farm center
+    inputtype:  bool
+    defaultval: True
+    ctrlelem:
+      - input:  turbines_farmcenter
+        activewhen: ['', 0]
+    outputdef:
+      help:     |
+        Automatically set farm center to be average of all turbine locations
+      farmsetup: turbines_autocalccenter
+
+  - name:       turbines_farmcenter
+    frame:      frame_farmturbines2
+    label:      Farm center coords (X,Y)
+    inputtype:  [float, float]
+    #defaultval: True
+    outputdef:
+      farmsetup: turbines_farmcenter
+
+  - name:       turbines_domainsize
+    frame:      frame_farmturbines2
+    label:      Farm domain size (X,Y,Z)
+    inputtype:  [float, float, float]
+    outputdef:
+      help:     Size of the computational domain in meters
+      farmsetup: turbines_domainsize
+
+
+  # -------- Refinement zone inputs -------------------
   - name:       refine_csvfile
     frame:      frame_farmrefinement
     label:      CSV file
@@ -91,25 +202,90 @@ inputwidgets:
       help:     Refine inputs
       farmsetup: refine_csvtextbox
 
+  - name:       refine_deleteprev
+    frame:      frame_farmrefinement2
+    label:      Delete existing zones
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Remove all existing refinement zones before adding these
+      farmsetup: refine_deleteprev
+
+  # -------- Sampling plane/probe inputs -------------------
+  - name:       sampling_csvfile
+    frame:      frame_farmsampling
+    label:      CSV file
+    inputtype:  filename
+    row:        0
+    defaultval: ''
+    entryopt:
+      width:    25
+    fileopenopt:
+      kwargs:
+        filetypes: 
+          - ["CSV files", "*.csv"]
+          - ["all files", "*.*"]
+    outputdef:
+      help:      CSV input file
+      farmsetup: sampling_csvfile
+
   - name:       sampling_csvtextbox
     frame:      frame_farmsampling1
     inputtype:  textbox
     defaultval: |
       # CSV file should have columns with
-      # upstream, downstream, lateral, below, above, options
+      # upstream, downstream, lateral, below, above, type, options
     entryopt:
       width:    55
       height:   10
     outputdef:
       help:     Sampling inputs
+      farmsetup: sampling_csvtextbox
 
 buttons:
+  - name:    farmbutton_loadturbines
+    text:    Load/Reload
+    frame:   frame_farmturbines
+    row:     0
+    col:     3
+    command: "partial(self.button_loadcsv, 'turbines_csvfile', 'turbines_csvtextbox')"
+
+  - name:    farmbutton_applyturbines
+    text:    Create turbines
+    frame:   frame_farmturbines3
+    row:     1
+    col:     0
+    command: "self.donothing_button"
+
+  - name:    farmbutton_previewturbines
+    text:    Preview
+    frame:   frame_farmturbines3
+    row:     1
+    col:     1
+    command: "self.donothing_button"
+
+
   - name:    farmbutton_loadrefine
     text:    Load/Reload
     frame:   frame_farmrefinement
     row:     0
     col:     3
     command: "partial(self.button_loadcsv, 'refine_csvfile', 'refine_csvtextbox')"
+
+  - name:    farmbutton_applyrefine
+    text:    Create refinements
+    frame:   frame_farmrefinement3
+    row:     1
+    col:     0
+    command: "self.refine_createAllZones"
+
+
+  - name:    farmbutton_loadsampling
+    text:    Load/Reload
+    frame:   frame_farmsampling
+    row:     0
+    col:     3
+    command: "partial(self.button_loadcsv, 'sampling_csvfile', 'sampling_csvtextbox')"
 
   - name:    farmbutton_saveyaml
     row:     2

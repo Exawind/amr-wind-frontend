@@ -633,6 +633,10 @@ class MyApp(tkyg.App, object):
             self.savefile = filename
         return
 
+    def donothing_button(self):
+        print("Does nothing")
+        return
+
     def menubar(self, root):
         """ 
         Adds a menu bar to root
@@ -742,6 +746,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import button_saveFarmSetupYAML, button_loadFarmSetupYAML
     from farmfunctions import resetFarmSetup
     from farmfunctions import writeFarmSetupYAML, loadFarmSetupYAML
+    from farmfunctions import refine_createAllZones, calc_FarmAvgProp, get_turbProp
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Wind farm functions
 """
@@ -6,6 +7,10 @@ import pandas as pd
 import sys, os, csv
 import re
 from collections            import OrderedDict 
+try:
+    from  tkyamlgui import moretypes
+except:
+    pass
 
 # Load the right version of StringIO
 if sys.version_info[0] < 3: 
@@ -19,13 +24,29 @@ try:
     #print("# Loaded ruamel.yaml")
     useruamel=True
     loaderkwargs = {'Loader':yaml.RoundTripLoader}
-    dumperkwargs = {'Dumper':yaml.RoundTripDumper, 'indent':4} # 'block_seq_indent':2, 'line_break':0, 'explicit_start':True, 
+    dumperkwargs = {'Dumper':yaml.RoundTripDumper, 'indent':4, 'default_flow_style':False} # 'block_seq_indent':2, 'line_break':0, 'explicit_start':True, 
 except:
     import yaml as yaml
     #print("# Loaded yaml")
     useruamel=False
     loaderkwargs = {}
-    dumperkwargs = {}
+    dumperkwargs = {'default_flow_style':False }
+
+if useruamel:
+    from ruamel.yaml.comments import CommentedMap 
+    def comseq(d):
+        """
+        Convert OrderedDict to CommentedMap
+        """
+        if isinstance(d, OrderedDict):
+            cs = CommentedMap()
+            for k, v in d.items():
+                cs[k] = comseq(v)
+            return cs
+        return d
+
+# Helper functions to get defaults from a dictionary
+getdictval = lambda d, k, default: default[k] if k not in d else d[k]
 
 def loadcsv(f, stringinput=False, reqheaders=None, optheaders=None,
             **kwargs):
@@ -42,8 +63,16 @@ def loadcsv(f, stringinput=False, reqheaders=None, optheaders=None,
     cleanstr = re.sub(r'(?m)^ *#.*\n?', '', s)
 
     # Check for header
-    sniffer   = csv.Sniffer()
-    hasheader = sniffer.has_header(cleanstr)
+    firstline = cleanstr.splitlines()[0]
+    firstlinewords = [x.strip().lower() for x in firstline.split(',')]
+    if reqheaders is not None:
+        hasheader =  all(elem in firstlinewords  for elem in reqheaders)
+    else:
+        hasheader = False
+
+    ## Check for header
+    #sniffer   = csv.Sniffer()
+    #hasheader = sniffer.has_header(cleanstr)
 
     #print("hasheader = %s"%repr(hasheader))
     
@@ -74,6 +103,7 @@ def loadcsv(f, stringinput=False, reqheaders=None, optheaders=None,
 def dataframe2dict(df, reqheaders, optheaders, dictkeys=[]):
     """
     Convert dataframe to a list of dictionaries
+    dictkeys are keys in optheaders which should be parsed as dictionaries
     """
     listdict = []
     for index, row in df.iterrows():
@@ -134,17 +164,259 @@ def resetFarmSetup(self):
             var.setdefault()
     return
 
+# ----------- Functions for refinement zones ---------------
+def get_turbProp(self, tdict):
+    # Get the default type
+    default_type   = self.inputvars['Actuator_default_type'].getval()
+    default_type   = None if len(default_type)==0 else default_type
+    default_type   = default_type[0] if isinstance(default_type, list) else default_type
+
+    turbtype = default_type if 'Actuator_type' not in tdict else tdict['Actuator_type']
+    turbtype = turbtype[0] if isinstance(turbtype, list) else turbtype
+
+    # Get default diameter and HH
+    if 'Actuator_%s_rotor_diameter'%turbtype in self.inputvars:
+        default_turbD  = self.inputvars['Actuator_%s_rotor_diameter'%turbtype].getval()
+    else:
+        default_turbD  = 100.0
+    if 'Actuator_%s_hub_height'%turbtype in self.inputvars:
+        default_hh     = self.inputvars['Actuator_%s_hub_height'%turbtype].getval()
+    else:
+        default_hh     = 100.0
+        
+    # Get the real values
+    turbhh   = default_hh  if tdict['Actuator_hub_height'] is None else tdict['Actuator_hub_height']
+    turbD    = default_turbD if tdict['Actuator_rotor_diameter'] is None else tdict['Actuator_rotor_diameter']
+    return turbD, turbhh
+
+def calc_FarmAvgProp(self):
+    # Go through all turbines
+    allturbines  = self.listboxpopupwindict['listboxactuator']
+    alltags      = allturbines.getitemlist()
+    keystr       = lambda n, d1, d2: d2.name
+    #print(alltags)
+    acceptableTurbTypes = ['TurbineFastLine', 'TurbineFastDisk',
+                           'UniformCtDisk' ]
+    Nturbs       = 0
+    AvgHH        = 0.0
+    AvgTurbD     = 0.0
+    AvgCenter    = np.array([0.0, 0.0, 0.0])
+    for turb in alltags:
+        tdict = allturbines.dumpdict('AMR-Wind', subset=[turb], keyfunc=keystr)
+        if tdict['Actuator_type'] in acceptableTurbTypes:
+            Nturbs    += 1
+            AvgCenter += tdict['Actuator_base_position']
+            turbD, turbhh = self.get_turbProp(tdict)
+            AvgHH     += turbhh
+            AvgTurbD  += turbD
+            #AvgHH     += tdict['Actuator_hub_height']
+            #AvgTurbD  += tdict['Actuator_rotor_diameter']
+            #print(tdict['Actuator_base_position'])
+            #print(tdict['Actuator_hub_height'])
+    if Nturbs>0:
+        AvgHH     /= Nturbs
+        AvgTurbD  /= Nturbs
+        AvgCenter /= Nturbs
+    return AvgCenter, AvgTurbD, AvgHH
+
+def refine_calcZone(zonename, zonedict, zonecenter, sx, cx, vx, scale):
+    refinedict = {}
+
+    # Get the distances
+    upstream   = scale*zonedict['upstream']
+    downstream = scale*zonedict['downstream']
+    lateral    = scale*zonedict['lateral']
+    below      = scale*zonedict['below']
+    above      = scale*zonedict['above']
+
+    # Calculate the corner
+    corner     = zonecenter - below*vx - upstream*sx - lateral*cx
+    axis1      = (upstream+downstream)*sx
+    axis2      = 2.0*lateral*cx
+    axis3      = (below+above)*vx
+    
+    # Edit the parameters of the refinement window
+    refinedict['tagging_name']         = zonename
+    refinedict['tagging_shapes']       = zonename
+    refinedict['tagging_type']         = 'GeometryRefinement'
+    refinedict['tagging_level']        = zonedict['level']
+    refinedict['tagging_geom_type']    = 'box'
+    refinedict['tagging_geom_origin']  = list(corner)
+    refinedict['tagging_geom_xaxis']   = list(axis1)
+    refinedict['tagging_geom_yaxis']   = list(axis2)
+    refinedict['tagging_geom_zaxis']   = list(axis3)
+    return refinedict
+
+def refine_createZoneForTurbine(self, turbname, turbinedict, zonedict,
+                                defaultopt):
+    # Get the wind direction
+    winddir = self.inputvars['ABL_winddir'].getval()
+
+    # Get the turbine properties
+    base_position = np.array(turbinedict['Actuator_base_position'])
+    turbD, turbhh = self.get_turbProp(turbinedict)
+    turbyaw       = winddir if turbinedict['Actuator_yaw'] is None else turbinedict['Actuator_yaw']
+
+    # Get the zone options
+    units   = getdictval(zonedict['options'], 'units', defaultopt).lower()
+    orient  = getdictval(zonedict['options'], 'orientation', defaultopt).lower()
+    # Set scale and orientation axes
+    scale = turbD if units=='diameter' else 1.0
+    if orient == 'x':
+        streamwise  = np.array([1.0, 0.0, 0.0])
+        crossstream = np.array([0.0, 1.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])
+    elif orient == 'y':
+        streamwise  = np.array([0.0, 1.0, 0.0])
+        crossstream = np.array([-1.0, 0.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])        
+    elif orient == 'nacdir':
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(turbyaw)
+    else:  # Use the wind direction
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
+        
+    # Get the name
+    zonename = '%s_level_%i_zone'%(turbname, zonedict['level'])
+
+    zonecenter = base_position + turbhh*vert
+    refinedict = refine_calcZone(zonename, zonedict, zonecenter, 
+                                 streamwise, crossstream, vert, scale)
+
+    return refinedict
+
+def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
+                             defaultopt):
+    # Get the wind direction
+    winddir = self.inputvars['ABL_winddir'].getval()
+
+    # Get the zone options
+    units   = getdictval(zonedict['options'], 'units', defaultopt).lower()
+    orient  = getdictval(zonedict['options'], 'orientation', defaultopt).lower()
+    # Set scale and orientation axes
+    scale   = AvgTurbD if units=='diameter' else 1.0
+    if orient == 'x':
+        streamwise  = np.array([1.0, 0.0, 0.0])
+        crossstream = np.array([0.0, 1.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])
+    elif orient == 'y':
+        streamwise  = np.array([0.0, 1.0, 0.0])
+        crossstream = np.array([-1.0, 0.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])        
+    elif orient == 'nacdir':
+        print("Zone orientation nacdir not possible for farm zone.")
+        print("Using wind direction instead")
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
+    else:  # Use the wind direction
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
+
+    # Set the farm center
+    if self.inputvars['turbines_autocalccenter'].getval() == True:
+        usecenter = autofarmcenter
+    else:
+        usecenter = self.inputvars['turbines_farmcenter'].getval()
+
+    # Get the name
+    zonename = 'Farm_level_%i_zone'%(zonedict['level'])
+    zonecenter = np.array([usecenter[0], usecenter[1], AvgHH])
+    refinedict = refine_calcZone(zonename, zonedict, zonecenter, 
+                                 streamwise, crossstream, vert, scale)
+
+    return refinedict
+
+def refine_createAllZones(self):
+    """
+    Create all of the refinement zones
+    """
+    # Default dictionary for optional inputs
+    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y
+                  'units':'diameter',        # diameter/meter
+                  'center':'turbine',        # turbine/farm
+              }
+
+    # Get the csv input
+    csvstring  = self.inputvars['refine_csvtextbox'].getval()
+    reqheaders = ['level', 'upstream', 'downstream', 
+                  'lateral', 'below', 'above']
+    optheaders = ['options']
+    #print(csvstring)
+    df         = loadcsv(csvstring, stringinput=True, 
+                         reqheaders=reqheaders, optheaders=optheaders)
+    alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
+    #for zone in alldf: print(zone['options'])
+
+    # See if any zones are farm-centered
+    allcenters = [getdictval(z['options'], 'center', defaultopt).lower() for z in alldf]
+    #print(allcenters)
+    if 'farm' in allcenters:
+        #print("Calculating farm center")
+        AvgCenter, AvgTurbD, AvgHH = calc_FarmAvgProp(self)
+        #print("AvgCenter = "+repr(AvgCenter))
+        #print("AvgTurbD  = "+repr(AvgTurbD))
+        #print("AvgHH     = "+repr(AvgHH))
+
+    # Get all turbine properties
+    allturbines  = self.listboxpopupwindict['listboxactuator']
+    alltags      = allturbines.getitemlist()
+    keystr       = lambda n, d1, d2: d2.name
+
+    # Get the wind direction
+    self.ABL_calculateWDirWS()
+
+    # Delete all old zones (if necessary)
+    if self.inputvars['refine_deleteprev']:
+        alltagging  = self.listboxpopupwindict['listboxtagging']
+        alltagging.deleteall()
+
+    # Go through all rows and create zones
+    for zone in alldf:
+        center=getdictval(zone['options'], 'center', defaultopt).lower()
+        if center=='turbine':
+            # Apply to every turbine
+            for turb in alltags:
+                tdict = allturbines.dumpdict('AMR-Wind', 
+                                             subset=[turb], keyfunc=keystr)
+                refinedict = refine_createZoneForTurbine(self, turb, tdict, 
+                                                         zone, defaultopt)
+                #print(refinedict)
+                if refinedict is not None:
+                    self.add_tagging(refinedict)
+        else:
+            # Apply to the farm center
+            refinedict = refine_createZoneForFarm(self, zone, AvgCenter, 
+                                                  AvgTurbD, AvgHH, defaultopt)
+            #print(refinedict)
+            if refinedict is not None:
+                self.add_tagging(refinedict)
+    return
+
+# ----------- Functions related to I/O  ----------------
 def writeFarmSetupYAML(self, filename, verbose=True):
     """
     Write out the farm setup parameters into a YAML file
     """
     inputdict = dict(self.getDictFromInputs('farmsetup', onlyactive=False))
 
-    if useruamel: yaml.scalarstring.walk_tree(inputdict)
+    # Get the help dict
+    helpdict = self.getHelpFromInputs('farmsetup', 'help', onlyactive=False)
 
+    if useruamel: 
+        inputdict = comseq(self.getDictFromInputs('farmsetup', onlyactive=False))
+        yaml.scalarstring.walk_tree(inputdict)
+        for k,v in inputdict.items():
+            if k in helpdict:
+                if self.inputvars[k].inputtype == moretypes.textbox:
+                    if hasattr(yaml.comments.CommentedMap, "yaml_set_comment_before_after_key"):
+                        inputdict.yaml_set_comment_before_after_key(k, before=helpdict[k])
+                else:
+                    inputdict.yaml_add_eol_comment(helpdict[k], k, column=40)
+
+    # Open the file and write it
     outfile = sys.stdout if filename == sys.stdout else open(filename, 'w')
-    yaml.dump(inputdict, outfile, default_flow_style=False, 
+    # Write out the header comment
+    outfile.write("# ----- BEGIN Farm setup input file ----\n")
+    yaml.dump(inputdict, outfile, 
               **dumperkwargs)
+    outfile.write("# ----- END Farm setup input file ------\n")
     if filename != sys.stdout: 
         outfile.close()
         print("Saved farm setup to %s"%filename)
@@ -168,7 +440,7 @@ def loadFarmSetupYAML(self, loadfile, stringinput=False):
             yamldict = Loader(fp, **loaderkwargs)
         print("Loaded farm setup from %s"%loadfile)
 
-    print(yamldict)
+    #print(yamldict)
 
     # Set the values of each variable
     for key, val in yamldict.items():
@@ -203,6 +475,7 @@ def button_loadFarmSetupYAML(self):
     self.loadFarmSetupYAML(farmfile, stringinput=False)
 
     return
+# ------------------------------------------------------
 
 def runtest1():
     testdata="""
@@ -235,7 +508,7 @@ def runtest1():
     for k in dataframe2dict(df, reqheaders, optheaders, dictkeys=['e']):
         print(k)
 
-    loadFarmSetupYAML(testinp, stringinput=True)    
+    #loadFarmSetupYAML(testinp, stringinput=True)    
 
 if __name__ == "__main__":
     runtest1()

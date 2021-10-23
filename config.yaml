@@ -1875,14 +1875,6 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
       help:     Number of theta force points to sample for velocity
-  - name:       Actuator_UniformCtDisk_num_vel_points_t
-    label:      Num vel theta pts sample
-    frame:      frame_uniformctglobals
-    inputtype:  int
-    defaultval: 
-    outputdef:
-      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
-      help:     Number of theta force points to sample for velocity
   - name:       Actuator_UniformCtDisk_thrust_coeff
     label:      Thrust coefficient
     frame:      frame_uniformctglobals
@@ -2666,14 +2658,6 @@ popupwindow:
       outputdef:
         AMR-Wind: num_vel_points_r
         help:     Number of radial force points to sample for velocity
-    - name:       Actuator_num_vel_points_t
-      label:      Num vel theta pts sample
-      frame:      uniformCt_frame
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_vel_points_t
-        help:     Number of theta force points to sample for velocity
     - name:       Actuator_num_vel_points_t
       label:      Num vel theta pts sample
       frame:      uniformCt_frame
