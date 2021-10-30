@@ -18,6 +18,8 @@ if sys.version_info[0] < 3:
 else:
     from io import StringIO
 
+from plotfunctions import plotRectangle
+
 # Load ruamel or pyyaml as needed
 try:
     import ruamel.yaml as yaml
@@ -387,6 +389,102 @@ def refine_createAllZones(self):
             #print(refinedict)
             if refinedict is not None:
                 self.add_tagging(refinedict)
+    return
+
+# ----------- Functions for wind farm turbines -------------
+def turbines_createAllTurbines(self):
+    """
+    Create all of the turbines from csv input
+    """
+    # Default dictionary for optional inputs
+    defaultopt = {'copyfast':False,          # True/False
+              }
+
+    reqheaders = ['name', 'x', 'y', 'type', 'yaw', 'hubheight']
+    optheaders = ['options']
+
+    # Get the csv input
+    csvstring  = self.inputvars['turbines_csvtextbox'].getval()    
+    #print(csvstring)
+    df         = loadcsv(csvstring, stringinput=True, 
+                         reqheaders=reqheaders, optheaders=optheaders)
+    alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
+    #for zone in alldf: print(zone['options'])
+
+    # Get all turbine properties
+    allturbines  = self.listboxpopupwindict['listboxactuator']
+    alltags      = allturbines.getitemlist()
+    keystr       = lambda n, d1, d2: d2.name
+
+    return
+
+def turbines_previewAllTurbines(self, ax=None):
+    """
+    Plot all of the turbines from the csv input
+    """
+    reqheaders = ['name', 'x', 'y', 'type', 'yaw', 'hubheight']
+    optheaders = ['options']
+
+    # Get the csv input
+    csvstring  = self.inputvars['turbines_csvtextbox'].getval()    
+    #print(csvstring)
+    df         = loadcsv(csvstring, stringinput=True, 
+                         reqheaders=reqheaders, optheaders=optheaders)
+    alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
+    #for turb in alldf: print("%10s %f %f"%(turb['name'], turb['x'], turb['y']))
+
+    # Calculate the farm center
+    # TODO: Generalize to UTM!
+    if self.inputvars['turbines_autocalccenter'].getval():
+        AvgCenter    = np.array([0.0, 0.0])
+        for turb in alldf: 
+            AvgCenter += np.array([turb['x'], turb['y']])
+        AvgCenter    = AvgCenter/len(alldf)
+    else:
+        AvgCenter    = self.inputvars['turbines_farmcenter'].getval()
+            
+    # Get the farm domain size
+    domainsize   = self.inputvars['turbines_domainsize'].getval()    
+    if domainsize is None:
+        # WARNING
+        print("ERROR: Farm domain size is not valid!")
+        return
+    corner1 = [AvgCenter[0] - 0.5*domainsize[0],
+               AvgCenter[1] - 0.5*domainsize[1],
+               0.0]
+
+    corner2 = [AvgCenter[0] + 0.5*domainsize[0],
+               AvgCenter[1] + 0.5*domainsize[1],
+               domainsize[2]]
+
+    # Clear and resize figure
+    if ax is None: ax=self.setupfigax()
+
+    # Do the domain plot first
+    ix = 0; xstr='X'
+    iy = 1; ystr='Y'
+    x1, y1, x2, y2  = plotRectangle(ax, corner1, corner2, ix, iy,
+                                    color='gray', ec='k', alpha=0.25)
+    # Plot the turbines
+    for turb in alldf: 
+        ax.plot(turb['x'], turb['y'], marker='s', color='k', markersize=8)
+        ax.text(turb['x']+50, turb['y']+50, turb['name'],
+                color='r', ha='right', va='top', fontdict={'fontsize':8})
+
+    # --------------------------------
+    # Set some plot formatting parameters
+
+    ax.set_xlim([AvgCenter[0]-domainsize[0]*0.55, 
+                 AvgCenter[0]+domainsize[0]*0.55])
+    ax.set_ylim([AvgCenter[1]-domainsize[1]*0.55, 
+                 AvgCenter[1]+domainsize[1]*0.55])
+
+    ax.set_aspect('equal')
+    ax.set_xlabel('%s [m]'%xstr)
+    ax.set_ylabel('%s [m]'%ystr)
+    ax.set_title(r'Wind Farm Preview')
+    self.figcanvas.draw()
+
     return
 
 # ----------- Functions related to I/O  ----------------

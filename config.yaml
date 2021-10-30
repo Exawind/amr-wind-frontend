@@ -2939,4 +2939,4 @@ helpwindows:
 # ------------
 includes:
   - help.yaml
-  - farm.yaml
+#  - farm.yaml   # Uncomment this line to include it in the official app

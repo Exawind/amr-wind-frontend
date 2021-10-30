@@ -255,14 +255,14 @@ buttons:
     frame:   frame_farmturbines3
     row:     1
     col:     0
-    command: "self.donothing_button"
+    command: "self.turbines_createAllTurbines"
 
   - name:    farmbutton_previewturbines
     text:    Preview
     frame:   frame_farmturbines3
     row:     1
     col:     1
-    command: "self.donothing_button"
+    command: "self.turbines_previewAllTurbines"
 
 
   - name:    farmbutton_loadrefine

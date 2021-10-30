@@ -742,11 +742,13 @@ class MyApp(tkyg.App, object):
 
     from plotfunctions import plotDomain, readCartBoxFile
 
+    # import all wind farm functions
     from farmfunctions import button_loadcsv
     from farmfunctions import button_saveFarmSetupYAML, button_loadFarmSetupYAML
     from farmfunctions import resetFarmSetup
     from farmfunctions import writeFarmSetupYAML, loadFarmSetupYAML
     from farmfunctions import refine_createAllZones, calc_FarmAvgProp, get_turbProp
+    from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size
