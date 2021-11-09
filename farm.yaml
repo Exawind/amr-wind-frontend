@@ -7,6 +7,27 @@ frames:
     tab:   Farm
     title: Wind farm setup
 
+  - name:  frame_farmsetup1
+    frame: frame_farmsetup
+    title: Options
+    row:   2
+    kwargs:
+      borderwidth: 0
+    toggled: True
+
+  - name:  frame_farmsetup1a
+    frame: frame_farmsetup1
+    title: User comments
+    kwargs:
+      borderwidth: 0
+
+  - name:  frame_farmsetup2
+    frame: frame_farmsetup
+    title: Actions
+    row:   3
+    kwargs:
+      borderwidth: 0
+
   - name:  frame_farmturbines
     tab:   Farm
     title: Wind farm turbine layout
@@ -78,8 +99,8 @@ inputwidgets:
   - name:       farm_setupfile
     frame:      frame_farmsetup
     label:      Farm setup file
-    inputtype:  filename
-    #row:        2
+    inputtype:  str #filename
+    row:        1
     defaultval: ''
     entryopt:
       width:    25
@@ -91,8 +112,49 @@ inputwidgets:
           - ["all files", "*.*"]
     outputdef:
       help:     YAML file with all farm inputs
+
+  - name:       farm_embedamrwindinput
+    frame:      frame_farmsetup1
+    label:      Embed AMR-Wind input
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Embed AMR-Wind input file in yaml file
+
+  - name:       farm_loadembedamrwindinput
+    frame:      frame_farmsetup1
+    label:      Loaded embeded AMR-Wind input
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Load embeded AMR-Wind input file
+
+  - name:       farm_usercomments
+    frame:      frame_farmsetup1a
+    inputtype:  textbox
+    defaultval: |
+      Add any optional commments here.
+    entryopt:
+      width:    50
+      height:   5
+    outputdef:
+      help:     "\nUser comments"
+      farmsetup: farm_usercomments
       
   # -------- Turbine layout inputs -------------------
+  - name:       turbines_csvtextbox
+    frame:      frame_farmturbines1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # name, x, y, type, yaw, hubheight, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     "\nTurbine layout"
+      farmsetup: turbines_csvtextbox
+
   - name:       turbines_csvfile
     frame:      frame_farmturbines
     label:      CSV file
@@ -109,19 +171,6 @@ inputwidgets:
     outputdef:
       help:      CSV input file
       farmsetup: turbines_csvfile
-
-  - name:       turbines_csvtextbox
-    frame:      frame_farmturbines1
-    inputtype:  textbox
-    defaultval: |
-      # CSV file should have columns with
-      # name, x, y, type, yaw, hubheight, options
-    entryopt:
-      width:    55
-      height:   10
-    outputdef:
-      help:     Turbine layout
-      farmsetup: turbines_csvtextbox
 
   - name:       turbines_deleteprev
     frame:      frame_farmturbines2
@@ -170,8 +219,29 @@ inputwidgets:
       help:     Size of the computational domain in meters
       farmsetup: turbines_domainsize
 
+  - name:       turbines_plotnames
+    frame:      frame_farmturbines2
+    label:      Plot turbine names
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Plot the turbine names in preview window
+
 
   # -------- Refinement zone inputs -------------------
+  - name:       refine_csvtextbox
+    frame:      frame_farmrefinement1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # level, upstream, downstream, lateral, below, above, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     "\nRefine inputs"
+      farmsetup: refine_csvtextbox
+
   - name:       refine_csvfile
     frame:      frame_farmrefinement
     label:      CSV file
@@ -189,19 +259,6 @@ inputwidgets:
       help:      CSV input file
       farmsetup: refine_csvfile
 
-  - name:       refine_csvtextbox
-    frame:      frame_farmrefinement1
-    inputtype:  textbox
-    defaultval: |
-      # CSV file should have columns with
-      # level, upstream, downstream, lateral, below, above, options
-    entryopt:
-      width:    55
-      height:   10
-    outputdef:
-      help:     Refine inputs
-      farmsetup: refine_csvtextbox
-
   - name:       refine_deleteprev
     frame:      frame_farmrefinement2
     label:      Delete existing zones
@@ -212,6 +269,19 @@ inputwidgets:
       farmsetup: refine_deleteprev
 
   # -------- Sampling plane/probe inputs -------------------
+  - name:       sampling_csvtextbox
+    frame:      frame_farmsampling1
+    inputtype:  textbox
+    defaultval: |
+      # CSV file should have columns with
+      # upstream, downstream, lateral, below, above, type, options
+    entryopt:
+      width:    55
+      height:   10
+    outputdef:
+      help:     "\nSampling inputs"
+      farmsetup: sampling_csvtextbox
+
   - name:       sampling_csvfile
     frame:      frame_farmsampling
     label:      CSV file
@@ -229,18 +299,19 @@ inputwidgets:
       help:      CSV input file
       farmsetup: sampling_csvfile
 
-  - name:       sampling_csvtextbox
+  # -------- Hidden/extra inputs ---------------------------
+  - name:       wfarm_embedamrwindinput
     frame:      frame_farmsampling1
     inputtype:  textbox
-    defaultval: |
-      # CSV file should have columns with
-      # upstream, downstream, lateral, below, above, type, options
+    visible:    False
     entryopt:
       width:    55
       height:   10
+    defaultval: |
+      # This should be the inputs to AMR-Wind
     outputdef:
-      help:     Sampling inputs
-      farmsetup: sampling_csvtextbox
+      help:     "\n___Embedded AMR-Wind input____"
+      farmsetup: wfarm_embedamrwindinput
 
 buttons:
   - name:    farmbutton_loadturbines
@@ -287,24 +358,31 @@ buttons:
     col:     3
     command: "partial(self.button_loadcsv, 'sampling_csvfile', 'sampling_csvtextbox')"
 
+  - name:    farmbutton_clearyamlfile
+    row:     1
+    col:     2
+    text:    Clear filename
+    frame:   frame_farmsetup
+    command: "self.button_clearSetupYAMLfile"
+
   - name:    farmbutton_saveyaml
     row:     2
     col:     0
     text:    Save YAML
-    frame:   frame_farmsetup
+    frame:   frame_farmsetup2
     command: "self.button_saveFarmSetupYAML"
 
   - name:    farmbutton_loadyaml
     row:     2
     col:     1
     text:    Load YAML
-    frame:   frame_farmsetup
+    frame:   frame_farmsetup2
     command: "self.button_loadFarmSetupYAML"
 
-  - name:    farmbutton_clearyaml
+  - name:    farmbutton_resetsetup
     row:     2
     col:     2
     text:    Reset inputs
-    frame:   frame_farmsetup
+    frame:   frame_farmsetup2
     command: "self.resetFarmSetup"
 

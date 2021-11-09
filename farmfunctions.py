@@ -15,10 +15,21 @@ except:
 # Load the right version of StringIO
 if sys.version_info[0] < 3: 
     from StringIO import StringIO
+    import Tkinter as Tk
+    import tkFileDialog as filedialog
 else:
     from io import StringIO
+    import tkinter as Tk
+    from tkinter import filedialog as filedialog
 
 from plotfunctions import plotRectangle
+
+# Load UTM library
+try:
+    import utm
+    useutm = True
+except:
+    useutm = False
 
 # Load ruamel or pyyaml as needed
 try:
@@ -392,6 +403,39 @@ def refine_createAllZones(self):
     return
 
 # ----------- Functions for wind farm turbines -------------
+def getTurbAvgCenter(self, turbdf, updatewidget=True, convertlatlong=True):
+    """
+    Calculate the farm center based on turbine locations
+    """
+    AvgCenter    = np.array([0.0, 0.0])
+    latcol       = 0 # which coordinate is latitude
+    longcol      = 1 # which coordinate is longitude
+
+    # Get the average center
+    if self.inputvars['turbines_autocalccenter'].getval():
+        for turb in turbdf: 
+            AvgCenter += np.array([turb['x'], turb['y']])
+        AvgCenter    = AvgCenter/len(turbdf)
+    else:
+        AvgCenter    = self.inputvars['turbines_farmcenter'].getval()
+
+    # Convert from lat/long if necessary
+    coordsys = self.inputvars['turbines_coordsys'].getval()
+    if coordsys=='latlong' and convertlatlong:
+        # Convert AvgCenter to lat/long
+        if useutm:
+            utmxy     = utm.from_latlon(AvgCenter[latcol], 
+                                        AvgCenter[longcol])
+            AvgCenter = [utmxy[0], utmxy[1]]
+            #utm.from_latlon(row['ylat'], row['xlong'])
+        else:
+            print("ERROR: UTM conversion not available ")
+    if updatewidget:
+        self.inputvars['turbines_farmcenter'].setval(AvgCenter, 
+                                                     forcechange=True)
+
+    return AvgCenter
+
 def turbines_createAllTurbines(self):
     """
     Create all of the turbines from csv input
@@ -416,6 +460,23 @@ def turbines_createAllTurbines(self):
     alltags      = allturbines.getitemlist()
     keystr       = lambda n, d1, d2: d2.name
 
+    # Calculate the farm center
+    AvgCenter = getTurbAvgCenter(self, alldf)    
+    #print("AvgCenter = "+repr(AvgCenter))
+
+    # Get the farm domain size
+    domainsize   = self.inputvars['turbines_domainsize'].getval()    
+    if domainsize is None:
+        # WARNING
+        print("ERROR: Farm domain size is not valid!")
+        return
+    corner1 = [AvgCenter[0] - 0.5*domainsize[0],
+               AvgCenter[1] - 0.5*domainsize[1],
+               0.0]
+    corner2 = [AvgCenter[0] + 0.5*domainsize[0],
+               AvgCenter[1] + 0.5*domainsize[1],
+               domainsize[2]]
+
     return
 
 def turbines_previewAllTurbines(self, ax=None):
@@ -431,17 +492,11 @@ def turbines_previewAllTurbines(self, ax=None):
     df         = loadcsv(csvstring, stringinput=True, 
                          reqheaders=reqheaders, optheaders=optheaders)
     alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
-    #for turb in alldf: print("%10s %f %f"%(turb['name'], turb['x'], turb['y']))
+    #for turb in alldf: print("%10s %f %f %10s"%(turb['name'], turb['x'], turb['y'], turb['type']))
 
     # Calculate the farm center
-    # TODO: Generalize to UTM!
-    if self.inputvars['turbines_autocalccenter'].getval():
-        AvgCenter    = np.array([0.0, 0.0])
-        for turb in alldf: 
-            AvgCenter += np.array([turb['x'], turb['y']])
-        AvgCenter    = AvgCenter/len(alldf)
-    else:
-        AvgCenter    = self.inputvars['turbines_farmcenter'].getval()
+    AvgCenter = getTurbAvgCenter(self, alldf)    
+    #print("AvgCenter = "+repr(AvgCenter))
             
     # Get the farm domain size
     domainsize   = self.inputvars['turbines_domainsize'].getval()    
@@ -466,13 +521,32 @@ def turbines_previewAllTurbines(self, ax=None):
     x1, y1, x2, y2  = plotRectangle(ax, corner1, corner2, ix, iy,
                                     color='gray', ec='k', alpha=0.25)
     # Plot the turbines
+    coordsys = self.inputvars['turbines_coordsys'].getval()
+    addturbinename = self.inputvars['turbines_plotnames'].getval()
     for turb in alldf: 
-        ax.plot(turb['x'], turb['y'], marker='s', color='k', markersize=8)
-        ax.text(turb['x']+50, turb['y']+50, turb['name'],
-                color='r', ha='right', va='top', fontdict={'fontsize':8})
+        turbx = turb['x']
+        turby = turb['y']
+        # Convert from lat,long if necessary
+        if coordsys=='latlong':
+            if useutm:
+                utmxy     = utm.from_latlon(turb['x'], turb['y'])
+                turbx     = utmxy[0]
+                turby     = utmxy[1]
+            else:
+                print("ERROR: UTM conversion not available ")
+                sys.exit(1)
+        # plot the point
+        ax.plot(turbx, turby, marker='s', color='k', markersize=8)
+        if addturbinename:
+            ax.text(turbx+50, turby+50, turb['name'],
+                    color='r', ha='right', va='top', fontdict={'fontsize':8})
 
     # --------------------------------
     # Set some plot formatting parameters
+
+    if coordsys=='latlong' or coordsys=='utm':
+        # this this for different hemispheres
+        xstr, ystr = 'EASTING', 'NORTHING'
 
     ax.set_xlim([AvgCenter[0]-domainsize[0]*0.55, 
                  AvgCenter[0]+domainsize[0]*0.55])
@@ -492,6 +566,17 @@ def writeFarmSetupYAML(self, filename, verbose=True):
     """
     Write out the farm setup parameters into a YAML file
     """
+
+    # Embed the AMR-Wind input file if needed
+    amrwindinput = ''
+    embedamrwindinput = self.inputvars['farm_embedamrwindinput'].getval()
+    if embedamrwindinput:
+        amrwindinput = self.writeAMRWindInput('')
+    formattedinput = ''
+    for line in amrwindinput.splitlines(): formattedinput += line.rstrip()+'\n'
+    self.inputvars['wfarm_embedamrwindinput'].setval(formattedinput)
+
+    # Get all farmsetup inputs into a dict
     inputdict = dict(self.getDictFromInputs('farmsetup', onlyactive=False))
 
     # Get the help dict
@@ -499,6 +584,7 @@ def writeFarmSetupYAML(self, filename, verbose=True):
 
     if useruamel: 
         inputdict = comseq(self.getDictFromInputs('farmsetup', onlyactive=False))
+        
         yaml.scalarstring.walk_tree(inputdict)
         for k,v in inputdict.items():
             if k in helpdict:
@@ -550,10 +636,27 @@ def button_saveFarmSetupYAML(self):
     Button to save the farm setup
     """
     farmfile  = self.inputvars['farm_setupfile'].getval()
+    kwargs = {'filetypes':[("YAML files","*.yaml *.yml"), 
+                           ("all files","*.*")]}
     if len(farmfile)==0:
-        print('Blank farm setup file provided.  Cannot save.')
+        initialdir = './'
+        initialfile= None
+        #print('Blank farm setup file provided.  Cannot save.')
+        #return
+    else:
+        initialdir  = os.path.dirname(farmfile)
+        initialfile = os.path.basename(farmfile)
+    if farmfile=='sys.stdout': 
+        farmfile=sys.stdout
+    else:
+        farmfile  = filedialog.asksaveasfilename(initialdir  = initialdir,
+                                                 initialfile = initialfile,
+                                                 title = "Save as farm YAML file",
+                                                 **kwargs)
+    if isinstance(farmfile, str) and len(farmfile)==0:
         return
-    if farmfile=='sys.stdout': farmfile=sys.stdout
+    if isinstance(farmfile, str): 
+        self.inputvars['farm_setupfile'].setval(farmfile)
 
     self.writeFarmSetupYAML(farmfile)
     return
@@ -563,16 +666,28 @@ def button_loadFarmSetupYAML(self):
     Button to load the farm setup
     """
     farmfile  = self.inputvars['farm_setupfile'].getval()
-    if len(farmfile)==0:
-        print('Blank farm setup file provided.  Cannot load.')
-        return
     # Check if file exists
     if not os.path.isfile(farmfile):
-        print("ERROR: %s does not exist"%farmfile)
+        kwargs = {'filetypes':[("YAML files","*.yaml *.yml"), 
+                               ("all files","*.*")]}
+        farmfile  = filedialog.askopenfilename(initialdir = "./",
+                                               title = "Select farm YAML file",
+                                               **kwargs)
+        #print("ERROR: %s does not exist"%farmfile)
+        #return
+    if len(farmfile)==0:
         return
+    self.inputvars['farm_setupfile'].setval(farmfile)
     self.loadFarmSetupYAML(farmfile, stringinput=False)
 
     return
+
+def button_clearSetupYAMLfile(self):
+    """
+    Button to load the farm setup
+    """
+    self.inputvars['farm_setupfile'].setval('')
+
 # ------------------------------------------------------
 
 def runtest1():

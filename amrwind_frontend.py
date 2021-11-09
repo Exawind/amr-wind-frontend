@@ -745,6 +745,7 @@ class MyApp(tkyg.App, object):
     # import all wind farm functions
     from farmfunctions import button_loadcsv
     from farmfunctions import button_saveFarmSetupYAML, button_loadFarmSetupYAML
+    from farmfunctions import button_clearSetupYAMLfile
     from farmfunctions import resetFarmSetup
     from farmfunctions import writeFarmSetupYAML, loadFarmSetupYAML
     from farmfunctions import refine_createAllZones, calc_FarmAvgProp, get_turbProp
