@@ -2066,13 +2066,15 @@ popupwindow:
         defaultval: 
         listboxopt:
           selectmode: multiple
+          height:     5
       - name:       plot_turbines
         label:      Plot Turbines
         inputtype:  listbox
         optionlist: "self.parent.listboxpopupwindict['listboxactuator'].getitemlist()"
         defaultval: 
         listboxopt:
-          selectmode: multiple          
+          selectmode: multiple  
+          height:     5
     buttons:
       - name: plot
         text: Plot Domain

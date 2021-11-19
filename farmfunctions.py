@@ -403,6 +403,23 @@ def refine_createAllZones(self):
     return
 
 # ----------- Functions for wind farm turbines -------------
+def convertLatLong(x, y, useutm, coordsys, stoponerror=True):
+    """
+    Convert lat/long to utm x/y if necessary
+    """
+    turbx = x
+    turby = y
+    if coordsys=='latlong':
+        if useutm:
+            utmxy     = utm.from_latlon(x, y)
+            turbx     = utmxy[0]
+            turby     = utmxy[1]
+        else:
+            print("ERROR: UTM conversion not available ")
+            if stoponerror: sys.exit(1)
+    return turbx, turby
+
+
 def getTurbAvgCenter(self, turbdf, updatewidget=True, convertlatlong=True):
     """
     Calculate the farm center based on turbine locations
@@ -476,6 +493,78 @@ def turbines_createAllTurbines(self):
     corner2 = [AvgCenter[0] + 0.5*domainsize[0],
                AvgCenter[1] + 0.5*domainsize[1],
                domainsize[2]]
+    self.inputvars['prob_lo'].setval(corner1)
+    self.inputvars['prob_hi'].setval(corner2)
+
+    # Make sure to add turbines to simulation
+    source_terms = self.inputvars['ICNS_source_terms'].getval()
+    if 'ActuatorForcing' not in source_terms:
+        source_terms.append('ActuatorForcing')
+        self.inputvars['ICNS_source_terms'].setval(source_terms)
+    #print(source_terms)
+
+    # Delete all old turbines (if necessary)
+    if self.inputvars['refine_deleteprev']:
+        allturbines.deleteall()
+
+    # Add all turbines
+    # Get teh turbine list
+    allturbtypes = self.listboxpopupwindict['listboxturbinetype'].getitemlist()
+    print(allturbtypes)
+
+    # Get the wind direction
+    self.ABL_calculateWDirWS()
+    winddir = self.inputvars['ABL_winddir'].getval()
+
+    coordsys = self.inputvars['turbines_coordsys'].getval()
+    for turb in alldf:
+        turbtype = turb['type'].strip()
+        # Check the turbine type
+        if turbtype not in allturbtypes:
+            print("ERROR: turbine type %s not found for turbine %s"%(turbtype,turb['name']))
+            continue
+
+        # Set the turbine xy
+        turbx, turby = convertLatLong(turb['x'], turb['y'], useutm, coordsys)
+        # turbx = turb['x']
+        # turby = turb['y']
+        # # Convert from lat,long if necessary
+        # if coordsys=='latlong':
+        #     if useutm:
+        #         utmxy     = utm.from_latlon(turb['x'], turb['y'])
+        #         turbx     = utmxy[0]
+        #         turby     = utmxy[1]
+        #     else:
+        #         print("ERROR: UTM conversion not available ")
+        #         sys.exit(1)
+
+        # ==== Set the turbine dictionary ====
+        turbdict = self.get_default_actuatordict()
+        turbdict['Actuator_name']          = turb['name']
+        turbdict['Actuator_base_position'] = [turbx, turby, 0.0]
+
+        # Set the yaw
+        try:
+            turbyaw = float(turb['yaw'])
+        except:
+            turbyaw = winddir
+        turbdict['Actuator_yaw'] = turbyaw
+
+        # Get all of the turbine model defaults
+        turbdict = self.turbinemodels_applyturbinemodel(turbdict,
+                                                        turbtype,
+                                                        docopy=True, 
+                                                        updatefast=True)
+
+        # Set the hub-height 
+        try:
+            hubheight = float(turb['hubheight'])
+            turbdict['Actuator_hub_height'] = hubheight
+        except:
+            pass
+
+        # Add the turbine to the list
+        self.add_turbine(turbdict, verbose=False)
 
     return
 
@@ -524,17 +613,19 @@ def turbines_previewAllTurbines(self, ax=None):
     coordsys = self.inputvars['turbines_coordsys'].getval()
     addturbinename = self.inputvars['turbines_plotnames'].getval()
     for turb in alldf: 
-        turbx = turb['x']
-        turby = turb['y']
-        # Convert from lat,long if necessary
-        if coordsys=='latlong':
-            if useutm:
-                utmxy     = utm.from_latlon(turb['x'], turb['y'])
-                turbx     = utmxy[0]
-                turby     = utmxy[1]
-            else:
-                print("ERROR: UTM conversion not available ")
-                sys.exit(1)
+        turbx, turby = convertLatLong(turb['x'], turb['y'], useutm, coordsys)
+        # turbx = turb['x']
+        # turby = turb['y']
+        # # Convert from lat,long if necessary
+        # if coordsys=='latlong':
+        #     if useutm:
+        #         utmxy     = utm.from_latlon(turb['x'], turb['y'])
+        #         turbx     = utmxy[0]
+        #         turby     = utmxy[1]
+        #     else:
+        #         print("ERROR: UTM conversion not available ")
+        #         sys.exit(1)
+
         # plot the point
         ax.plot(turbx, turby, marker='s', color='k', markersize=8)
         if addturbinename:

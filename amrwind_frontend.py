@@ -1375,7 +1375,7 @@ class MyApp(tkyg.App, object):
                 if (key in inputdict) and (item is not None):
                     outdict[key] = item
 
-        if docopy:
+        if docopy and (modelfiles['turbinetype_filedir'] != "None"):
             origdir = modelfiles['turbinetype_filelocation']
             copydir = modelfiles['turbinetype_filedir']
             if windowinputs is not None:
@@ -1487,7 +1487,7 @@ class MyApp(tkyg.App, object):
         if (window is None) and (len(inputdict)==0):
             return
 
-        # Get the actuator the
+        # Get the actuator type
         if window is not None:
             Actuator_type = window.temp_inputvars['Actuator_type'].getval()
         else:
