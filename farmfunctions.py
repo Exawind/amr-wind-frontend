@@ -230,6 +230,8 @@ def calc_FarmAvgProp(self):
         AvgHH     /= Nturbs
         AvgTurbD  /= Nturbs
         AvgCenter /= Nturbs
+    else:
+        print("ERROR: calc_FarmAvgProp(): No turbines found to average over.")
     return AvgCenter, AvgTurbD, AvgHH
 
 def refine_calcZone(zonename, zonedict, zonecenter, sx, cx, vx, scale):
@@ -327,6 +329,7 @@ def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
         usecenter = autofarmcenter
     else:
         usecenter = self.inputvars['turbines_farmcenter'].getval()
+
 
     # Get the name
     zonename = 'Farm_level_%i_zone'%(zonedict['level'])

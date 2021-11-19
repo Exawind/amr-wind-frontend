@@ -2036,49 +2036,151 @@ popupwindow:
     title:        Plot domain     # optional
     loadonstart:  True            # optional
     width:        350
-    height:       320
+    height:       400
+    frames:
+      - name:       plot_frameoverall
+        title:      Plot settings
+        row:        0
+      - name:       plot_framesampleprobes
+        title:      Select sample probes
+        #toggled:    True
+        row:        1
+      - name:       plot_framesampleprobes1
+        frame:      plot_framesampleprobes
+        row:        2
+        kwargs:
+          borderwidth: 0
+      - name:       plot_framerefineboxes
+        title:      Select refinement zones
+        #toggled:    True
+        row:        2
+      - name:       plot_framerefineboxes1
+        frame:      plot_framerefineboxes
+        row:        2
+        kwargs:
+          borderwidth: 0
+      - name:       plot_frameturbines
+        title:      Select turbines
+        #toggled:    True
+        row:        3
+      - name:       plot_frameturbines1
+        frame:      plot_frameturbines
+        row:        2
+        kwargs:
+          borderwidth: 0
     inputwidgets:
       - name:       plot_chooseview
+        frame:      plot_frameoverall
         label:      "Choose plot view"
         inputtype:  str
         optionlist: ['XY', 'XZ', 'YZ']
         defaultval: 'XY'
       - name:       plot_windnortharrows
+        frame:      plot_frameoverall
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
-      - name:       spacer1
-        labelonly:  True
-      - name:       spacer2
-        label:      Click on objects below to include in plot
-        labelonly:  True
+      # - name:       spacer1
+      #   labelonly:  True
+      # - name:       spacer2
+      #   label:      Click on objects below to include in plot
+      #   labelonly:  True
       - name:       plot_sampleprobes
-        label:      Plot sample probes
+        frame:      plot_framesampleprobes
+        label:      #Plot sample probes
+        row:        1
         inputtype:  listbox
         optionlist: "self.parent.listboxpopupwindict['listboxsampling'].getitemlist()"
         defaultval: 
         listboxopt:
           selectmode: multiple
+          height:     5
+          width:      35
       - name:       plot_refineboxes
-        label:      Plot Refinements
+        frame:      plot_framerefineboxes
+        label:      #Plot Refinements
+        row:        1
         inputtype:  listbox
         optionlist: "self.parent.listboxpopupwindict['listboxtagging'].getitemlist()"
         defaultval: 
         listboxopt:
           selectmode: multiple
           height:     5
+          width:      35
       - name:       plot_turbines
-        label:      Plot Turbines
+        frame:      plot_frameturbines
+        label:      #Plot Turbines
+        row:        1
         inputtype:  listbox
         optionlist: "self.parent.listboxpopupwindict['listboxactuator'].getitemlist()"
         defaultval: 
         listboxopt:
           selectmode: multiple  
           height:     5
+          width:      35
     buttons:
       - name: plot
         text: Plot Domain
-        command: "partial(self.savethenexec, 'self.master.plotDomain()')"
+        command: partial(self.savethenexec, 'self.master.plotDomain()')
+      # Sample probe select/deselect buttons
+      - name:    selectall_sample
+        frame:   plot_framesampleprobes1
+        row:     0
+        col:     1
+        text:    Select all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_sampleprobes'].tkentry.select_set(0, Tk.END)") 
+        #partial(self.savethenexec, 'self.master.donothing_button()')
+      - name:    deleteall_sample
+        frame:   plot_framesampleprobes1
+        row:     0
+        col:     2
+        text:    Deselect all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_sampleprobes'].tkentry.selection_clear(0, Tk.END)")
+      - name:    refresh_sample
+        frame:   plot_framesampleprobes1
+        row:     0
+        col:     3
+        text:    Refresh
+        command: partial(self.updatelistbox, 'plot_sampleprobes', 'listboxsampling')
+      # Refine windows select/deselect buttons
+      - name:    selectall_refine
+        frame:   plot_framerefineboxes1
+        row:     0
+        col:     1
+        text:    Select all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_refineboxes'].tkentry.select_set(0, Tk.END)") 
+      - name:    deleteall_refine
+        frame:   plot_framerefineboxes1
+        row:     0
+        col:     2
+        text:    Deselect all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_refineboxes'].tkentry.selection_clear(0, Tk.END)")
+      - name:    refresh_refine
+        frame:   plot_framerefineboxes1
+        row:     0
+        col:     3
+        text:    Refresh
+        command: partial(self.updatelistbox, 'plot_refineboxes', 'listboxtagging')
+      # Turbine select/deselect buttons
+      - name:    selectall_turbines
+        frame:   plot_frameturbines1
+        row:     0
+        col:     1
+        text:    Select all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_turbines'].tkentry.select_set(0, Tk.END)") 
+      - name:    deleteall_turbines
+        frame:   plot_frameturbines1
+        row:     0
+        col:     2
+        text:    Deselect all
+        command: partial(self.savethenexec, "self.temp_inputvars['plot_turbines'].tkentry.selection_clear(0, Tk.END)")
+      - name:    refresh_turbines
+        frame:   plot_frameturbines1
+        row:     0
+        col:     3
+        text:    Refresh
+        command: partial(self.updatelistbox, 'plot_turbines', 'listboxactuator')
+          
 
   # === Plot FAST output ===
   plotfastout:
