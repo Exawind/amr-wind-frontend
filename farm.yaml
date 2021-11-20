@@ -89,6 +89,18 @@ frames:
     row:   1
     kwargs:
       borderwidth: 0
+  - name:  frame_farmsampling2
+    frame: frame_farmsampling
+    title: Sampling options
+    row:   2
+    kwargs:
+      borderwidth: 0
+  - name:  frame_farmsampling3
+    frame: frame_farmsampling
+    title: Sampling options
+    row:   3
+    kwargs:
+      borderwidth: 0
 
   - name:  frame_runsweeps
     tab:   Farm
@@ -299,6 +311,15 @@ inputwidgets:
       help:      CSV input file
       farmsetup: sampling_csvfile
 
+  - name:       sampling_deleteprev
+    frame:      frame_farmsampling2
+    label:      Delete existing sampling probes
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Remove all existing sampling probes before adding these
+      farmsetup: sampling_deleteprev
+
   # -------- Hidden/extra inputs ---------------------------
   - name:       wfarm_embedamrwindinput
     frame:      frame_farmsampling1
@@ -357,6 +378,13 @@ buttons:
     row:     0
     col:     3
     command: "partial(self.button_loadcsv, 'sampling_csvfile', 'sampling_csvtextbox')"
+
+  - name:    farmbutton_applysampling
+    text:    Create sampling probes
+    frame:   frame_farmsampling3
+    row:     1
+    col:     0
+    command: "self.sampling_createAllProbes"
 
   - name:    farmbutton_clearyamlfile
     row:     1

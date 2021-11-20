@@ -750,6 +750,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import writeFarmSetupYAML, loadFarmSetupYAML
     from farmfunctions import refine_createAllZones, calc_FarmAvgProp, get_turbProp
     from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
+    from farmfunctions import sampling_createAllProbes
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size
@@ -1694,6 +1695,9 @@ if __name__ == "__main__":
     parser.add_argument('--ablstatsfile',   
                         default='',  
                         help="Load the ABL statistics file [default: None]")
+    parser.add_argument('--farmfile',   
+                        default='',  
+                        help="Load the farm layout YAML file [default: None]")
     parser.add_argument('--samplefile',   
                         default='',  
                         help="Load the sample probe file [default: None]")
@@ -1713,6 +1717,7 @@ if __name__ == "__main__":
     args         = parser.parse_args()
     inputfile    = args.inputfile
     ablstatsfile = args.ablstatsfile
+    farmfile     = args.farmfile
     samplefile   = args.samplefile
     outputfile   = args.outputfile
     validate     = args.validate
@@ -1749,7 +1754,12 @@ if __name__ == "__main__":
                 
     if len(outputfile)>0:
         mainapp.writeAMRWindInput(outputfile, outputextraparams=True)
-    
+
+
+    # Load the farm file
+    if len(farmfile)>0:
+        mainapp.loadFarmSetupYAML(farmfile)
+
     # Load the abl statsfile
     if len(ablstatsfile)>0:
         mainapp.inputvars['ablstats_file'].setval(ablstatsfile)

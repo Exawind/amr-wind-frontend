@@ -511,9 +511,8 @@ def turbines_createAllTurbines(self):
         allturbines.deleteall()
 
     # Add all turbines
-    # Get teh turbine list
+    # Get the turbine list
     allturbtypes = self.listboxpopupwindict['listboxturbinetype'].getitemlist()
-    print(allturbtypes)
 
     # Get the wind direction
     self.ABL_calculateWDirWS()
@@ -529,17 +528,6 @@ def turbines_createAllTurbines(self):
 
         # Set the turbine xy
         turbx, turby = convertLatLong(turb['x'], turb['y'], useutm, coordsys)
-        # turbx = turb['x']
-        # turby = turb['y']
-        # # Convert from lat,long if necessary
-        # if coordsys=='latlong':
-        #     if useutm:
-        #         utmxy     = utm.from_latlon(turb['x'], turb['y'])
-        #         turbx     = utmxy[0]
-        #         turby     = utmxy[1]
-        #     else:
-        #         print("ERROR: UTM conversion not available ")
-        #         sys.exit(1)
 
         # ==== Set the turbine dictionary ====
         turbdict = self.get_default_actuatordict()
@@ -617,17 +605,6 @@ def turbines_previewAllTurbines(self, ax=None):
     addturbinename = self.inputvars['turbines_plotnames'].getval()
     for turb in alldf: 
         turbx, turby = convertLatLong(turb['x'], turb['y'], useutm, coordsys)
-        # turbx = turb['x']
-        # turby = turb['y']
-        # # Convert from lat,long if necessary
-        # if coordsys=='latlong':
-        #     if useutm:
-        #         utmxy     = utm.from_latlon(turb['x'], turb['y'])
-        #         turbx     = utmxy[0]
-        #         turby     = utmxy[1]
-        #     else:
-        #         print("ERROR: UTM conversion not available ")
-        #         sys.exit(1)
 
         # plot the point
         ax.plot(turbx, turby, marker='s', color='k', markersize=8)
@@ -653,6 +630,244 @@ def turbines_previewAllTurbines(self, ax=None):
     ax.set_title(r'Wind Farm Preview')
     self.figcanvas.draw()
 
+    return
+
+# ----------- Functions for sample plane creation ----------
+def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
+    """
+    Creates a sampling dictionary for turbine-oriented probes
+    """
+    # Get the wind direction
+    winddir = self.inputvars['ABL_winddir'].getval()
+
+    # Get the turbine properties
+    base_position = np.array(tdict['Actuator_base_position'])
+    turbD, turbhh = self.get_turbProp(tdict)
+    turbyaw       = winddir if tdict['Actuator_yaw'] is None else tdict['Actuator_yaw']
+
+    # Get the zone options
+    units   = getdictval(pdict['options'], 'units', defaultopt).lower()
+    orient  = getdictval(pdict['options'], 'orientation', defaultopt).lower()
+    usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
+
+    # Set scale and orientation axes
+    scale = turbD if units=='diameter' else 1.0
+    if orient == 'x':
+        streamwise  = np.array([1.0, 0.0, 0.0])
+        crossstream = np.array([0.0, 1.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])
+    elif orient == 'y':
+        streamwise  = np.array([0.0, 1.0, 0.0])
+        crossstream = np.array([-1.0, 0.0, 0.0])
+        vert        = np.array([0.0, 0.0, 1.0])        
+    elif orient == 'nacdir':
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(turbyaw)
+    else:  # Use the wind direction
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
+
+    # Turbine hub center
+    hubcenter = base_position + turbhh*vert 
+    # # Get the distances
+    # upstream   = scale*pdict['upstream']
+    # downstream = scale*pdict['downstream']
+    # lateral    = scale*pdict['lateral']
+    # below      = scale*pdict['below']
+    # above      = scale*pdict['above']
+
+    # Get the name
+    probename = '%s_%s'%(turbname, pdict['name'])
+
+    probetype = pdict['type'].lower().strip()
+
+    sampledict = {}
+    # --- Create centerline sampling probes --- 
+    if probetype == 'centerline':
+        # Calculate the start, end, and number of points
+        upstream   = scale*float(pdict['upstream'])
+        downstream = scale*float(pdict['downstream'])
+        clstart = hubcenter - upstream*streamwise
+        clend   = hubcenter + downstream*streamwise
+
+        # Calculate the grid points
+        if usedx is None:
+            N1 = int(pdict['n1'])
+        else:
+            N1 = int(round((upstream+downstream)/(scale*float(usedx))))+1
+
+        # Set up the sampling dict
+        sampledict['sampling_name']         = probename
+        sampledict['sampling_type']         = 'LineSampler'
+        sampledict['sampling_l_num_points'] = N1
+        sampledict['sampling_l_start']      = clstart
+        sampledict['sampling_l_end']        = clend
+    # --- Create rotorplane sampling plane --- 
+    elif probetype == 'rotorplane':
+        # Calculate the geometry
+        upstream   = scale*float(pdict['upstream'])
+        origin     = hubcenter - upstream*streamwise
+        origin     = origin - 0.5*turbD*crossstream - 0.5*turbD*vert
+
+        # Calculate the grid points
+        if usedx is None:
+            N1 = int(pdict['n1'])
+            N2 = int(pdict['n2'])
+        else:
+            N1 = int(round((turbD)/(scale*float(usedx))))+1
+            N2 = int(round((turbD)/(scale*float(usedx))))+1
+
+        # Set up the sampling dict
+        sampledict['sampling_name']         = probename
+        sampledict['sampling_type']         = 'PlaneSampler'
+        sampledict['sampling_p_num_points'] = [N1, N2]
+        sampledict['sampling_p_origin']     = origin
+        sampledict['sampling_p_axis1']      = crossstream*turbD
+        sampledict['sampling_p_axis2']      = vert*turbD
+
+        # Calculate offsets
+        noffsets   = int(getdictval(pdict['options'], 'noffsets', defaultopt))
+        if noffsets>0:
+            downstream = scale*float(pdict['downstream'])        
+            offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
+            offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offsets'] = offsetstr
+    # --- Create hub-height sampling planes --- 
+    elif probetype == 'hubheight':
+        # Calculate the geometry
+        upstream   = scale*float(pdict['upstream'])
+        downstream = scale*float(pdict['downstream'])
+        lateral    = scale*float(pdict['lateral'])
+        below      = scale*float(pdict['below'])
+
+        origin     = hubcenter - upstream*streamwise - below*vert
+        origin     = origin - lateral*crossstream
+
+        # Calculate dimensions
+        L1         = upstream + downstream
+        L2         = 2.0*lateral
+
+        # Calculate the grid points
+        if usedx is None:
+            N1 = int(pdict['n1'])
+            N2 = int(pdict['n2'])
+        else:
+            N1 = int(round((L1)/(scale*float(usedx))))+1
+            N2 = int(round((L2)/(scale*float(usedx))))+1
+
+        # Set up the sampling dict
+        sampledict['sampling_name']         = probename
+        sampledict['sampling_type']         = 'PlaneSampler'
+        sampledict['sampling_p_num_points'] = [N1, N2]
+        sampledict['sampling_p_origin']     = origin
+        sampledict['sampling_p_axis1']      = L1*streamwise
+        sampledict['sampling_p_axis2']      = L2*crossstream
+
+        # Calculate offsets
+        noffsets   = int(getdictval(pdict['options'], 'noffsets', defaultopt))
+        if noffsets>0:
+            above      = scale*float(pdict['above'])
+            offsetvec  = np.linspace(0, above+below, noffsets+1)
+            offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = vert
+            sampledict['sampling_p_offsets'] = offsetstr
+    # --- Create streamwise sampling planes --- 
+    elif probetype == 'streamwise':
+        # Calculate the geometry
+        upstream   = scale*float(pdict['upstream'])
+        downstream = scale*float(pdict['downstream'])
+        below      = scale*float(pdict['below'])
+        above      = scale*float(pdict['above'])
+
+        origin     = hubcenter - upstream*streamwise - below*vert
+
+        # Calculate dimensions
+        L1         = upstream + downstream
+        L2         = (above + below)
+
+        # Calculate the grid points
+        if usedx is None:
+            N1 = int(pdict['n1'])
+            N2 = int(pdict['n2'])
+        else:
+            N1 = int(round((L1)/(scale*float(usedx))))+1
+            N2 = int(round((L2)/(scale*float(usedx))))+1
+
+        # Set up the sampling dict
+        sampledict['sampling_name']         = probename
+        sampledict['sampling_type']         = 'PlaneSampler'
+        sampledict['sampling_p_num_points'] = [N1, N2]
+        sampledict['sampling_p_origin']     = origin
+        sampledict['sampling_p_axis1']      = L1*streamwise
+        sampledict['sampling_p_axis2']      = L2*vert
+
+        # Calculate offsets
+        noffsets   = int(getdictval(pdict['options'], 'noffsets', defaultopt))
+        if noffsets>0:
+            lateral    = scale*float(pdict['lateral'])
+            offsetvec  = np.linspace(0, lateral, noffsets+1)
+            offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = crossstream
+            sampledict['sampling_p_offsets'] = offsetstr        
+    else:
+        print("ERROR: probetype %s not recognized"%probetype)
+
+    return sampledict
+
+def sampling_createAllProbes(self):
+    """
+    Create all of the sample probes from csv input
+    """
+    # Default dictionary for optional inputs
+    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y
+                  'units':'diameter',        # diameter/meter
+                  'center':'turbine',        # turbine/farm
+                  'usedx':None,              # use this mesh size
+                  'noffsets':0               # number of offsets
+                 }
+
+    reqheaders = ['name', 'type', 'upstream', 'downstream', 'lateral', 
+                  'below', 'above', 'n1', 'n2']
+    optheaders = ['options']
+
+    # Get the csv input
+    csvstring  = self.inputvars['sampling_csvtextbox'].getval()    
+    df         = loadcsv(csvstring, stringinput=True, 
+                         reqheaders=reqheaders, optheaders=optheaders)
+    alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
+
+    # Make sure to add sampling to the outputs
+    ppro_items = self.inputvars['post_processing'].getval()
+    if 'sampling' not in ppro_items:
+        ppro_items.append('sampling')
+        self.inputvars['post_processing'].setval(ppro_items)
+        self.inputvars['post_processing'].onoffctrlelem(None)
+    
+    # Get all turbine properties
+    allturbines  = self.listboxpopupwindict['listboxactuator']
+    alltags      = allturbines.getitemlist()
+    keystr       = lambda n, d1, d2: d2.name
+
+    # Get the wind direction
+    self.ABL_calculateWDirWS()
+
+    # Delete all old zones (if necessary)
+    if self.inputvars['sampling_deleteprev']:
+        allsampling  = self.listboxpopupwindict['listboxsampling']
+        allsampling.deleteall()
+
+    # Go through all rows and create sampling probes
+    for probe in alldf:
+        center=getdictval(probe['options'], 'center', defaultopt).lower()
+        if center=='turbine':
+            # Apply to every turbine
+            for turb in alltags:
+                tdict = allturbines.dumpdict('AMR-Wind', 
+                                             subset=[turb], keyfunc=keystr)
+                sampledict = sampling_createDictForTurbine(self, turb, tdict,
+                                                           probe, defaultopt)
+                print(sampledict)
+                if sampledict is not None:
+                    self.add_sampling(sampledict, verbose=True)
     return
 
 # ----------- Functions related to I/O  ----------------
