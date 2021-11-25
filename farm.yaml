@@ -363,11 +363,30 @@ inputwidgets:
       help:      List of wind directions to sweep [deg]
       farmsetup: sweep_winddirs
 
+  - name:       sweep_inflowmode
+    frame:      frame_runsweep2
+    label:      Inflow mode
+    inputtype:  str
+    optionlist: ['uniform', 'RANS']
+    defaultval: uniform
+    outputdef:
+      help:      Type of inflow velocity to wind farm
+      farmsetup: sweep_inflowmode
+
+  - name:       sweep_autosetBC
+    frame:      frame_runsweep2
+    label:      Automatically set BC's
+    inputtype:  bool
+    defaultval: true
+    outputdef:
+      help:      Automatically setup the boundary conditions for each wind direction
+      farmsetup: sweep_autosetBC
+
   - name:       sweep_caseprefix
     frame:      frame_runsweep2
     label:      Case prefix
     inputtype:  str
-    defaultval: Case_{casenum}
+    defaultval: Case_{CASENUM}
     entryopt:
       width:    30
     outputdef:
@@ -390,11 +409,11 @@ inputwidgets:
     frame:      frame_runsweep2
     label:      Directory prefix
     inputtype:  str
-    defaultval: Case_{casenum}
+    defaultval: Case_{CASENUM}
     entryopt:
       width:    30
     outputdef:
-      help:      Directory prefix
+      help:      Directory prefix (python format strings allowed)
       farmsetup: sweep_dirprefix
 
   - name:       sweep_createsubmitscript
@@ -511,7 +530,8 @@ buttons:
   - name:    farmbutton_setupsweep
     text:    Create cases
     frame:   frame_runsweep
-    command: self.donothing_button
+    command: self.sweep_SetupRunParamSweep
+    #command: self.donothing_button
 
   # --- Help buttons ---
   - name:     helpbutton_farmsampling

@@ -751,6 +751,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import refine_createAllZones, calc_FarmAvgProp, get_turbProp
     from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
     from farmfunctions import sampling_createAllProbes
+    from farmfunctions import sweep_SetupRunParamSweep
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size

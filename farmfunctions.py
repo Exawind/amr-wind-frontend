@@ -1031,6 +1031,148 @@ def sampling_createAllProbes(self):
             print("ERROR: option center=%s not recognized"%center)
     return
 
+# ----------- Functions related to parameter sweeps ----
+def sweep_setBCTable(self, inflow='mass_inflow', outflow='pressure_outflow'):
+    """
+    Sets the boundary condition table for all wind direction angles
+    Figures out which sides should be periodic and which are inflow/outflow
+    """
+    eps      = 1.0E-5
+    BCtable  = [ 
+        # mindir, maxdir,  xper,  yper,    xlo,     xhi,     ylo,     yhi
+        [  0-eps,   0+eps, True,   False,  None,    None,    outflow, inflow ],
+        [  0+eps,  90-eps, False,  False,  outflow, inflow,  outflow, inflow ],
+        [ 90-eps,  90+eps, False,  True,   outflow, inflow,  None,    None ],
+        [ 90+eps, 180-eps, False,  False,  outflow, inflow,  inflow,  outflow ],
+        [180-eps, 180+eps, True,   False,  None,    None,    inflow,  outflow ],
+        [180+eps, 270-eps, False,  False,  inflow,  outflow, inflow,  outflow ],
+        [270-eps, 270+eps, False,  True,   inflow,  outflow, None,    None ],
+        [270+eps, 360-eps, False,  False,  inflow,  outflow, outflow, inflow ],
+    ]
+    return BCtable
+
+def sweep_findBCinTable(self, WDir, table):
+    for entry in table:
+        if (entry[0]<=WDir) and (WDir <= entry[1]): return entry
+    print('Cannot find BC entry corresponding to WDir: '+repr(WDir))
+    sys.exit(1)  # Problem if it gets to here
+    return
+
+def setBC(self, bcsurf, bctype, velocity, density):
+    if bctype is None: return
+    if bctype == 'pressure_outflow':
+        self.setAMRWindInput(bcsurf+'.type',     'pressure_outflow')
+        self.setAMRWindInput(bcsurf+'.density',  None)
+        self.setAMRWindInput(bcsurf+'.velocity', [None, None, None])
+    if bctype == 'mass_inflow':
+        self.setAMRWindInput(bcsurf+'.type',     'mass_inflow')
+        self.setAMRWindInput(bcsurf+'.density',  density)
+        self.setAMRWindInput(bcsurf+'.velocity', velocity)
+
+def sweep_SetupRunParamSweep(self):
+    """
+    Set up and run a parameter sweep 
+    """
+    str2list = lambda strinput: [float(x) for x in strinput.replace(',',' ').replace(';', ' ').split()]
+
+    # Get the wind speed and direction lists    
+    try: 
+        WSlist   = str2list(self.inputvars['sweep_windspeeds'].getval())
+    except:
+        print("ERROR: error in sweep_windspeeds")
+        return
+    try:
+        WDirlist = str2list(self.inputvars['sweep_winddirs'].getval())
+    except:
+        print("ERROR: error in sweep_winddirs")
+        return
+        
+    print(WSlist)
+    print(WDirlist)
+
+    # Get the case name 
+    casename_template = self.inputvars['sweep_caseprefix'].getval()
+    # Add an index to the prefix if necessary
+    if ('{' not in casename_template) and ('}' not in casename_template):
+        casename_template += '_{CASENUM}'
+
+    # Get the directory 
+    dirname_template = self.inputvars['sweep_dirprefix'].getval()
+    # Add an index to the prefix if necessary
+    if ('{' not in dirname_template) and ('}' not in dirname_template):
+        dirname_template += '_{CASENUM}'
+
+    # Add any formatting necessary to string
+    fmtstr = lambda x: x.format(WS=WS, WDIR=WDir, CASENUM=icase)
+
+    # Construct the list of runs
+    runlist = []
+    # Add in however many loops are necessary here
+    for WS in WSlist:
+        for WDir in WDirlist:
+            runlist.append({'WS':WS, 'WDir':WDir})
+
+    
+    # Get the current directory
+    cwd = os.getcwd()
+
+    # Loop over all wind speeds and directions
+    for icase, case in enumerate(runlist):
+        WS   = case['WS']
+        WDir = case['WDir']
+        casename = fmtstr(casename_template)
+        print("%i %f %f %s"%(icase, WS, WDir, casename))
+        
+        # Create the directories if necessary
+        if self.inputvars['sweep_usenewdirs'].getval():
+            dirname = fmtstr(dirname_template)
+            if not os.path.exists(dirname): os.makedirs(dirname)
+            os.chdir(dirname)
+
+        # Set the WS/WDir
+        self.inputvars['ABL_windspeed'].setval(WS, forcechange=True)
+        self.inputvars['ABL_winddir'].setval(WDir, forcechange=True)
+        self.ABL_calculateWindVector()
+
+        velocity = self.inputvars['ABL_velocity'].getval()
+        density  = self.inputvars['density'].getval()
+
+        inflowmode=self.inputvars['sweep_inflowmode'].getval()
+        if inflowmode=='uniform':
+            self.inputvars['ConstValue_velocity'].setval(velocity, forcechange=True)
+
+        # Set up the boundary conditions
+        if inflowmode=='uniform':
+            BCtable = sweep_setBCTable(self)
+            BCentry = sweep_findBCinTable(self, WDir, BCtable)
+            self.setAMRWindInput('is_periodicx', BCentry[2])
+            self.setAMRWindInput('is_periodicy', BCentry[3])
+            setBC(self, 'xlo', BCentry[4], velocity, density)
+            setBC(self, 'xhi', BCentry[5], velocity, density)
+            setBC(self, 'ylo', BCentry[6], velocity, density)
+            setBC(self, 'yhi', BCentry[7], velocity, density)
+        else:
+            print("ERROR: boundary conditions for %s not yet implemented"%inflowmode)
+        # Set up the turbines
+        turbines_createAllTurbines(self)
+        
+        # Set up the refinement regions
+        refine_createAllZones(self)
+
+        # Set up the sampling probes
+        sampling_createAllProbes(self)
+
+        # Write the AMR-Wind input file
+        AMRinputfile = casename+".inp"
+        self.writeAMRWindInput(AMRinputfile)
+
+        # Handle submission
+
+        # Done creating the case, get back to cwd
+        if self.inputvars['sweep_usenewdirs'].getval():
+            os.chdir(cwd)
+    return
+
 # ----------- Functions related to I/O  ----------------
 def writeFarmSetupYAML(self, filename, verbose=True):
     """
