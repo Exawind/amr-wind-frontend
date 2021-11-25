@@ -2036,7 +2036,7 @@ popupwindow:
     title:        Plot domain     # optional
     loadonstart:  True            # optional
     width:        350
-    height:       400
+    height:       680
     frames:
       - name:       plot_frameoverall
         title:      Plot settings

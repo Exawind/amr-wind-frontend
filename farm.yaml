@@ -97,15 +97,29 @@ frames:
       borderwidth: 0
   - name:  frame_farmsampling3
     frame: frame_farmsampling
-    title: Sampling options
+    title: Actions
     row:   3
     kwargs:
       borderwidth: 0
 
-  - name:  frame_runsweeps
+  - name:  frame_runsweep
     tab:   Farm
     title: Run parameter sweep
     toggled: True
+
+  - name:  frame_runsweep1
+    frame: frame_runsweep
+    title: ABL parameters
+    row:   1
+    kwargs:
+      borderwidth: 0
+
+  - name:  frame_runsweep2
+    frame: frame_runsweep
+    title: Case setup
+    row:   2
+    kwargs:
+      borderwidth: 0
       
 inputwidgets:
   - name:       farm_setupfile
@@ -231,6 +245,14 @@ inputwidgets:
       help:     Size of the computational domain in meters
       farmsetup: turbines_domainsize
 
+  - name:       turbines_backgroundmeshsize
+    frame:      frame_farmturbines2
+    label:      Background mesh size [m]
+    inputtype:  float
+    outputdef:
+      help:     Size of the background mesh in meters (optional)
+      farmsetup: turbines_backgroundmeshsize
+
   - name:       turbines_plotnames
     frame:      frame_farmturbines2
     label:      Plot turbine names
@@ -317,8 +339,80 @@ inputwidgets:
     inputtype:  bool
     defaultval: True
     outputdef:
-      help:     Remove all existing sampling probes before adding these
+      help:     "Remove all existing sampling probes before adding these"
       farmsetup: sampling_deleteprev
+
+  # -------- Run wind farm sweep inputs --------------------
+  - name:       sweep_windspeeds
+    frame:      frame_runsweep1
+    label:      Wind speeds
+    inputtype:  str
+    entryopt:
+      width:    30
+    outputdef:
+      help:      "## List of wind speeds to sweep [m/s]"
+      farmsetup: sweep_windspeeds
+
+  - name:       sweep_winddirs
+    frame:      frame_runsweep1
+    label:      Wind directions
+    inputtype:  str
+    entryopt:
+      width:    30
+    outputdef:
+      help:      List of wind directions to sweep [deg]
+      farmsetup: sweep_winddirs
+
+  - name:       sweep_caseprefix
+    frame:      frame_runsweep2
+    label:      Case prefix
+    inputtype:  str
+    defaultval: Case_{casenum}
+    entryopt:
+      width:    30
+    outputdef:
+      help:      Case prefix (python format strings allowed)
+      farmsetup: sweep_caseprefix
+
+  - name:       sweep_usenewdirs
+    frame:      frame_runsweep2
+    label:      New dir for each case
+    inputtype:  bool
+    defaultval: true
+    outputdef:
+      help:      Create a new directory for each case
+      farmsetup: sweep_usenewdirs
+    ctrlelem:
+      - input:  sweep_dirprefix
+        activewhen: ['', 1]
+
+  - name:       sweep_dirprefix
+    frame:      frame_runsweep2
+    label:      Directory prefix
+    inputtype:  str
+    defaultval: Case_{casenum}
+    entryopt:
+      width:    30
+    outputdef:
+      help:      Directory prefix
+      farmsetup: sweep_dirprefix
+
+  - name:       sweep_createsubmitscript
+    frame:      frame_runsweep2
+    label:      Create submission script
+    inputtype:  bool
+    outputdef:
+      help:      Create a submission script for each case
+      farmsetup: sweep_createsubmitscript
+
+  - name:       sweep_submitjob
+    frame:      frame_runsweep2
+    label:      Submit job
+    inputtype:  bool
+    outputdef:
+      help:      Submit each job to the queue
+      farmsetup: sweep_submitjob
+
 
   # -------- Hidden/extra inputs ---------------------------
   - name:       wfarm_embedamrwindinput
@@ -414,3 +508,49 @@ buttons:
     frame:   frame_farmsetup2
     command: "self.resetFarmSetup"
 
+  - name:    farmbutton_setupsweep
+    text:    Create cases
+    frame:   frame_runsweep
+    command: self.donothing_button
+
+  # --- Help buttons ---
+  - name:     helpbutton_farmsampling
+    text:     "[?]"
+    frame:    frame_farmsampling header_frame
+    help:     "Need help?"
+    row:      0
+    col:      3
+    command:  "partial(self.showyamlmesg, 'frame_farmsampling')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+
+
+# Add all help messages and buttons in here
+helpwindows:
+  frame_farmsampling: 
+    options:
+      #autowidth: True
+      height: 30
+      title: Farm Sampling Setup
+    mesg: |
+      Sampling parameters
+      -------------------
+      
+      # CSV file should have columns with
+      # name, type, upstream, downstream, lateral, below, above, n1, n2, options
+
+      Probe types:
+        - centerline
+        - rotorplane
+        - hubheight
+        - streamwise
+
+      Options:
+        - orientation:   winddir/nacdir/x/y [default:winddir]
+        - units:         diameter/meter [default: diameter]
+        - center:        turbine/farm [default: turbine]
+        - usedx:         Use this mesh spacing [default: None]
+        - noffsets:      Number of offsets [default: 0]
