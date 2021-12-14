@@ -960,7 +960,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     
     return sampledict
 
-def sampling_createAllProbes(self):
+def sampling_createAllProbes(self, verbose=False):
     """
     Create all of the sample probes from csv input
     """
@@ -1018,15 +1018,15 @@ def sampling_createAllProbes(self):
                                              subset=[turb], keyfunc=keystr)
                 sampledict = sampling_createDictForTurbine(self, turb, tdict,
                                                            probe, defaultopt)
-                print(sampledict)
+                if verbose: print(sampledict)
                 if sampledict is not None:
-                    self.add_sampling(sampledict, verbose=True)
+                    self.add_sampling(sampledict, verbose=verbose)
         elif center=='farm':
             sampledict = sampling_createDictForFarm(self, probe, 
                                                     AvgCenter, AvgTurbD, AvgHH, defaultopt)
-            print(sampledict)
+            if verbose: print(sampledict)
             if sampledict is not None:
-                self.add_sampling(sampledict, verbose=True)
+                self.add_sampling(sampledict, verbose=verbose)
         else:
             print("ERROR: option center=%s not recognized"%center)
     return
