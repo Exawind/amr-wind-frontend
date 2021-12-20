@@ -99,6 +99,11 @@ class MyApp(tkyg.App, object):
         self.edit_sampling = partial(self.edit_entryval, 'listboxsampling')
         self.edit_tagging  = partial(self.edit_entryval, 'listboxtagging')
 
+        # Shorthand aliases to load CSV files
+        from farmfunctions import loadcsv2textbox
+        self.loadTurbineCSVFile = partial(loadcsv2textbox, self,
+                                          'turbines_csvtextbox')
+
         return
 
     # Used to define alias for populatefromdict()
@@ -752,6 +757,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
     from farmfunctions import sampling_createAllProbes
     from farmfunctions import sweep_SetupRunParamSweep
+
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size

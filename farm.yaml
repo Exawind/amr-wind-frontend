@@ -149,11 +149,19 @@ inputwidgets:
 
   - name:       farm_loadembedamrwindinput
     frame:      frame_farmsetup1
-    label:      Loaded embeded AMR-Wind input
+    label:      Load embeded AMR-Wind input
     inputtype:  bool
     defaultval: True
     outputdef:
       help:     Load embeded AMR-Wind input file
+
+  - name:       farm_embedturbinetype
+    frame:      frame_farmsetup1
+    label:      Embed turbine type
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Embed turbine type
 
   - name:       farm_usercomments
     frame:      frame_farmsetup1a

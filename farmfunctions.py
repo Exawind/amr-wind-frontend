@@ -167,6 +167,20 @@ def button_loadcsv(self, filenameinput, csvtextbox):
     self.inputvars[csvtextbox].setval(csvstr)
     return
 
+def loadcsv2textbox(self, csvtextbox, csvfile):
+    """
+    Loads CSV file to a textbox
+    """
+    # Check if file exists
+    if not os.path.isfile(csvfile):
+        print("ERROR: %s does not exist"%csvfile)
+        return
+
+    # Load the filename and display it in the text box    
+    csvstr = open(csvfile, 'r').read().lstrip()
+    self.inputvars[csvtextbox].setval(csvstr)
+    return
+
 def resetFarmSetup(self):
     """
     Resets all variables with 'farmsetup' in outputdef to their defaults
