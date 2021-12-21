@@ -470,6 +470,34 @@ def getTurbAvgCenter(self, turbdf, updatewidget=True, convertlatlong=True):
 
     return AvgCenter
 
+def turbines_getAllTurbineTypes(self):
+    """
+    Get a list of all turbine types from csv input
+    """
+    reqheaders = ['name', 'x', 'y', 'type', 'yaw', 'hubheight']
+    optheaders = ['options']
+
+    # Get the csv input
+    csvstring  = self.inputvars['turbines_csvtextbox'].getval()    
+    df         = loadcsv(csvstring, stringinput=True, 
+                         reqheaders=reqheaders, optheaders=optheaders)
+    alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
+
+    # Get the turbine list
+    allturbtypes = self.listboxpopupwindict['listboxturbinetype'].getitemlist()
+
+    # build the list of turbine types
+    includedturbtypes = []
+    for turb in alldf:
+        turbtype = turb['type'].strip()
+        if turbtype not in allturbtypes:
+            print("ERROR: %s is not in list all turbine types:%s"%(turbtype, 
+                                                                   allturbtypes))
+            continue
+        if (turbtype not in includedturbtypes):
+            includedturbtypes.append(turbtype)
+    return includedturbtypes
+
 def turbines_createAllTurbines(self):
     """
     Create all of the turbines from csv input
@@ -1083,7 +1111,7 @@ def setBC(self, bcsurf, bctype, velocity, density):
         self.setAMRWindInput(bcsurf+'.density',  density)
         self.setAMRWindInput(bcsurf+'.velocity', velocity)
 
-def sweep_SetupRunParamSweep(self):
+def sweep_SetupRunParamSweep(self, verbose=False):
     """
     Set up and run a parameter sweep 
     """
@@ -1101,9 +1129,6 @@ def sweep_SetupRunParamSweep(self):
         print("ERROR: error in sweep_winddirs")
         return
         
-    print(WSlist)
-    print(WDirlist)
-
     # Get the case name 
     casename_template = self.inputvars['sweep_caseprefix'].getval()
     # Add an index to the prefix if necessary
@@ -1129,19 +1154,28 @@ def sweep_SetupRunParamSweep(self):
     
     # Get the current directory
     cwd = os.getcwd()
+    
+    # Print the header
+    if verbose:
+        print("%10s %12s %12s %20s"%("NUM", "WS", "WDir", "Case name"))
+        print("%10s %12s %12s %20s"%("---", "--", "----", "---------"))
 
     # Loop over all wind speeds and directions
     for icase, case in enumerate(runlist):
         WS   = case['WS']
         WDir = case['WDir']
         casename = fmtstr(casename_template)
-        print("%i %f %f %s"%(icase, WS, WDir, casename))
+        if verbose:
+            print("%10i %12.5f %12.5f %20s"%(icase, WS, WDir, casename))
         
         # Create the directories if necessary
         if self.inputvars['sweep_usenewdirs'].getval():
             dirname = fmtstr(dirname_template)
             if not os.path.exists(dirname): os.makedirs(dirname)
             os.chdir(dirname)
+            case['dir'] = dirname
+        else:
+            case['dir'] = cwd
 
         # Set the WS/WDir
         self.inputvars['ABL_windspeed'].setval(WS, forcechange=True)
@@ -1181,10 +1215,31 @@ def sweep_SetupRunParamSweep(self):
         self.writeAMRWindInput(AMRinputfile)
 
         # Handle submission
+        submit = self.inputvars['sweep_submitjob'].getval()
+        if submit:
+            # TO-DO: handle case submission
+            print('NOT IMPLEMENTED: case submission')
+        case['submitted'] = False
+        
+
+        # Update the run list
+        case['casename']  = casename
+        case['inputfile'] = AMRinputfile
 
         # Done creating the case, get back to cwd
         if self.inputvars['sweep_usenewdirs'].getval():
             os.chdir(cwd)
+
+    # Write out the log file list of runs
+    logfilename = self.inputvars['sweep_logfile'].getval()
+    if logfilename:        
+        logfile=sys.stdout if logfilename.strip()=='sys.stdout' else open(logfilename, 'w')
+        for run in runlist:
+            dumpdict = {run['casename']:run}
+            yaml.dump(dumpdict, logfile, **dumperkwargs)
+        if logfile != sys.stdout:
+            logfile.close()
+        
     return
 
 # ----------- Functions related to I/O  ----------------
@@ -1192,6 +1247,18 @@ def writeFarmSetupYAML(self, filename, verbose=True):
     """
     Write out the farm setup parameters into a YAML file
     """
+
+    # Embed the turbine types if needed
+    embedturbinetype = self.inputvars['farm_embedturbinetype'].getval()
+    embedturbinedict = {}
+    if embedturbinetype:
+        turbtypelist = turbines_getAllTurbineTypes(self)
+        #print(turbtypelist)
+        for turbtype in turbtypelist:
+            allturbinemodels = self.listboxpopupwindict['listboxturbinetype']
+            for k, g in allturbinemodels.alldataentries.items():
+                if k==turbtype:
+                    embedturbinedict[k] = g
 
     # Embed the AMR-Wind input file if needed
     amrwindinput = ''
@@ -1208,9 +1275,14 @@ def writeFarmSetupYAML(self, filename, verbose=True):
     # Get the help dict
     helpdict = self.getHelpFromInputs('farmsetup', 'help', onlyactive=False)
 
+    if embedturbinetype:
+        inputdict['wfarm_embedturbinetype'] = embedturbinedict
+
     if useruamel: 
         inputdict = comseq(self.getDictFromInputs('farmsetup', onlyactive=False))
-        
+        if embedturbinetype:
+            inputdict['wfarm_embedturbinetype'] = embedturbinedict
+
         yaml.scalarstring.walk_tree(inputdict)
         for k,v in inputdict.items():
             if k in helpdict:
@@ -1254,7 +1326,27 @@ def loadFarmSetupYAML(self, loadfile, stringinput=False):
             yamldict = Loader(fp, **loaderkwargs)
         print("Loaded farm setup from %s"%loadfile)
 
-    #print(yamldict)
+    if 'wfarm_embedturbinetype' in yamldict:
+        embedturbdict = yamldict['wfarm_embedturbinetype']
+        #print(embedturbdict)
+        if self.inputvars['farm_embedturbinetype'].getval():
+            allturbinemodels = self.listboxpopupwindict['listboxturbinetype']
+            turbmodellist = allturbinemodels.getitemlist()
+            # #print(turbmodellist)
+            # # Delete any existing turbine models with the same name
+            # for k, g in embedturbdict.items():
+            #     if k in turbmodellist:
+            #         print("pop "+k)
+            #         allturbinemodels.alldataentries.pop(k)
+            # Load the turbine type
+            allturbinemodels.populatefromdict(embedturbdict,
+                                              deleteprevious=True, 
+                                              verbose=False,
+                                              forcechange=True)
+            #print(allturbinemodels.getitemlist())
+        # Delete the key from the yamldict
+        yamldict.pop('wfarm_embedturbinetype', None)
+
 
     # Set the values of each variable
     for key, val in yamldict.items():

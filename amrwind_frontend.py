@@ -103,6 +103,8 @@ class MyApp(tkyg.App, object):
         from farmfunctions import loadcsv2textbox
         self.loadTurbineCSVFile = partial(loadcsv2textbox, self,
                                           'turbines_csvtextbox')
+        self.loadRefineCSVFile  = partial(loadcsv2textbox, self,
+                                          'refine_csvtextbox')
 
         return
 

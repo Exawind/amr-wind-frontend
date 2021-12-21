@@ -436,9 +436,23 @@ inputwidgets:
     frame:      frame_runsweep2
     label:      Submit job
     inputtype:  bool
+    defaultval: False
     outputdef:
       help:      Submit each job to the queue
       farmsetup: sweep_submitjob
+
+  - name:       sweep_logfile
+    frame:      frame_runsweep2
+    label:      Logfile
+    inputtype:  filename
+    defaultval: ''
+    entryopt:
+      width:    30
+    fileopenopt:             
+      selecttype: saveas       # open/saveas/directory [optional]
+    outputdef:
+      help:      Log file to record each run
+      farmsetup: sweep_logfile
 
 
   # -------- Hidden/extra inputs ---------------------------
