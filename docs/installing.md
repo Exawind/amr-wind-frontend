@@ -20,6 +20,7 @@ requires on the following libraries to be installed:
 - matplotlib
 - netcdf4
 - pyyaml
+- pandas
 
 In addition, there are a few libraries which make life easier or are
 nice to have:
