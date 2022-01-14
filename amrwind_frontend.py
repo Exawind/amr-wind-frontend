@@ -323,9 +323,8 @@ class MyApp(tkyg.App, object):
         return
 
     def dumpAMRWindInputGUI(self):
-        tkyg.messagewindow(self, self.writeAMRWindInput(''), 
-                           height=40, title='Preview Input File')
-        return
+        return tkyg.messagewindow(self, self.writeAMRWindInput(''), 
+                                  height=40, title='Preview Input File')
 
     def showyamlmesg(self, helpkey, category='helpwindows'):
         """
@@ -334,8 +333,7 @@ class MyApp(tkyg.App, object):
         mesg = self.yamldict[category][helpkey]['mesg']
         opts = tkyg.getdictval(self.yamldict['helpwindows'][helpkey], 
                                'options', {})
-        tkyg.messagewindow(self, mesg, **opts)
-        return
+        return tkyg.messagewindow(self, mesg, **opts)
 
     def getInputHelp(self, search=''):
         # Print the header
@@ -705,8 +703,7 @@ class MyApp(tkyg.App, object):
 
     def validateGUI(self, **kwargs):
         result = self.validate(**kwargs)
-        tkyg.messagewindow(self, result, height=25)
-        return
+        return tkyg.messagewindow(self, result, height=25)
 
     def validate(self, printeverything=True):
         # Load validateinputs plugins
