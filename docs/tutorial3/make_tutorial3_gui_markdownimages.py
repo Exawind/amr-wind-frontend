@@ -16,10 +16,24 @@ scriptpath='../../'
 sys.path.insert(1, scriptpath)
 import genscreenshot as screenshot
 
+# ========================================
 # Set the tutorial properties
 scrwidth  = 1280
 scrheight = 800
 imagedir  = 'images'
+mdfile    = 'tutorial3gui.md'
+# ========================================
+
+mdstr = ''
+
+mdstr+="""
+# Tutorial 3: Setting up a farm calculation
+
+## Introduction
+
+This tutorial will do something...
+"""
+
 
 # Create the directory
 if not os.path.exists(imagedir): os.makedirs(imagedir)
@@ -48,14 +62,25 @@ case.launchpopupwin('plotdomain', savebutton=False).okclose()
 
 ###########################
 case.notebook.select(2)
+WS   = 10     # Wind speed [m/s]
+WDir = 225    # Wind direction
+
 case.setAMRWindInput('useWSDir',      True)
-case.setAMRWindInput('ABL_windspeed', 10.0)
-case.setAMRWindInput('ABL_winddir',   225.0)
+case.setAMRWindInput('ABL_windspeed', WS,   forcechange=True)
+case.setAMRWindInput('ABL_winddir',   WDir, forcechange=True)
 case.ABL_calculateWindVector()
 #logging.info("Main    : saving ABL_settings.png")
 screenshot.Xvfb_screenshot(imagedir+'/ABL_settings.png', 
                            crop=(0, 0, 515, 400))
 ###########################
+mdstr += """
+## Set some wind properties
+
+WS = {WS}  m/s
+WDir =  {WDir} degrees
+
+![{imgf}]({imgf})
+""".format(WS=WS, WDir=WDir, imgf=imagedir+'/ABL_settings.png')
 
 ###########################
 turbinescsv="""# CSV file should have columns with
@@ -193,6 +218,12 @@ plt.tight_layout()
 plt.savefig(imagedir+'/plotDomainFig_refineturbinesampling.png')
 ###########################
 
+# Write the markdown file
+logging.info("Main    : writing "+mdfile)
+with open(mdfile, "w") as f:
+    f.write(mdstr)
+    
+# Quit and clean up
 time.sleep(2)
 case.quit()
 t1.join()

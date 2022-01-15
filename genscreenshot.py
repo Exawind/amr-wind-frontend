@@ -5,6 +5,16 @@ import os, sys, tempfile
 from PIL import Image
 from xvfbwrapper import Xvfb
 
+"""
+Note that this script relies on:
+- xvfbwrapper
+- xwd
+- convert
+
+On ubuntu systems, install with
+sudo apt install x11-apps imagemagick-6.q16
+"""
+
 # Set the location of amrwind_frontend.py script
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath)
