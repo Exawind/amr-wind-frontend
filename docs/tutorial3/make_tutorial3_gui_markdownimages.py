@@ -60,8 +60,8 @@ screenshot.Xvfb_screenshot(imagedir+'/ABL_settings.png',
 ###########################
 turbinescsv="""# CSV file should have columns with
 # name, x, y, type, yaw, hubheight, options
-T0, 500, 300, GE25test, , ,
-T1, 500, 700, GE25test, , ,
+T0, 500, 300, UnifCtTest, , ,
+T1, 500, 700, UnifCtTest, , ,
 """
 domainsize       = [1000,1000,1000]   # Domain size [x,y,z] in meters
 backgrounddeltax = 10                 # Background mesh delta x in meters

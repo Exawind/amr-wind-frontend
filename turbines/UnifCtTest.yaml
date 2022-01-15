@@ -1,0 +1,7 @@
+turbines:
+  UnifCttest:
+    turbinetype_name:    "UnifCtTest"
+    turbinetype_comment: "Test UnifCtDisk"
+    Actuator_type:       UniformCtDisk
+    Actuator_rotor_diameter:      116
+    Actuator_hub_height:          80
