@@ -19,6 +19,8 @@ else:
     import tkinter as Tk
     from tkinter import filedialog as filedialog
 
+import traceback
+
 # Try the loading the Xvfb package
 import platform
 hasxvfb=False
@@ -106,8 +108,12 @@ class MyApp(tkyg.App, object):
         self.loadRefineCSVFile  = partial(loadcsv2textbox, self,
                                           'refine_csvtextbox')
 
+        self.report_callback_exception = self.showerror
         return
 
+    def showerror(self, *args):
+        err = traceback.format_exception(*args)
+        
     # Used to define alias for populatefromdict()
     def add_populatefromdict(self, key, d, **kwargs):
         deleteprevious = False

@@ -69,10 +69,9 @@ case.setAMRWindInput('useWSDir',      True)
 case.setAMRWindInput('ABL_windspeed', WS,   forcechange=True)
 case.setAMRWindInput('ABL_winddir',   WDir, forcechange=True)
 case.ABL_calculateWindVector()
-#logging.info("Main    : saving ABL_settings.png")
-screenshot.Xvfb_screenshot(imagedir+'/ABL_settings.png', 
-                           crop=(0, 0, 515, 400))
-###########################
+imgf=imagedir+'/ABL_settings.png'
+screenshot.Xvfb_screenshot(imgf, crop=(0, 0, 515, 400))
+#--------------------------
 mdstr += """
 ## Set some wind properties
 
@@ -80,7 +79,8 @@ WS = {WS}  m/s
 WDir =  {WDir} degrees
 
 ![{imgf}]({imgf})
-""".format(WS=WS, WDir=WDir, imgf=imagedir+'/ABL_settings.png')
+""".format(WS=WS, WDir=WDir, imgf=imgf)
+###########################
 
 ###########################
 turbinescsv="""# CSV file should have columns with
@@ -98,13 +98,21 @@ case.setAMRWindInput('turbines_backgroundmeshsize', backgrounddeltax)
 case.setAMRWindInput('turbines_deleteprev', True)   # Delete any existing turbines from the system
 
 #-------------------------------------------------------
-#logging.info("Main    : saving farm_turbine_layout.png")
 case.notebook.select(8)
 case.toggledframes['frame_farmturbines'].setstate(True)
 
 screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
-screenshot.Xvfb_screenshot(imagedir+'/farm_turbine_layout.png', 
-                           crop=(0,60,515,scrheight-175))
+imgf=imagedir+'/farm_turbine_layout.png'
+screenshot.Xvfb_screenshot(imgf, crop=(0,60,515,scrheight-175))
+mdstr += """
+## Create wind farm layout and domain
+```
+{csvtxt}
+```
+![{imgf}]({imgf})
+""".format(csvtxt=turbinescsv, imgf=imgf)
+#--------------------------
+
 ###########################
 
 ###########################
@@ -112,14 +120,19 @@ screenshot.Xvfb_screenshot(imagedir+'/farm_turbine_layout.png',
 fig, ax = plt.subplots(figsize=(5,5), facecolor='w', dpi=150)
 case.turbines_previewAllTurbines(ax=ax)
 plt.tight_layout()
-plt.savefig(imagedir+'/farm_turbine_layout_preview.png')
+imgf=imagedir+'/farm_turbine_layout_preview.png'
+plt.savefig(imgf)
+#--------------------------
+mdstr += """
+![{imgf}]({imgf})
+""".format(imgf=imgf)
 ###########################
 
 ###########################
 case.turbines_createAllTurbines()
 case.notebook.select(4)
-screenshot.Xvfb_screenshot(imagedir+'/farm_turbine_created.png', 
-                           crop=(0,60,515,scrheight-350))
+imgf=imagedir+'/farm_turbine_created.png'
+screenshot.Xvfb_screenshot(imgf, crop=(0,60,515,scrheight-350))
 ###########################
 
 
