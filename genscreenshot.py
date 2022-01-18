@@ -4,6 +4,7 @@ import threading
 import os, sys, tempfile
 from PIL import Image
 from xvfbwrapper import Xvfb
+import yaml
 
 """
 Note that this script relies on:
@@ -86,3 +87,11 @@ def getwinpos(win):
 def scrollcanvas(canvas, ypos):
     canvas.update()
     canvas.yview_moveto(ypos)
+
+def gethelpmesg(yamlfile, key, basekey='helpwindows', mesgkey='mesg'):
+    with open(yamlfile) as stream:
+        try:
+            yamldata=yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)   
+    return yamldata[basekey][key][mesgkey]

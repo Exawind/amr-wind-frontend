@@ -556,12 +556,51 @@ buttons:
     #command: self.donothing_button
 
   # --- Help buttons ---
+  - name:     helpbutton_farmturbinecsv
+    text:     "[?]"
+    frame:    frame_farmturbines1 header_frame
+    help:     "Need help?"
+    row:      0
+    col:      2
+    command:  "partial(self.showyamlmesg, 'frame_farmturbinecsv')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+
+  - name:     helpbutton_farmrefinecsv
+    text:     "[?]"
+    frame:    frame_farmrefinement1 header_frame
+    help:     "Need help?"
+    row:      0
+    col:      2
+    command:  "partial(self.showyamlmesg, 'frame_farmrefinecsv')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+
+  - name:     helpbutton_farmsamplingcsv
+    text:     "[?]"
+    frame:    frame_farmsampling1 header_frame
+    help:     "Need help?"
+    row:      0
+    col:      2
+    command:  "partial(self.showyamlmesg, 'frame_farmsamplingcsv')"
+    buttonoptions:
+      pady:   0
+      padx:   1
+    gridoptions:
+      sticky: 'NE'
+
   - name:     helpbutton_farmsampling
     text:     "[?]"
     frame:    frame_farmsampling header_frame
     help:     "Need help?"
     row:      0
-    col:      3
+    col:      2
     command:  "partial(self.showyamlmesg, 'frame_farmsampling')"
     buttonoptions:
       pady:   0
@@ -572,6 +611,75 @@ buttons:
 
 # Add all help messages and buttons in here
 helpwindows:
+  frame_farmturbinecsv: 
+    options:
+      #autowidth: True
+      height: 30
+      title: Farm Turbine CSV input
+    mesg: |
+      ### TURBINE LAYOUT SPECIFICATIONS
+
+      | column      | description                                                                       | required/optional |
+      | ---         | ---                                                                               | ---               |
+      | `name`      | The name of the turbine (can be arbitrary).                                       | required          |
+      | `x`         | The x position of the turbine.                                                    | required          |
+      | `y`         | The y position of the turbine.                                                    | required          |
+      | `type`      | The turbine type (must be listed under turbine types tab)                         | required          |
+      | `yaw`       | The turbine yaw heading.  If not specified, turbine points directly into the wind | optional          |
+      | `hubheight` | The turbine hub-height.  If not specified, uses the default from the turbine type | optional          |
+      | `options`   | Optional parameters                                                               | optional          |
+
+
+  frame_farmrefinecsv: 
+    options:
+      #autowidth: True
+      height: 30
+      title: Farm refinement CSV input
+    mesg: |
+      ### REFINEMENT SPECIFICATIONS
+      
+      | column       | description                                                      | required/optional |
+      | ---          | ---                                                              | ---               |
+      | `level`      | The mesh level to apply the refinement.                          | required          |
+      | `upstream`   | The number of diameters or meters upstream to apply refinement   | required          |
+      | `downstream` | The number of diameters or meters downstream to apply refinement | required          |
+      | `lateral`    | The number of diameters or meters off to side of each turbine    | required          |
+      | `below`      | The number of diameters or meters below the turbine hub-height   | required          |
+      | `above`      | The number of diameters or meters above the turbine hub-height   | required          |
+      | `options`    | Any additional options (see below)                               | optional          |
+
+      ### OPTIONAL INPUTS
+      | keyword       | default    | possible values               | description                                          |
+      | ---           | ---        | ---                           | ---                                                  |
+      | `orientation` | `winddir`  | `winddir`, `nacdir`, `x`, `y` | Which direction the refinement box should be pointed |
+      | `units`       | `diameter` | `diameter`, `meter`           | What units the values are in                         |
+      | `center`      | `turbine`  | `turbine`, `farm`             | Where the center of the refinement zone is located   |
+
+  frame_farmsamplingcsv: 
+    options:
+      #autowidth: True
+      height: 30
+      title: Farm sampling CSV input
+    mesg: |
+      ### SAMPLING SPECIFICATIONS
+      | Type         | Description                                                                                                                                   | Required inputs                              |
+      | ---          | ---                                                                                                                                           | ---                                          |
+      | `centerline` | Creates a centerline probe from hub center, starting from upstream to downstream.                                                             | `upstream`, `downstream`                     |
+      | `rotorplane` | Creates a rotor plane sampling problem start at upstream going to downstream from turbine.                                                    | `upstream`, `downstream`                     |
+      | `hubheight`  | Creates a hub-height plane starting from upstream going to downstream, and with `lateral` width on either side.                               | `upstream`, `downstream`, `lateral`, `below` |
+      | `streamwise` | Creates a streamwise plane from upstream to downstream location, starting at a position `below` the centerline to position `above` centerline | `upstream`, `downstream`, `below`, `above`   |
+
+      ### Options
+      
+      | keyword       | default  | possible values       | description                                                       |
+      | ---           | ---      | ---                   | ---                                                               |
+      | `orientation` | winddir  | winddir, nacdir, x, y | Which direction the refinement box should be pointed              |
+      | `units`       | diameter | diameter, meter       | What units the values are in                                      |
+      | `center`      | turbine  | turbine, farm         | Where the center of the refinement zone is located                |
+      | `usedx`       | None     | Any float value       | Use this spacing between probe points, disregarding `n1` and `n2` |
+      | `noffsets`    | 0        | Any integerr value    | Create this number of offset planes                               |
+
+
   frame_farmsampling: 
     options:
       #autowidth: True
