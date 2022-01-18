@@ -1,0 +1,28 @@
+Tutorial3_Case_0:
+    casename: Tutorial3_Case_0
+    WDir: 270.0
+    submitted: false
+    WS: 10.0
+    dir: /gpfs/lcheung/tmp/createdocs/amrwind-frontend/docs/tutorial3
+    inputfile: Tutorial3_Case_0.inp
+Tutorial3_Case_1:
+    casename: Tutorial3_Case_1
+    WDir: 225.0
+    submitted: false
+    WS: 10.0
+    dir: /gpfs/lcheung/tmp/createdocs/amrwind-frontend/docs/tutorial3
+    inputfile: Tutorial3_Case_1.inp
+Tutorial3_Case_2:
+    casename: Tutorial3_Case_2
+    WDir: 270.0
+    submitted: false
+    WS: 20.0
+    dir: /gpfs/lcheung/tmp/createdocs/amrwind-frontend/docs/tutorial3
+    inputfile: Tutorial3_Case_2.inp
+Tutorial3_Case_3:
+    casename: Tutorial3_Case_3
+    WDir: 225.0
+    submitted: false
+    WS: 20.0
+    dir: /gpfs/lcheung/tmp/createdocs/amrwind-frontend/docs/tutorial3
+    inputfile: Tutorial3_Case_3.inp

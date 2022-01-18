@@ -27,6 +27,9 @@ imagedir  = 'images'
 mdtemplate= 'tutorial3gui_template.md'
 mdfile    = 'tutorial3gui.md'
 # ========================================
+farmtab = 8
+abltab  = 2
+
 mdstr = ""
 mdvar = {}
 
@@ -56,7 +59,7 @@ case=casedict[1]
 case.launchpopupwin('plotdomain', savebutton=False).okclose()
 
 ###########################
-case.notebook.select(2)
+case.notebook.select(abltab)
 useWSDir = True
 WS   = 10     # Wind speed [m/s]
 WDir = 225    # Wind direction
@@ -97,7 +100,7 @@ case.setAMRWindInput('turbines_backgroundmeshsize', backgrounddeltax)
 case.setAMRWindInput('turbines_deleteprev', True)   # Delete any existing turbines from the system
 
 #-------------------------------------------------------
-case.notebook.select(8)
+case.notebook.select(farmtab)
 case.toggledframes['frame_farmturbines'].setstate(True)
 
 screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
@@ -130,8 +133,8 @@ screenshot.Xvfb_screenshot(mdvar['img_farm_turbine_created'],
 refinementcsv="""# CSV file should have columns with
 # level, upstream, downstream, lateral, below, above, options
 level, upstream, downstream, lateral, below, above, options
-0,     1,    1,   1,   0.75, 1, 
-1,     0.5,  0.5, 0.5, 0.75, 1, """
+0,     1,    1,   1,   0.75, 1,
+1,     0.5,  0.5, 0.5, 0.75, 1,"""
 
 mdvar['refinementcsv']           = refinementcsv
 mdvar['img_farm_refinementspec'] = imagedir+'/farm_refinementspec.png'
@@ -143,7 +146,7 @@ case.setAMRWindInput('refine_deleteprev', True)
 #-------------------------------------------------------
 #logging.info("Main    : saving farm_refinementspec.png")
 time.sleep(0.25)
-case.notebook.select(8)
+case.notebook.select(farmtab)
 case.toggledframes['frame_farmrefinement'].setstate(True)
 
 screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
@@ -195,7 +198,7 @@ case.setAMRWindInput('sampling_csvtextbox', samplingcsv)
 case.setAMRWindInput('sampling_deleteprev', True)
 
 time.sleep(0.25)
-case.notebook.select(8)
+case.notebook.select(farmtab)
 case.toggledframes['frame_farmsampling'].setstate(True)
 
 screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
@@ -240,7 +243,7 @@ mdvar['amrwindinput1'] = "\n".join([s for s in inputfile.split("\n") if s])
 
 ###########################
 # Set up a wind sweep
-case.notebook.select(8)
+case.notebook.select(farmtab)
 case.toggledframes['frame_runsweep'].setstate(True)
 
 windspeeds   = [10, 20]        
@@ -263,17 +266,41 @@ case.setAMRWindInput('sweep_caseprefix',  caseprefix)
 case.setAMRWindInput('sweep_usenewdirs',  usenewdirs)
 case.setAMRWindInput('sweep_logfile',     logfile)
 
-case.notebook.select(8)
+case.notebook.select(farmtab)
 case.toggledframes['frame_farmrefinement'].setstate(True)
 screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
 screenshot.Xvfb_screenshot(mdvar['img_farm_runsweepspec'],
                            crop=(0,60+325,515,scrheight-10))
 #--------------------
 case.sweep_SetupRunParamSweep(verbose=True)
+time.sleep(2)
 # Load the logfile
 with open (logfile, "r") as myfile:
     mdvar['logfileoutput']=myfile.read()
 ###########################
+
+###########################
+# Save the wind farm setup
+
+mdvar['farm_setupfile']    = 'Tutorial3_WindFarmSetup.yaml'
+mdvar['farm_usercomments'] = 'Tutorial3 wind farm setup parameters.'
+mdvar['img_farm_savefarmsetup'] = imagedir+'/farm_savefarmsetup.png'
+
+case.setAMRWindInput('farm_setupfile',    mdvar['farm_setupfile'])
+case.setAMRWindInput('farm_usercomments', mdvar['farm_usercomments'])
+
+case.notebook.select(farmtab)
+case.toggledframes['frame_farmsetup1'].setstate(True)
+screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 0.0)
+screenshot.Xvfb_screenshot(mdvar['img_farm_savefarmsetup'],
+                           crop=(0,60,515,scrheight-300))
+# write file
+case.writeFarmSetupYAML(mdvar['farm_setupfile'])
+with open (mdvar['farm_setupfile'], "r") as myfile:
+    inputfile=myfile.read()
+mdvar['farm_setupfile_output'] = "\n".join([s for s in inputfile.split("\n") if s])
+###########################
+
 
 
 # Write the markdown file
