@@ -8,6 +8,7 @@ make_tutorial3_gui_markdownimages.py -->
 <!-- Variables within braces (between {{ and }}) will be replaced
 by the python script make_tutorial3_gui_markdownimages.py -->
 
+<!--INTROTEXT0-->
 ## Introduction
 
 This tutorial will demonstrate the following features: 
@@ -16,7 +17,9 @@ This tutorial will demonstrate the following features:
 - How to run a parameter sweep over wind speed and wind direction, and
   have `amrwind-frontend` generate the necessary input files for each
   case.
+<!--INTROTEXT1-->
 
+<!--WINDPROPSTART-->
 ## Set some wind properties
 
 For the purposes of demonstrating how to setup a wind farm layout,
@@ -24,6 +27,10 @@ we'll start with some arbitrary wind speed and wind direction values.
 The exact values don't really matter, as later on in the tutorial,
 we'll change these values, but for now they'll be useful when plotting
 the results.
+
+Below we'll use a wind speed of {WS} m/s and wind direction of {WDir}
+degrees.
+<!--WINDPROPEND-->
 
 In the **ABL** tab, set the following inputs according to this table:
 

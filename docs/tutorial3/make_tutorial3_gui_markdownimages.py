@@ -15,6 +15,14 @@ warnings.filterwarnings('ignore')
 scriptpath='../../'
 sys.path.insert(1, scriptpath)
 import genscreenshot as screenshot
+import nbformat as nbf
+
+getsubstring          = lambda x, s1, s2: x.split(s1)[-1].split(s2)[0]
+
+setAMRWindInputString = screenshot.setAMRWindInputString
+NBADDMARKDOWN = lambda nb, x: nb['cells'].append(nbf.v4.new_markdown_cell(x))
+NBADDCELL     = lambda nb, x: nb['cells'].append(nbf.v4.new_code_cell(x.strip()))
+
 
 # Get the yaml help file
 farmyaml = os.path.join(scriptpath, 'farm.yaml')
@@ -26,12 +34,20 @@ scrheight = 800
 imagedir  = 'images'
 mdtemplate= 'tutorial3gui_template.md'
 mdfile    = 'tutorial3gui.md'
+nbfile    = 'tutorial3python.ipynb'
+gennbfile = True
+runjupyter= True
 # ========================================
+
 farmtab = 8
 abltab  = 2
 
 mdstr = ""
 mdvar = {}
+
+# Load the markdown template
+with open (mdtemplate, "r") as myfile:
+    mdstr=myfile.read()
 
 # Create the directory
 if not os.path.exists(imagedir): os.makedirs(imagedir)
@@ -44,9 +60,9 @@ format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, 
                     level=logging.INFO,
                     datefmt="%H:%M:%S")
+
+# Start the app
 logging.info("Main    : Starting script")
-
-
 casedict={}
 lock= threading.Lock()
 t1 = threading.Thread(target=screenshot.start_instance, 
@@ -57,6 +73,44 @@ time.sleep(3)
 
 case=casedict[1]
 case.launchpopupwin('plotdomain', savebutton=False).okclose()
+
+if gennbfile:
+    nb = nbf.v4.new_notebook()
+    nb['cells'] = []
+
+###########################
+if gennbfile:
+    # Get the header
+    txt = "# Tutorial 3: Setting up a farm calculation"
+    NBADDMARKDOWN(nb, txt)
+
+    # Load the modules
+    txt = """\
+# Load the modules
+amrwindfedir = '../../'  # Location of amrwind-frontend directory
+import sys, os
+sys.path.insert(1, amrwindfedir)
+
+# Load the libraries
+import amrwind_frontend as amrwind
+import matplotlib.pyplot    as plt
+
+# Also ignore warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+# Make all plots inline 
+%matplotlib inline
+"""
+    NBADDCELL(nb, txt)
+    txt="""\
+# Start the AMR-Wind case
+case = amrwind.MyApp.init_nogui()"""
+    NBADDCELL(nb, txt)
+
+    # Intro text
+    txt = getsubstring(mdstr, '<!--INTROTEXT0-->', '<!--INTROTEXT1-->')
+    NBADDMARKDOWN(nb, txt)
 
 ###########################
 case.notebook.select(abltab)
@@ -75,6 +129,17 @@ case.setAMRWindInput('ABL_winddir',   WDir, forcechange=True)
 case.ABL_calculateWindVector()
 
 screenshot.Xvfb_screenshot(mdvar['img_ABL_settings'], crop=(0, 0, 515, 400))
+
+if gennbfile:
+    txt  = getsubstring(mdstr, '<!--WINDPROPSTART-->', '<!--WINDPROPEND-->')
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+    txt  = setAMRWindInputString(case, 'case', 'useWSDir')
+    txt += setAMRWindInputString(case, 'case', 'ABL_windspeed',
+                                 extra='forcechange=True')
+    txt += setAMRWindInputString(case, 'case', 'ABL_winddir',  
+                                 extra='forcechange=True')
+    txt += "case.ABL_calculateWindVector()"
+    NBADDCELL(nb, txt)
 ###########################
 
 ###########################
@@ -94,7 +159,7 @@ mdvar['turbinecsv_help']             = screenshot.gethelpmesg(farmyaml,
                                                  'frame_farmturbinecsv')
 
 # Set the parameters
-case.setAMRWindInput('turbines_csvtextbox', turbinescsv)
+case.setAMRWindInput('turbines_csvtextbox',         turbinescsv)
 case.setAMRWindInput('turbines_domainsize',         domainsize)
 case.setAMRWindInput('turbines_backgroundmeshsize', backgrounddeltax)
 case.setAMRWindInput('turbines_deleteprev', True)   # Delete any existing turbines from the system
@@ -107,7 +172,45 @@ screenshot.scrollcanvas(case.notebook._tab['Farm'].canvas, 1.0)
 screenshot.Xvfb_screenshot(mdvar['img_farm_turbine_layout'], 
                            crop=(0,60,515,scrheight-175))
 #--------------------------
+if gennbfile:
+    txt = """\
+## Create wind farm layout and domain
 
+We'll use a CSV format to provde the turbine layout information.  This
+will generally take the form of something like 
+
+```
+{turbinescsv}
+```
+
+Here's what each of the columns mean:
+
+{turbinecsv_help}
+"""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt = """\
+turbinescsv=\"\"\"
+{turbinescsv}
+\"\"\"
+case.setAMRWindInput('turbines_csvtextbox',  turbinescsv)"""
+    NBADDCELL(nb, txt.format(**mdvar))
+
+    txt = """\
+Note that if you already have a csv file saved somewhere, you can load that directly using the `loadTurbineCSVFile()` command, like
+```python
+case.loadTurbineCSVFile('turbines.csv')
+```
+instead of using `setAMRWindInput()` to set the variable directly.
+
+We'll also need to set some thing things like the turbine domainsize
+of `{domainsize}` and background mesh size of `{backgrounddeltax}`m."""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt  = setAMRWindInputString(case, 'case', 'turbines_domainsize')
+    txt += setAMRWindInputString(case, 'case', 'turbines_backgroundmeshsize')
+    txt += setAMRWindInputString(case, 'case', 'turbines_deleteprev')
+    NBADDCELL(nb, txt)
 ###########################
 
 ###########################
@@ -117,6 +220,17 @@ plt.tight_layout()
 mdvar['img_turbine_layout_preview']=imagedir+'/farm_turbine_layout_preview.png'
 plt.savefig(mdvar['img_turbine_layout_preview'])
 #--------------------------
+if gennbfile:
+    txt = """You can preview the locations and domain size using the `turbines_previewAllTurbines() command:`"""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt = """\
+# Preview the turbine layout
+fig, ax = plt.subplots(figsize=(5,5), facecolor='w', dpi=150)
+case.turbines_previewAllTurbines(ax=ax)
+"""
+    NBADDCELL(nb, txt)
+
 ###########################
 
 ###########################
@@ -125,6 +239,18 @@ case.notebook.select(4)
 mdvar['img_farm_turbine_created'] = imagedir+'/farm_turbine_created.png'
 screenshot.Xvfb_screenshot(mdvar['img_farm_turbine_created'], 
                            crop=(0,60,515,scrheight-350))
+# ------------------
+if gennbfile:
+    txt="""In this next step, we tell it to actually create the turbines specified in the CSV input."""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt="""
+case.turbines_createAllTurbines()
+
+# Print out existing list of turbines, just to confirm that the turbines got made
+print(case.listboxpopupwindict['listboxactuator'].getitemlist())
+"""
+    NBADDCELL(nb, txt)
 ###########################
 
 
@@ -302,14 +428,22 @@ mdvar['farm_setupfile_output'] = "\n".join([s for s in inputfile.split("\n") if 
 ###########################
 
 
+###########################
+# WRAP UP AND FINISH
+# -------------------------
 
 # Write the markdown file
 logging.info("Main    : writing "+mdfile)
-with open (mdtemplate, "r") as myfile:
-    mdstr=myfile.read()
-
 with open(mdfile, "w") as f:
     f.write(mdstr.format(**mdvar))
+
+if gennbfile:
+    logging.info("Main    : writing "+nbfile)
+    nbf.write(nb, nbfile)
+    if runjupyter:
+        logging.info("Main    : running jupyter on "+nbfile)
+        cmd='jupyter nbconvert --execute --inplace '+nbfile
+        os.system(cmd)
     
 # Quit and clean up
 time.sleep(2)

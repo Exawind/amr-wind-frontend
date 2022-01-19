@@ -95,3 +95,14 @@ def gethelpmesg(yamlfile, key, basekey='helpwindows', mesgkey='mesg'):
         except yaml.YAMLError as exc:
             print(exc)   
     return yamldata[basekey][key][mesgkey]
+
+def setAMRWindInputString(case, casename, key, extra='', comment=''):
+    """
+    Returns the string 
+      casename.setAMRWindInput('key', value)
+    """
+    extraargs  = '' if extra=='' else ', '+extra
+    addcomment = '' if comment=='' else ' # '+comment
+    valstr = repr(case.getAMRWindInput(key))
+    outstr = """%s.setAMRWindInput('%s', %s%s)%s\n"""
+    return outstr%(casename, key, valstr, extraargs, addcomment)
