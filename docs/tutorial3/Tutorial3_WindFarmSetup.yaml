@@ -4,7 +4,8 @@
 farm_usercomments: Tutorial3 wind farm setup parameters.
 
 # Turbine layout
-turbines_csvtextbox: |-
+turbines_csvtextbox: |4
+
     # CSV file should have columns with
     # name, x, y, type, yaw, hubheight, options
     T0, 500, 300, UnifCtTest, , ,
@@ -23,7 +24,8 @@ turbines_domainsize:                    # Size of the computational domain in me
 turbines_backgroundmeshsize: 10.0       # Size of the background mesh in meters (optional)
 
 # Refine inputs
-refine_csvtextbox: |-
+refine_csvtextbox: |4
+
     # CSV file should have columns with
     # level, upstream, downstream, lateral, below, above, options
     level, upstream, downstream, lateral, below, above, options
@@ -33,7 +35,8 @@ refine_csvfile: ''                      # CSV input file
 refine_deleteprev: true                 # Remove all existing refinement zones before adding these
 
 # Sampling inputs
-sampling_csvtextbox: |-
+sampling_csvtextbox: |4
+
     # CSV file should have columns withturbinescsv=
     # name, type, upstream, downstream, lateral, below, above, n1, n2, options
     name, type, upstream, downstream, lateral, below, above, n1, n2, options
@@ -77,7 +80,7 @@ wfarm_embedamrwindinput: |
     geometry.prob_lo                         = 0.0 0.0 0.0
     geometry.prob_hi                         = 1000.0 1000.0 1000.0
     amr.n_cell                               = 100 100 100         # Number of cells in x, y, and z directions
-    amr.max_level                            = 2
+    amr.max_level                            = 0
     geometry.is_periodic                     = 0 0 0
     xlo.type                                 = mass_inflow
     xlo.density                              = 1.0
