@@ -28,6 +28,7 @@ nice to have:
 **Optional libraries**
 - ruamel (for better yaml handling)
 - xvfbwrapper (for non-X11/headless operation)
+- [utm](https://pypi.org/project/utm/) (for handling lat/long conversion, see https://github.com/Turbo87/utm for library)
 
 
 If you on an Ubuntu system, you can install all of these using apt:
@@ -39,7 +40,7 @@ sudo apt-get install python-yaml
 sudo apt-get install python-enum34
 ```
 
-And for the optional libraries,
+And for some of the optional libraries,
 ```bash
 sudo apt-get install python-ruamel.yaml 
 sudo apt-get install python-xvfbwrapper 
