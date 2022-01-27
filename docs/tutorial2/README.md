@@ -3,5 +3,9 @@
 This tutorial demonstrates how to set up a convectively unstable ABL
 case and postprocess it using `amrwind-frontend`.
 
-- [Setup using python interface](tutorial2setup.md)
-- [Post-processing the simulation](tutorial2_PostprocessABL.ipynb)
+Case set up: 
+- [Setup using the GUI interface](tutorial2guisetup.md)
+- [Setup using the python interface](tutorial2setup.md)
+
+Case postprocessing: 
+- [Post-processing the simulation with python](tutorial2_PostprocessABL.ipynb)

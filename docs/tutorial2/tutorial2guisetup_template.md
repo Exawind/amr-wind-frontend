@@ -334,7 +334,7 @@ menu bar, select **Run** --> **Preview Input File**, to see the
 preview window.  Then, once you're satisfied with the way things look,
 you can hit **File** --> **Save input file as** to save it to a file.
 
-The result should similar to 
+The result should be similar to 
 
 <details>
   <summary>[input file]</summary>
