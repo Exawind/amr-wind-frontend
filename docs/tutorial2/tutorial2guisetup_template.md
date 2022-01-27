@@ -24,9 +24,11 @@ REF1 conditions measured off of the coast of Denmark.
 
 ## Simulation settings
 
-In the **Simulation type** window, choose `{incflo_physics}` for **Physics models**.
+In the **Simulation** tab, go to the **Simulation type** window, and 
+choose `{incflo_physics}` for **Physics models**.
 
-THen under the **Time control** section, set the following parameters
+Then under the **Time control** section, set the following parameters:
+
 | Parameter  | Value            |
 | ---        | ---              |
 | Max time   | {time_stop_time} |
@@ -35,17 +37,19 @@ THen under the **Time control** section, set the following parameters
 | dt         | {time_fixed_dt}  |
 
 Under **Restart parameters**, set **Check file** to `{io_check_file}`.
+Then the settings at the top of the tab should look like:  
 
 ![{img_time_settings}]({img_time_settings})
 
-In the **Fluid and transport properties** section, set the following:
+Now in the **Fluid and transport properties** section, set the
+following:
 
 | Parameter         | Value                 |
 | ---               | ---                   |
 | Dynamic viscosity | {transport_viscosity} |
 
 In the **Godunov parameters** section and the **Turbulence
-parameters** section, set the followign parameters:
+parameters** section, set the following parameters:
 
 | Parameter        | Value                 |
 | ---              | ---                   |
@@ -54,21 +58,70 @@ parameters** section, set the followign parameters:
 | Turbulence model | {turbulence_model}    |
 | TKE source terms | {TKE_source_terms}    |
 
+After setting these variables, the bottom part of the tab should look
+like:
+
 ![{img_turb_settings}]({img_turb_settings})
 
 ## Domain and boundary conditions
 
-| Parameter                     | Value                           |
-| ---                           | ---                             |
+In the **Domain** tab, we'll set the computational domain and boundary
+conditions.
+
+| Parameter       | Value              | Comment                               |
+| ---             | ---                | ---                                   |
+| Domain corner 1 | {geometry_prob_lo} |                                       |
+| Domain corner 2 | {geometry_prob_hi} |                                       |
+| Mesh size       | {amr_n_cell}       | Number of cells in X, Y, Z directions |
+| Periodic in X   | {is_periodicx}     |                                       |
+| Periodic in Y   | {is_periodicy}     |                                       |
+| Periodic in Z   | {is_periodicz}     | Z is not periodic                     |
+
 
 ![{img_domain_settings}]({img_domain_settings})
 
-| Parameter                     | Value                           |
-| ---                           | ---                             |
+Now we'll set the boundary conditions on the upper and lower Z
+surfaces. Press **[show]** next to **Boundary conditions on Z faces**,
+then use these parameter values in the following fields, and you can
+leave the remainder of them blank.
 
+| Parameter       | Value                  | Comment                          |
+| ---             | ---                    | ---                              |
+| zlo velocity BC | {zlo_type}             |                                  |
+| zlo temp BC     | {zlo_temperature_type} |                                  |
+| zlo TKE BC      | {zlo_tke_type}         |                                  |
+| zhi velocity BC | {zhi_type}             |                                  |
+| zhi temp BC     | {zhi_temperature_type} |                                  |
+| zhi temperature | {zhi_temperature}      | This is actually the dT/dz value |
+
+
+It should look like this in the front-end interface:
+	
 ![{img_zBC_settings}]({img_zBC_settings})
 
 ## ABL settings
+
+In the **ABL** tab, we'll add the necessary physical values for an ABL
+simulation.  First in the **ABL Forcing** window, check the following
+items:
+
+| Parameter              | Value               |
+| ---                    | ---                 |
+| add ABL Forcing        | {ABLForcing}        |
+| add Coriolis forces    | {CoriolisForcing}   |
+| add Boussinesq forcing | {BoussinesqForcing} |
+
+Next we'll set the ABL wind speed and direction.  In the **ABL
+physics** section, use the following variables:
+
+| Parameter      | Value                           |
+| ---            | ---                             |
+| Wind speed     | {ABL_windspeed}                 |
+| Wind direction | {ABL_winddir}                   |
+| Forcing height | {ABLForcing_abl_forcing_height} |
+
+ Then hit the **[Calc W. Vec]** button, and it should automatically
+ calculate the correct wind vector to use.
 
 ![{img_ABL_settings1}]({img_ABL_settings1})
 
