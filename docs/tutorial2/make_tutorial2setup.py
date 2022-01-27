@@ -147,7 +147,7 @@ SETINPUT(mdvar, case, 'useWSDir', True)
 SETINPUT(mdvar, case, 'ABL_windspeed', 6.13)
 SETINPUT(mdvar, case, 'ABL_winddir',   230.07)
 case.ABL_calculateWindVector()
-SETINPUT(mdvar, case, 'useWSDir', False)
+#SETINPUT(mdvar, case, 'useWSDir', False)
 
 SETINPUT(mdvar, case, 'ABLForcing.abl_forcing_height',   57.19)
 SETINPUT(mdvar, case, 'ABL.kappa',                       0.4) 
@@ -161,8 +161,6 @@ SETINPUT(mdvar, case, 'ABL.surface_temp_flux',     0.0122096146646)
 SETINPUT(mdvar, case, 'ABL.mo_beta_m',             16.0)
 SETINPUT(mdvar, case, 'ABL.mo_gamma_m',            5.0)
 SETINPUT(mdvar, case, 'ABL.mo_gamma_h',            5.0)
-SETINPUT(mdvar, case, 'ABL.random_gauss_mean',     0.0)
-SETINPUT(mdvar, case, 'ABL.random_gauss_var',      1.0)
 
 SETINPUT(mdvar, case, 'CoriolisForcing.latitude',  55.49)
 SETINPUT(mdvar, case, 'BoussinesqBuoyancy.reference_temperature', 288.15) 
@@ -205,40 +203,40 @@ mdvar['img_IO_settings']   = imagedir+'/IO_settings.png'
 
 sampleplane = case.get_default_samplingdict()
 # Modify the geometry
-sampleplane['sampling_name']         = 'p_hub'
-sampleplane['sampling_type']         = 'PlaneSampler'
-sampleplane['sampling_p_num_points'] = [129, 129]
-sampleplane['sampling_p_origin']     = [0, 0, 0]
-sampleplane['sampling_p_axis1']      = [1536, 0, 0]
-sampleplane['sampling_p_axis2']      = [0, 1536, 0]
-sampleplane['sampling_p_normal']     = [0, 0, 1]
-sampleplane['sampling_p_offsets']    = '17        28.5      41        57        77        90'
+sampleplane['sampling_name']         = mdvar['phub_name']   = 'p_hub'
+sampleplane['sampling_type']         = mdvar['phub_type']   = 'PlaneSampler'
+sampleplane['sampling_p_num_points'] = mdvar['phub_Npts']   = [129, 129]
+sampleplane['sampling_p_origin']     = mdvar['phub_origin'] = [0, 0, 0]
+sampleplane['sampling_p_axis1']      = mdvar['phub_axis1']  = [1536, 0, 0]
+sampleplane['sampling_p_axis2']      = mdvar['phub_axis2']  = [0, 1536, 0]
+sampleplane['sampling_p_normal']     = mdvar['phub_normal'] = [0, 0, 1]
+sampleplane['sampling_p_offsets']    = mdvar['phub_offset'] = '17        28.5      41        57        77        90'
 case.add_sampling(sampleplane)
 mdvar['img_phub_settings1']   = imagedir+'/phub_settings1.png'
 mdvar['img_phub_settings2']   = imagedir+'/phub_settings2.png'
 
 sampleplane = case.get_default_samplingdict()
-sampleplane['sampling_name']         = 'xbc'
-sampleplane['sampling_type']         = 'PlaneSampler'
-sampleplane['sampling_p_num_points'] = [257, 161]
-sampleplane['sampling_p_origin']     = [0, 0, 0]
-sampleplane['sampling_p_axis1']      = [0, 1536, 0]
-sampleplane['sampling_p_axis2']      = [0, 0, 1920]
-sampleplane['sampling_p_normal']     = [1, 0, 0]
-sampleplane['sampling_p_offsets']    = '0.0 1536'
+sampleplane['sampling_name']         = mdvar['xbc_name']   = 'xbc'
+sampleplane['sampling_type']         = mdvar['xbc_type']   = 'PlaneSampler'
+sampleplane['sampling_p_num_points'] = mdvar['xbc_Npts']   = [257, 161]
+sampleplane['sampling_p_origin']     = mdvar['xbc_origin'] = [0, 0, 0]
+sampleplane['sampling_p_axis1']      = mdvar['xbc_axis1']  = [0, 1536, 0]
+sampleplane['sampling_p_axis2']      = mdvar['xbc_axis2']  = [0, 0, 1920]
+sampleplane['sampling_p_normal']     = mdvar['xbc_normal'] = [1, 0, 0]
+sampleplane['sampling_p_offsets']    = mdvar['xbc_offset'] = '0.0 1536'
 case.add_sampling(sampleplane)
 mdvar['img_xbc_settings1']   = imagedir+'/xbc_settings1.png'
 mdvar['img_xbc_settings2']   = imagedir+'/xbc_settings2.png'
 
 sampleplane = case.get_default_samplingdict()
-sampleplane['sampling_name']         = 'ybc'
-sampleplane['sampling_type']         = 'PlaneSampler'
-sampleplane['sampling_p_num_points'] = [257, 161]
-sampleplane['sampling_p_origin']     = [0, 0, 0]
-sampleplane['sampling_p_axis1']      = [1536, 0, 0]
-sampleplane['sampling_p_axis2']      = [0, 0, 1920]
-sampleplane['sampling_p_normal']     = [0, 1, 0]
-sampleplane['sampling_p_offsets']    = '0.0 1536'
+sampleplane['sampling_name']         = mdvar['ybc_name']   = 'ybc'
+sampleplane['sampling_type']         = mdvar['ybc_type']   = 'PlaneSampler'
+sampleplane['sampling_p_num_points'] = mdvar['ybc_Npts']   = [257, 161]
+sampleplane['sampling_p_origin']     = mdvar['ybc_origin'] = [0, 0, 0]
+sampleplane['sampling_p_axis1']      = mdvar['ybc_axis1']  = [1536, 0, 0]
+sampleplane['sampling_p_axis2']      = mdvar['ybc_axis2']  = [0, 0, 1920]
+sampleplane['sampling_p_normal']     = mdvar['ybc_normal'] = [0, 1, 0]
+sampleplane['sampling_p_offsets']    = mdvar['ybc_offset'] = '0.0 1536'
 case.add_sampling(sampleplane)
 mdvar['img_ybc_settings1']   = imagedir+'/ybc_settings1.png'
 mdvar['img_ybc_settings2']   = imagedir+'/ybc_settings2.png'
@@ -246,7 +244,7 @@ mdvar['img_ybc_settings2']   = imagedir+'/ybc_settings2.png'
 
 if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_IO_settings'], 
-                               crop=(0, 0, 515, 600))
+                               crop=(0, 0, 515, 500))
 
     # Get pbub sampling plane
     case.listboxpopupwindict['listboxsampling'].tkentry.selection_set(0)
@@ -295,11 +293,15 @@ SETINPUT(mdvar, case, 'diffusion.mg_rtol'                        , 1e-06)
 SETINPUT(mdvar, case, 'diffusion.mg_atol'                        , 1e-12)
 SETINPUT(mdvar, case, 'temperature_diffusion.mg_rtol'            , 1e-10)
 SETINPUT(mdvar, case, 'temperature_diffusion.mg_atol'            , 1e-13)
+
+SETINPUT(mdvar, case, 'ABL.random_gauss_mean',     0.0)
+SETINPUT(mdvar, case, 'ABL.random_gauss_var',      1.0)
+
 mdvar['img_expert_settings']   = imagedir+'/expert_settings.png'
 
 if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_expert_settings'], 
-                               crop=(0, 0, 515, 350))
+                               crop=(0, 0, 515, 425))
 
 ###########################
 # -- Plot the domain --

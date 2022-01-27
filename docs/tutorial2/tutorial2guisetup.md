@@ -13,13 +13,13 @@ This tutorial will demonstrate the following features:
 The desired conditions for this ABL case are derived from the IEA29
 REF1 conditions measured off of the coast of Denmark.  
 
-| Parameter                 | Value       |
-| ---                       | ---         |
-| Turbine hub height        | 57.19 m     |
-| Hub height wind speed     | 6.1 m/s     |
-| Hub height wind direction | 230 degrees |
-| Hub height TI             | 0.068       |
-| Hub height shear exponent | 0.0025      |
+| Parameter                 | Value                             |
+| ---                       | ---                               |
+| Turbine hub height        | 57.19 m |
+| Hub height wind speed     | 6.13 m/s               |
+| Hub height wind direction | 230.07 degrees             |
+| Hub height TI             | 0.068                             |
+| Hub height shear exponent | 0.0025                            |
 <!--INTROTEXTEND-->
 
 ## Simulation settings
@@ -112,7 +112,8 @@ items:
 | add Boussinesq forcing | True |
 
 Next we'll set the ABL wind speed and direction.  In the **ABL
-physics** section, use the following variables:
+physics** section, check the **Use speed & dir instead** checkbox,
+then use the following variables:
 
 | Parameter      | Value                           |
 | ---            | ---                             |
@@ -121,29 +122,176 @@ physics** section, use the following variables:
 | Forcing height | 57.19 |
 
  Then hit the **[Calc W. Vec]** button, and it should automatically
- calculate the correct wind vector to use.
+ calculate the correct wind vector to use.  Under the **ABL
+ properties** section, fill in the following values:
+ 
+| Parameter            | Value                       |
+| ---                  | ---                         |
+| kappa                | 0.4                 |
+| ABL normal direction | 2      |
+| z0 roughness         | 0.0001  |
+| ABL ref temp         | 288.15 |
+| surf temp rate       | 0.0     |
+| surf temp flux       | 0.0122096146646     |
+| M.O. beta_m          | 16.0             |
+| M.O. gamma_m         | 5.0            |
+| M.O. gamma_h         | 5.0            |
+ 
+
+In the **Coriolis forces** and **Boussinesq forces** sections, put in
+the following parameters:
+
+| Parameter             | Value                                      |
+| ---                   | ---                                        |
+| Latitude              | 55.49                 |
+| Reference Temperature | 288.15 |
+
+The top part of the **ABL** tab should then look like:  
 
 ![images/ABL_settings1.png](images/ABL_settings1.png)
+
+Scrolling down the same tab, next we'll specify the initial
+temperature profile in the **ABL temperature profiles** section:
+
+| Parameter        | Value                     |
+| ---              | ---                       |
+| Temp profile z   | 1050.0 1150.0 1920.0 |
+| Temp profile val | 288.15 296.15 296.9  |
+
+In the **ABL perturbations** tab, we're going to override the amr-wind
+frontend defaults, by putting `None` in a number of fields.  Using
+`None` will prevent these parameters from appearing in the final input
+file.
+
+| Parameter               | Value                    |
+| ---                     | ---                      |
+| Ref z for vel perturb   | None |
+| Num of periods in x     | None           |
+| Num of periods in y     | None           |
+| Amp. of U fluct.        | None             |
+| Amp. of V fluct.        | None             |
+| Amp. of T perturbations | None    |
+| Max T perturb height    | None      |
+
+In the **ABL output parameters** section, put in the following inputs.
+
+| Parameter        | Value                        |
+| ---              | ---                          |
+| Output frequency | 1 |
+| Output format    | netcdf    |
+
 
 ![images/ABL_settings2.png](images/ABL_settings2.png)
 
 ## IO settings
 
+In this section, we're going to be specifying the outputs and the
+sampling probes in the simulation.  In the **IO** tab, we'll first set
+some generic parameters in the **Plot Ouputs** section:  
+
+| Parameter     | Value                |
+| ---           | ---                  |
+| Verbosity     | 3     |
+| Plot interval | 2000 |
+
+Under **Post processing**, select `['sampling']`.  Then
+in the **Sampling probes** section, set the following values:  
+
+| Parameter   | Value                       |
+| ---         | ---                         |
+| Output freq | 100 |
+| Variables   | ['velocity', 'temperature']           |
+
+The tab should then looks something similar to:  
+
 ![images/IO_settings.png](images/IO_settings.png)
+
+Now we're going to set up 3 different sets of sampling planes.  One
+set will be for hub-height X-Y planes, another for the X boundary
+planes, and one for the Y boundary planes.  To set up the hub height
+planes, click on the **[New]** in the **Sampling probes** section,
+then put in the following information at the top:
+
+| Parameter | Value       |
+| ---       | ---         |
+| Name      | p_hub |
+| Type      | PlaneSampler |
 
 ![images/phub_settings1.png](images/phub_settings1.png)
 
+Click on the **[show]** button under **Sample plane specifications**
+and then put in the following details:  
+
+| Parameter        | Value         |
+| ---              | ---           |
+| Plane num points | [129, 129]   |
+| Plane origin     | [0, 0, 0] |
+| Plane axis1      | [1536, 0, 0]  |
+| Plane axis2      | [0, 1536, 0]  |
+| Plane normal     | [0, 0, 1] |
+| Plane offsets    | 17        28.5      41        57        77        90 |
+
+That part of the windows should then look like:  
+
 ![images/phub_settings2.png](images/phub_settings2.png)
+
+Then click **[Save & Close]**.
+
+Now to set up the X boundary sample planes, click on **[New]** again
+and put in these values at the top:
+
+| Parameter | Value      |
+| ---       | ---        |
+| Name      | xbc |
+| Type      | PlaneSampler |
 
 ![images/xbc_settings1.png](images/xbc_settings1.png)
 
+And in the **Sample plane specifications**, put in these values: 
+
+| Parameter        | Value        |
+| ---              | ---          |
+| Plane num points | [257, 161]   |
+| Plane origin     | [0, 0, 0] |
+| Plane axis1      | [0, 1536, 0]  |
+| Plane axis2      | [0, 0, 1920]  |
+| Plane normal     | [1, 0, 0] |
+| Plane offsets    | 0.0 1536 |
+
+which will look like this in the window: 
+
 ![images/xbc_settings2.png](images/xbc_settings2.png)
+
+Then click **[Save & Close]**.  For the Y boundary planes, use these inputs 
+
+| Parameter | Value      |
+| ---       | ---        |
+| Name      | ybc |
+| Type      | PlaneSampler |
 
 ![images/ybc_settings1.png](images/ybc_settings1.png)
 
+And these geometry settings: 
+
+| Parameter        | Value        |
+| ---              | ---          |
+| Plane num points | [257, 161]   |
+| Plane origin     | [0, 0, 0] |
+| Plane axis1      | [1536, 0, 0]  |
+| Plane axis2      | [0, 0, 1920]  |
+| Plane normal     | [0, 1, 0] |
+| Plane offsets    | 0.0 1536 |
+
 ![images/ybc_settings2.png](images/ybc_settings2.png)
 
+Then click **[Save & Close]**.  
+
 ## Expert settings
+
+In the last settings for the simulation, we'll put in a few details in
+the **Expert** tab.  This is optional, and mostly to keep things
+consistent with previous ABL solutions.  Put in the following values
+in the **Tolerances** section:  
 
 | Parameter                     | Value                           |
 | ---                           | ---                             |
@@ -156,11 +304,26 @@ physics** section, use the following variables:
 | temperature_diffusion.mg_rtol | 1e-10 |
 | temperature_diffusion.mg_atol | 1e-13 |
 
+In the **Numerics** section, put in the following values: 
+
+| Parameter             | Value                   |
+| ---                   | ---                     |
+| Random Gauss mean     | 0.0 |
+| Random Gauss Variance | 1.0  |
+
+The resulting tab should then look like: 
+
 ![images/expert_settings.png](images/expert_settings.png)
 
 ## Plot of the domain
 
+To visualize the domain with the ABL forcing and the sampling planes,
+click on the menu bar's **Plot** --> **Plot domain** option.  Then
+under the **Select sample probes** section, choose **[Select all]**:  
+
 ![images/plotDomainWin_samplingzone.png](images/plotDomainWin_samplingzone.png)
+
+Now press **[Plot Domain]** and you should see the following plotted: 
 
 ![images/plotDomainFig_sampling.png](images/plotDomainFig_sampling.png)
 
@@ -168,8 +331,10 @@ physics** section, use the following variables:
 
 To see what the AMR-Wind input file would look like, you can go to the
 menu bar, select **Run** --> **Preview Input File**, to see the
-preview window (you can also just hit **File** --> **Save input file
-as** to save it to a file).
+preview window.  Then, once you're satisfied with the way things look,
+you can hit **File** --> **Save input file as** to save it to a file.
+
+The result should similar to 
 
 <details>
   <summary>[input file]</summary>

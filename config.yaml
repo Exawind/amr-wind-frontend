@@ -1152,8 +1152,8 @@ inputwidgets:
     ctrlelem:
       - input:  ABL_windspeed
       - input:  ABL_winddir
-      - input:  ABL_velocity
-        activewhen: ['', 0]
+#      - input:  ABL_velocity
+#        activewhen: ['', 0]
 
   - name:       ABL_windspeed
     label:      Wind speed
@@ -1312,6 +1312,8 @@ inputwidgets:
     #defaultval: 0.0 650.0 750.0 1000.0
     outputdef:
       AMR-Wind: ABL.temperature_heights
+    entryopt:
+      width:    20
 
   - name:       temperature_values
     label:      Temp profile val
@@ -1320,6 +1322,8 @@ inputwidgets:
     #defaultval: 300.0 300.0 308.0 308.75 
     outputdef:
       AMR-Wind: ABL.temperature_values
+    entryopt:
+      width:    20
 
   - name:       perturb_velocity
     label:      Apply vel perturbations
