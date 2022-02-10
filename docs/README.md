@@ -14,8 +14,11 @@ There are a couple of examples cases which demonstrate how to use
 - [Tutorial 1](tutorial1/README.md): Demonstrates setting up, running,
   and postprocessing an acutator disk model in uniform flow.
 
-- [Tutorial 2](tutorial2/README.md): [Incomplete] Setting up, running,
-  and postprocessing a convectively unstable ABL case.
+- [Tutorial 2](tutorial2/README.md): Setting up, running, and
+  postprocessing a convectively unstable ABL case.
+
+- [Tutorial 3](tutorial3/README.md): How to set up a wind farm case
+  with many wind turbines.
 
 
 
