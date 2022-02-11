@@ -40,7 +40,7 @@ mdfile    = 'tutorial2guisetup.md'
 nbfile    = 'tutorial2python.ipynb'
 gennbfile = False
 runjupyter= True
-savefigs  = True
+savefigs  = False
 # ========================================
 
 mdstr = ""

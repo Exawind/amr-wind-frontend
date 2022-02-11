@@ -36,7 +36,8 @@ Then under the **Time control** section, set the following parameters:
 | March with | `{time_control}` |
 | dt         | {time_fixed_dt}  |
 
-Under **Restart parameters**, set **Check file** to `{io_check_file}`.
+Under **Restart parameters**, set **Check file** to `{io_check_file}`
+and **Checkpoint interval** to `{time_checkpoint_interval}`.
 Then the settings at the top of the tab should look like:  
 
 ![{img_time_settings}]({img_time_settings})

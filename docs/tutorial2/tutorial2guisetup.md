@@ -36,7 +36,8 @@ Then under the **Time control** section, set the following parameters:
 | March with | `const dt` |
 | dt         | 0.5  |
 
-Under **Restart parameters**, set **Check file** to `chk`.
+Under **Restart parameters**, set **Check file** to `chk`
+and **Checkpoint interval** to `2000`.
 Then the settings at the top of the tab should look like:  
 
 ![images/time_settings.png](images/time_settings.png)
