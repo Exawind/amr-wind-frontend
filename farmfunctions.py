@@ -1351,6 +1351,11 @@ def loadFarmSetupYAML(self, loadfile, stringinput=False):
     # Set the values of each variable
     for key, val in yamldict.items():
         self.inputvars[key].setval(val, forcechange=True)
+
+    # Load the embedded AMR-Wind inputs
+    if self.inputvars['farm_loadembedamrwindinput'].getval():
+        embeddedinput=self.inputvars['wfarm_embedamrwindinput'].getval()
+        self.loadAMRWindInput(embeddedinput, string=True)
     return
 
 def button_saveFarmSetupYAML(self):
