@@ -40,7 +40,7 @@ mdfile    = 'tutorial2guisetup.md'
 nbfile    = 'tutorial2python.ipynb'
 gennbfile = False
 runjupyter= True
-savefigs  = False
+savefigs  = True
 # ========================================
 
 mdstr = ""
@@ -271,7 +271,7 @@ if savefigs:
 
     # Get ybc sampling plane
     case.listboxpopupwindict['listboxsampling'].tkentry.selection_clear(0, Tk.END)
-    case.listboxpopupwindict['listboxsampling'].tkentry.selection_set(1)
+    case.listboxpopupwindict['listboxsampling'].tkentry.selection_set(2)
     p=case.listboxpopupwindict['listboxsampling'].edit()
     p.popup_toggledframes['sample_plane_frame'].setstate(True)
     screenshot.Xvfb_screenshot(mdvar['img_ybc_settings1'],
