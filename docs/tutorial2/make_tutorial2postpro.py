@@ -197,6 +197,7 @@ if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_postpro_samplefile2'], 
                                crop=(0, 350, 515, scrheight))
 
+case.inputvars['samplingprobe_variables'].tkentry.selection_set(1)
 SETINPUT(mdvar, case, 'samplingprobe_plotaxis1', 'X')
 SETINPUT(mdvar, case, 'samplingprobe_plotaxis2', 'Y')
 SETINPUT(mdvar, case, 'samplingprobe_plottimeindex', 400)
@@ -207,7 +208,6 @@ if savefigs:
 
 # -- Create the plot --
 levels = 41 #np.linspace(0,8,41)
-#fig, (ax1, ax2) = plt.subplots(1,2, figsize=(6,5), gridspec_kw={'width_ratios': [1, 0.05]}, dpi=150)
 from matplotlib import cm
 fig, ax = plt.subplots(figsize=(6,5), facecolor='w', dpi=150)
 im1 = case.plotSamplePlane('p_hub', 'velocityx', 400, 0, 'X','Y',

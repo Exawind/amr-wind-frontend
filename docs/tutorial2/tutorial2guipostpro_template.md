@@ -60,6 +60,17 @@ and hit **[Load file]**:
 
 ![{img_postpro_samplefile2}]({img_postpro_samplefile2})
 
-![{img_postpro_samplefile2}]({img_postpro_samplefile3})
+| Parameter        | value                         |
+| ---              | ---                           |
+| NetCDF vars      | `velocityx`                   |
+| Plot axis 1      | {samplingprobe_plotaxis1}     |
+| Plot axis 2      | {samplingprobe_plotaxis2}     |
+| k-plane          | 0                             |
+| Set current time | {samplingprobe_plottimeindex} |
+
+![{img_postpro_samplefile3}]({img_postpro_samplefile3})
+
+Then press the **[Plot sample]** button, and it should generate the
+figure below:
 
 ![{img_postpro_phub_u}]({img_postpro_phub_u})

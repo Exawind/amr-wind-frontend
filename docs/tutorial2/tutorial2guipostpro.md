@@ -71,6 +71,17 @@ and hit **[Load file]**:
 
 ![images/postpro_samplefile2.png](images/postpro_samplefile2.png)
 
-![images/postpro_samplefile2.png](images/postpro_samplefile3.png)
+| Parameter        | value                         |
+| ---              | ---                           |
+| NetCDF vars      | `velocityx`                   |
+| Plot axis 1      | X     |
+| Plot axis 2      | Y     |
+| k-plane          | 0                             |
+| Set current time | 400 |
+
+![images/postpro_samplefile3.png](images/postpro_samplefile3.png)
+
+Then press the **[Plot sample]** button, and it should generate the
+figure below:
 
 ![images/postpro_phub_u.png](images/postpro_phub_u.png)
