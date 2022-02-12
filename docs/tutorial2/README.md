@@ -1,4 +1,4 @@
-# Tutorial 2: Convectively unstable ABL
+# Tutorial 2: Setting up and postprocessing a convectively unstable ABL
 
 This tutorial demonstrates how to set up a convectively unstable ABL
 case and postprocess it using `amrwind-frontend`.
