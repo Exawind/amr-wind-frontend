@@ -8,4 +8,5 @@ Case set up:
 - [Setup using the python interface](tutorial2setup.md)
 
 Case postprocessing: 
+- [Post-processing the simulation using the GUI](tutorial2guipostpro.md)
 - [Post-processing the simulation with python](tutorial2_PostprocessABL.ipynb)
