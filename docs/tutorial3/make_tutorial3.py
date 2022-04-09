@@ -1,3 +1,8 @@
+# Note to self: run on skybridge with
+#  $ module load canopy/2.1.9
+#  $ export PYTHONPATH=~/.local/lib/python2.7/site-packages/
+#
+
 import logging
 import threading
 import os, sys
@@ -37,11 +42,12 @@ mdfile    = 'tutorial3gui.md'
 nbfile    = 'tutorial3python.ipynb'
 gennbfile = True
 runjupyter= True
-savefigs  = False
+savefigs  = True
 # ========================================
 
 farmtab = 8
 abltab  = 2
+simtab  = 0
 
 mdstr = ""
 mdvar = {}
@@ -148,12 +154,34 @@ if gennbfile:
 ###########################
 
 ###########################
+case.notebook.select(simtab)
+
+physicsmodels          = ['FreeStream', 'Actuator']
+dt                     = 0.25
+mdvar['physicsmodels'] = physicsmodels
+mdvar['dt']            = dt
+
+case.setAMRWindInput('incflo.physics', physicsmodels)
+case.setAMRWindInput('time.fixed_dt',  dt)
+mdvar['img_sim_settings'] = imagedir+'/sim_settings.png'
+
+if savefigs:
+    screenshot.Xvfb_screenshot(mdvar['img_sim_settings'], crop=(0, 0, 515, 410))
+
+if gennbfile:
+    txt  = setAMRWindInputString(case, 'case', 'incflo.physics')
+    txt += setAMRWindInputString(case, 'case', 'time.fixed_dt')
+    NBADDCELL(nb, txt)
+
+###########################
+
+###########################
 turbinescsv="""# CSV file should have columns with
 # name, x, y, type, yaw, hubheight, options
-T0, 500, 300, UnifCtTest, , ,
-T1, 500, 700, UnifCtTest, , ,"""
+T0, 480, 280, UnifCtTest, , ,
+T1, 480, 680, UnifCtTest, , ,"""
 
-domainsize       = [1000,1000,1000]   # Domain size [x,y,z] in meters
+domainsize       = [960,960,960]   # Domain size [x,y,z] in meters
 backgrounddeltax = 10                 # Background mesh delta x in meters
 
 mdvar['turbinescsv']                 = turbinescsv

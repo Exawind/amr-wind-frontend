@@ -49,6 +49,19 @@ The input field should look similar to:
 Then hit the **[Calc WS/WDir]** button, and it should fill in the
 values of the Wind Vector appropriately.
 
+## Set the simulation type
+
+In the **Simulation** tab, set the following inputs:
+
+| Input          | Value           |
+| ---            | ---             |
+| Physics models | ['FreeStream', 'Actuator'] |
+| dt             | 0.25            |
+
+![images/sim_settings.png](images/sim_settings.png)
+
+This should set up a case similar to the Tutorial 1 set up.
+
 ## Create wind farm layout and domain
 
 The first thing to do in setting the wind farm layout is to set the
@@ -59,8 +72,8 @@ Copy and paste this input into the **CSV Contents** window.
 ```
 # CSV file should have columns with
 # name, x, y, type, yaw, hubheight, options
-T0, 500, 300, UnifCtTest, , ,
-T1, 500, 700, UnifCtTest, , ,
+T0, 480, 280, UnifCtTest, , ,
+T1, 480, 680, UnifCtTest, , ,
 ```
 
 If you have all of the turbine inputs in a separate CSV file, you can
@@ -70,7 +83,7 @@ and hitting **[Load/Reload]**.
 The other inputs in the
 | Input                    | value              |
 | ---                      | ---                |
-| Farm domain size (X,Y,Z) | [1000, 1000, 1000]       |
+| Farm domain size (X,Y,Z) | [960, 960, 960]       |
 | Background mesh size [m] | 10 |
 
 ![images/farm_turbine_layout.png](images/farm_turbine_layout.png)
@@ -247,7 +260,8 @@ The input file should look similar to:
 # --- Simulation time control parameters ---
 time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
 time.max_step                            = -1                  
-time.fixed_dt                            = -1.0                # Fixed timestep size (in seconds). If negative, then time.cfl is used
+time.fixed_dt                            = 0.25                # Fixed timestep size (in seconds). If negative, then time.cfl is used
+incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
 incflo.verbose                           = 0                   
 io.check_file                            = chk                 
 incflo.use_godunov                       = true                
@@ -259,14 +273,15 @@ transport.laminar_prandtl                = 0.7                 # Laminar prandtl
 transport.turbulent_prandtl              = 0.3333              # Turbulent prandtl number
 # --- Geometry and Mesh ---
 geometry.prob_lo                         = 0.0 0.0 0.0         
-geometry.prob_hi                         = 1000.0 1000.0 1000.0
-amr.n_cell                               = 100 100 100         # Number of cells in x, y, and z directions
+geometry.prob_hi                         = 960.0 960.0 960.0   
+amr.n_cell                               = 96 96 96            # Number of cells in x, y, and z directions
 amr.max_level                            = 2                   
 geometry.is_periodic                     = 1 1 0               
 zlo.type                                 = no_slip_wall        
 zhi.type                                 = no_slip_wall        
 # --- ABL parameters ---
 ICNS.source_terms                        =    ActuatorForcing  
+incflo.velocity                          = 7.07106781187 7.07106781187 0.0
 ABLForcing.abl_forcing_height            = 0.0                 
 time.plot_interval                       = 1000                
 io.plot_file                             = plt                 
@@ -279,41 +294,41 @@ sampling.fields                          = velocity
 sampling.labels                          = T0_cl1 T1_cl1 T0_rp1 T1_rp1 T0_sw1 T1_sw1 Farm_hh
 sampling.T0_cl1.type                     = LineSampler         
 sampling.T0_cl1.num_points               = 11                  
-sampling.T0_cl1.start                    = 417.975613382 217.975613382 80.0
-sampling.T0_cl1.end                      = 500.0 300.0 80.0    
+sampling.T0_cl1.start                    = 397.975613382 197.975613382 80.0
+sampling.T0_cl1.end                      = 480.0 280.0 80.0    
 sampling.T1_cl1.type                     = LineSampler         
 sampling.T1_cl1.num_points               = 11                  
-sampling.T1_cl1.start                    = 417.975613382 617.975613382 80.0
-sampling.T1_cl1.end                      = 500.0 700.0 80.0    
+sampling.T1_cl1.start                    = 397.975613382 597.975613382 80.0
+sampling.T1_cl1.end                      = 480.0 680.0 80.0    
 sampling.T0_rp1.type                     = PlaneSampler        
 sampling.T0_rp1.num_points               = 11 11               
-sampling.T0_rp1.origin                   = 294.939033456 176.963420074 22.0
+sampling.T0_rp1.origin                   = 274.939033456 156.963420074 22.0
 sampling.T0_rp1.axis1                    = 82.0243866176 -82.0243866176 0.0
 sampling.T0_rp1.axis2                    = 0.0 0.0 116.0       
 sampling.T0_rp1.normal                   = 0.0 0.0 0.0         
 sampling.T1_rp1.type                     = PlaneSampler        
 sampling.T1_rp1.num_points               = 11 11               
-sampling.T1_rp1.origin                   = 294.939033456 576.963420074 22.0
+sampling.T1_rp1.origin                   = 274.939033456 556.963420074 22.0
 sampling.T1_rp1.axis1                    = 82.0243866176 -82.0243866176 0.0
 sampling.T1_rp1.axis2                    = 0.0 0.0 116.0       
 sampling.T1_rp1.normal                   = 0.0 0.0 0.0         
 sampling.T0_sw1.type                     = PlaneSampler        
 sampling.T0_sw1.num_points               = 13 5                
-sampling.T0_sw1.origin                   = 335.951226765 135.951226765 22.0
+sampling.T0_sw1.origin                   = 315.951226765 115.951226765 22.0
 sampling.T0_sw1.axis1                    = 246.073159853 246.073159853 0.0
 sampling.T0_sw1.axis2                    = 0.0 0.0 116.0       
 sampling.T0_sw1.normal                   = 0.707106781187 -0.707106781187 0.0
 sampling.T0_sw1.offsets                  = 0.0 116.0           
 sampling.T1_sw1.type                     = PlaneSampler        
 sampling.T1_sw1.num_points               = 13 5                
-sampling.T1_sw1.origin                   = 335.951226765 535.951226765 22.0
+sampling.T1_sw1.origin                   = 315.951226765 515.951226765 22.0
 sampling.T1_sw1.axis1                    = 246.073159853 246.073159853 0.0
 sampling.T1_sw1.axis2                    = 0.0 0.0 116.0       
 sampling.T1_sw1.normal                   = 0.707106781187 -0.707106781187 0.0
 sampling.T1_sw1.offsets                  = 0.0 116.0           
 sampling.Farm_hh.type                    = PlaneSampler        
 sampling.Farm_hh.num_points              = 13 9                
-sampling.Farm_hh.origin                  = 268.0 384.0 80.0    
+sampling.Farm_hh.origin                  = 248.0 364.0 80.0    
 sampling.Farm_hh.axis1                   = 348.0 0.0 0.0       
 sampling.Farm_hh.axis2                   = 0.0 232.0 0.0       
 sampling.Farm_hh.normal                  = 0.0 0.0 0.0         
@@ -323,7 +338,7 @@ tagging.T0_level_0_zone.type             = GeometryRefinement
 tagging.T0_level_0_zone.shapes           = T0_level_0_zone     
 tagging.T0_level_0_zone.level            = 0                   
 tagging.T0_level_0_zone.T0_level_0_zone.type = box                 
-tagging.T0_level_0_zone.T0_level_0_zone.origin = 335.951226765 300.0 -7.0
+tagging.T0_level_0_zone.T0_level_0_zone.origin = 315.951226765 280.0 -7.0
 tagging.T0_level_0_zone.T0_level_0_zone.xaxis = 164.048773235 164.048773235 0.0
 tagging.T0_level_0_zone.T0_level_0_zone.yaxis = 164.048773235 -164.048773235 0.0
 tagging.T0_level_0_zone.T0_level_0_zone.zaxis = 0.0 0.0 203.0       
@@ -331,7 +346,7 @@ tagging.T1_level_0_zone.type             = GeometryRefinement
 tagging.T1_level_0_zone.shapes           = T1_level_0_zone     
 tagging.T1_level_0_zone.level            = 0                   
 tagging.T1_level_0_zone.T1_level_0_zone.type = box                 
-tagging.T1_level_0_zone.T1_level_0_zone.origin = 335.951226765 700.0 -7.0
+tagging.T1_level_0_zone.T1_level_0_zone.origin = 315.951226765 680.0 -7.0
 tagging.T1_level_0_zone.T1_level_0_zone.xaxis = 164.048773235 164.048773235 0.0
 tagging.T1_level_0_zone.T1_level_0_zone.yaxis = 164.048773235 -164.048773235 0.0
 tagging.T1_level_0_zone.T1_level_0_zone.zaxis = 0.0 0.0 203.0       
@@ -339,7 +354,7 @@ tagging.T0_level_1_zone.type             = GeometryRefinement
 tagging.T0_level_1_zone.shapes           = T0_level_1_zone     
 tagging.T0_level_1_zone.level            = 1                   
 tagging.T0_level_1_zone.T0_level_1_zone.type = box                 
-tagging.T0_level_1_zone.T0_level_1_zone.origin = 417.975613382 300.0 -7.0
+tagging.T0_level_1_zone.T0_level_1_zone.origin = 397.975613382 280.0 -7.0
 tagging.T0_level_1_zone.T0_level_1_zone.xaxis = 82.0243866176 82.0243866176 0.0
 tagging.T0_level_1_zone.T0_level_1_zone.yaxis = 82.0243866176 -82.0243866176 0.0
 tagging.T0_level_1_zone.T0_level_1_zone.zaxis = 0.0 0.0 203.0       
@@ -347,19 +362,19 @@ tagging.T1_level_1_zone.type             = GeometryRefinement
 tagging.T1_level_1_zone.shapes           = T1_level_1_zone     
 tagging.T1_level_1_zone.level            = 1                   
 tagging.T1_level_1_zone.T1_level_1_zone.type = box                 
-tagging.T1_level_1_zone.T1_level_1_zone.origin = 417.975613382 700.0 -7.0
+tagging.T1_level_1_zone.T1_level_1_zone.origin = 397.975613382 680.0 -7.0
 tagging.T1_level_1_zone.T1_level_1_zone.xaxis = 82.0243866176 82.0243866176 0.0
 tagging.T1_level_1_zone.T1_level_1_zone.yaxis = 82.0243866176 -82.0243866176 0.0
 tagging.T1_level_1_zone.T1_level_1_zone.zaxis = 0.0 0.0 203.0       
 #---- actuator defs ----
 Actuator.labels                          = T0 T1               
 Actuator.T0.type                         = UniformCtDisk       
-Actuator.T0.base_position                = 500.0 300.0 0.0     
+Actuator.T0.base_position                = 480.0 280.0 0.0     
 Actuator.T0.rotor_diameter               = 116.0               
 Actuator.T0.hub_height                   = 80.0                
 Actuator.T0.yaw                          = 225.0               
 Actuator.T1.type                         = UniformCtDisk       
-Actuator.T1.base_position                = 500.0 700.0 0.0     
+Actuator.T1.base_position                = 480.0 680.0 0.0     
 Actuator.T1.rotor_diameter               = 116.0               
 Actuator.T1.hub_height                   = 80.0                
 Actuator.T1.yaw                          = 225.0               
@@ -463,19 +478,19 @@ farm_usercomments: Tutorial3 wind farm setup parameters.
 turbines_csvtextbox: |-
     # CSV file should have columns with
     # name, x, y, type, yaw, hubheight, options
-    T0, 500, 300, UnifCtTest, , ,
-    T1, 500, 700, UnifCtTest, , ,
+    T0, 480, 280, UnifCtTest, , ,
+    T1, 480, 680, UnifCtTest, , ,
 turbines_csvfile: ''                    # CSV input file
 turbines_deleteprev: true               # Remove all existing turbines before adding these
 turbines_coordsys: xy
 turbines_autocalccenter: true           # Automatically set farm center to be average of all turbine locations
 turbines_farmcenter:
--   500.0
--   500.0
+-   480.0
+-   480.0
 turbines_domainsize:                    # Size of the computational domain in meters
-    -   1000.0
-    -   1000.0
-    -   1000.0
+    -   960.0
+    -   960.0
+    -   960.0
 turbines_backgroundmeshsize: 10.0       # Size of the background mesh in meters (optional)
 # Refine inputs
 refine_csvtextbox: |-
@@ -513,7 +528,8 @@ wfarm_embedamrwindinput: |
     # --- Simulation time control parameters ---
     time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
     time.max_step                            = -1
-    time.fixed_dt                            = -1.0                # Fixed timestep size (in seconds). If negative, then time.cfl is used
+    time.fixed_dt                            = 0.25                # Fixed timestep size (in seconds). If negative, then time.cfl is used
+    incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
     incflo.verbose                           = 0
     io.check_file                            = chk
     incflo.use_godunov                       = true
@@ -526,8 +542,8 @@ wfarm_embedamrwindinput: |
     ConstValue.velocity.value                = 14.1421356237 14.1421356237 0.0
     # --- Geometry and Mesh ---
     geometry.prob_lo                         = 0.0 0.0 0.0
-    geometry.prob_hi                         = 1000.0 1000.0 1000.0
-    amr.n_cell                               = 100 100 100         # Number of cells in x, y, and z directions
+    geometry.prob_hi                         = 960.0 960.0 960.0
+    amr.n_cell                               = 96 96 96            # Number of cells in x, y, and z directions
     amr.max_level                            = 2
     geometry.is_periodic                     = 0 0 0
     xlo.type                                 = mass_inflow
@@ -544,6 +560,7 @@ wfarm_embedamrwindinput: |
     zhi.type                                 = no_slip_wall
     # --- ABL parameters ---
     ICNS.source_terms                        =    ActuatorForcing
+    incflo.velocity                          = 14.1421356237 14.1421356237 0.0
     ABLForcing.abl_forcing_height            = 0.0
     time.plot_interval                       = 1000
     io.plot_file                             = plt
@@ -556,41 +573,41 @@ wfarm_embedamrwindinput: |
     sampling.labels                          = T0_cl1 T1_cl1 T0_rp1 T1_rp1 T0_sw1 T1_sw1 Farm_hh
     sampling.T0_cl1.type                     = LineSampler
     sampling.T0_cl1.num_points               = 11
-    sampling.T0_cl1.start                    = 417.975613382 217.975613382 80.0
-    sampling.T0_cl1.end                      = 500.0 300.0 80.0
+    sampling.T0_cl1.start                    = 397.975613382 197.975613382 80.0
+    sampling.T0_cl1.end                      = 480.0 280.0 80.0
     sampling.T1_cl1.type                     = LineSampler
     sampling.T1_cl1.num_points               = 11
-    sampling.T1_cl1.start                    = 417.975613382 617.975613382 80.0
-    sampling.T1_cl1.end                      = 500.0 700.0 80.0
+    sampling.T1_cl1.start                    = 397.975613382 597.975613382 80.0
+    sampling.T1_cl1.end                      = 480.0 680.0 80.0
     sampling.T0_rp1.type                     = PlaneSampler
     sampling.T0_rp1.num_points               = 11 11
-    sampling.T0_rp1.origin                   = 294.939033456 176.963420074 22.0
+    sampling.T0_rp1.origin                   = 274.939033456 156.963420074 22.0
     sampling.T0_rp1.axis1                    = 82.0243866176 -82.0243866176 0.0
     sampling.T0_rp1.axis2                    = 0.0 0.0 116.0
     sampling.T0_rp1.normal                   = 0.0 0.0 0.0
     sampling.T1_rp1.type                     = PlaneSampler
     sampling.T1_rp1.num_points               = 11 11
-    sampling.T1_rp1.origin                   = 294.939033456 576.963420074 22.0
+    sampling.T1_rp1.origin                   = 274.939033456 556.963420074 22.0
     sampling.T1_rp1.axis1                    = 82.0243866176 -82.0243866176 0.0
     sampling.T1_rp1.axis2                    = 0.0 0.0 116.0
     sampling.T1_rp1.normal                   = 0.0 0.0 0.0
     sampling.T0_sw1.type                     = PlaneSampler
     sampling.T0_sw1.num_points               = 13 5
-    sampling.T0_sw1.origin                   = 335.951226765 135.951226765 22.0
+    sampling.T0_sw1.origin                   = 315.951226765 115.951226765 22.0
     sampling.T0_sw1.axis1                    = 246.073159853 246.073159853 0.0
     sampling.T0_sw1.axis2                    = 0.0 0.0 116.0
     sampling.T0_sw1.normal                   = 0.707106781187 -0.707106781187 0.0
     sampling.T0_sw1.offsets                  = 0.0 116.0
     sampling.T1_sw1.type                     = PlaneSampler
     sampling.T1_sw1.num_points               = 13 5
-    sampling.T1_sw1.origin                   = 335.951226765 535.951226765 22.0
+    sampling.T1_sw1.origin                   = 315.951226765 515.951226765 22.0
     sampling.T1_sw1.axis1                    = 246.073159853 246.073159853 0.0
     sampling.T1_sw1.axis2                    = 0.0 0.0 116.0
     sampling.T1_sw1.normal                   = 0.707106781187 -0.707106781187 0.0
     sampling.T1_sw1.offsets                  = 0.0 116.0
     sampling.Farm_hh.type                    = PlaneSampler
     sampling.Farm_hh.num_points              = 13 9
-    sampling.Farm_hh.origin                  = 268.0 384.0 80.0
+    sampling.Farm_hh.origin                  = 248.0 364.0 80.0
     sampling.Farm_hh.axis1                   = 348.0 0.0 0.0
     sampling.Farm_hh.axis2                   = 0.0 232.0 0.0
     sampling.Farm_hh.normal                  = 0.0 0.0 0.0
@@ -600,7 +617,7 @@ wfarm_embedamrwindinput: |
     tagging.T0_level_0_zone.shapes           = T0_level_0_zone
     tagging.T0_level_0_zone.level            = 0
     tagging.T0_level_0_zone.T0_level_0_zone.type = box
-    tagging.T0_level_0_zone.T0_level_0_zone.origin = 335.951226765 300.0 -7.0
+    tagging.T0_level_0_zone.T0_level_0_zone.origin = 315.951226765 280.0 -7.0
     tagging.T0_level_0_zone.T0_level_0_zone.xaxis = 164.048773235 164.048773235 0.0
     tagging.T0_level_0_zone.T0_level_0_zone.yaxis = 164.048773235 -164.048773235 0.0
     tagging.T0_level_0_zone.T0_level_0_zone.zaxis = 0.0 0.0 203.0
@@ -608,7 +625,7 @@ wfarm_embedamrwindinput: |
     tagging.T1_level_0_zone.shapes           = T1_level_0_zone
     tagging.T1_level_0_zone.level            = 0
     tagging.T1_level_0_zone.T1_level_0_zone.type = box
-    tagging.T1_level_0_zone.T1_level_0_zone.origin = 335.951226765 700.0 -7.0
+    tagging.T1_level_0_zone.T1_level_0_zone.origin = 315.951226765 680.0 -7.0
     tagging.T1_level_0_zone.T1_level_0_zone.xaxis = 164.048773235 164.048773235 0.0
     tagging.T1_level_0_zone.T1_level_0_zone.yaxis = 164.048773235 -164.048773235 0.0
     tagging.T1_level_0_zone.T1_level_0_zone.zaxis = 0.0 0.0 203.0
@@ -616,7 +633,7 @@ wfarm_embedamrwindinput: |
     tagging.T0_level_1_zone.shapes           = T0_level_1_zone
     tagging.T0_level_1_zone.level            = 1
     tagging.T0_level_1_zone.T0_level_1_zone.type = box
-    tagging.T0_level_1_zone.T0_level_1_zone.origin = 417.975613382 300.0 -7.0
+    tagging.T0_level_1_zone.T0_level_1_zone.origin = 397.975613382 280.0 -7.0
     tagging.T0_level_1_zone.T0_level_1_zone.xaxis = 82.0243866176 82.0243866176 0.0
     tagging.T0_level_1_zone.T0_level_1_zone.yaxis = 82.0243866176 -82.0243866176 0.0
     tagging.T0_level_1_zone.T0_level_1_zone.zaxis = 0.0 0.0 203.0
@@ -624,19 +641,19 @@ wfarm_embedamrwindinput: |
     tagging.T1_level_1_zone.shapes           = T1_level_1_zone
     tagging.T1_level_1_zone.level            = 1
     tagging.T1_level_1_zone.T1_level_1_zone.type = box
-    tagging.T1_level_1_zone.T1_level_1_zone.origin = 417.975613382 700.0 -7.0
+    tagging.T1_level_1_zone.T1_level_1_zone.origin = 397.975613382 680.0 -7.0
     tagging.T1_level_1_zone.T1_level_1_zone.xaxis = 82.0243866176 82.0243866176 0.0
     tagging.T1_level_1_zone.T1_level_1_zone.yaxis = 82.0243866176 -82.0243866176 0.0
     tagging.T1_level_1_zone.T1_level_1_zone.zaxis = 0.0 0.0 203.0
     #---- actuator defs ----
     Actuator.labels                          = T0 T1
     Actuator.T0.type                         = UniformCtDisk
-    Actuator.T0.base_position                = 500.0 300.0 0.0
+    Actuator.T0.base_position                = 480.0 280.0 0.0
     Actuator.T0.rotor_diameter               = 116.0
     Actuator.T0.hub_height                   = 80.0
     Actuator.T0.yaw                          = 225.0
     Actuator.T1.type                         = UniformCtDisk
-    Actuator.T1.base_position                = 500.0 700.0 0.0
+    Actuator.T1.base_position                = 480.0 680.0 0.0
     Actuator.T1.rotor_diameter               = 116.0
     Actuator.T1.hub_height                   = 80.0
     Actuator.T1.yaw                          = 225.0

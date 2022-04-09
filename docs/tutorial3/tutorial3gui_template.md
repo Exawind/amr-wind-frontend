@@ -49,6 +49,19 @@ The input field should look similar to:
 Then hit the **[Calc WS/WDir]** button, and it should fill in the
 values of the Wind Vector appropriately.
 
+## Set the simulation type
+
+In the **Simulation** tab, set the following inputs:
+
+| Input          | Value           |
+| ---            | ---             |
+| Physics models | {physicsmodels} |
+| dt             | {dt}            |
+
+![{img_sim_settings}]({img_sim_settings})
+
+This should set up a case similar to the Tutorial 1 set up.
+
 ## Create wind farm layout and domain
 
 The first thing to do in setting the wind farm layout is to set the

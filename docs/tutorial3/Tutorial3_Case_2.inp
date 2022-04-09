@@ -1,0 +1,135 @@
+# --- Simulation time control parameters ---
+time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
+time.max_step                            = -1                  
+time.fixed_dt                            = 0.25                # Fixed timestep size (in seconds). If negative, then time.cfl is used
+incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
+incflo.verbose                           = 0                   
+io.check_file                            = chk                 
+incflo.use_godunov                       = true                
+incflo.godunov_type                      = ppm                 
+incflo.gravity                           = 0.0 0.0 -9.81       # Gravitational acceleration vector (x,y,z) [m/s^2]
+incflo.density                           = 1.0                 # Fluid density [kg/m^3]
+transport.viscosity                      = 1.872e-05           # Fluid dynamic viscosity [kg/m-s]
+transport.laminar_prandtl                = 0.7                 # Laminar prandtl number
+transport.turbulent_prandtl              = 0.3333              # Turbulent prandtl number
+ConstValue.velocity.value                = 20.0 0.0 0.0        
+
+# --- Geometry and Mesh ---
+geometry.prob_lo                         = 0.0 0.0 0.0         
+geometry.prob_hi                         = 960.0 960.0 960.0   
+amr.n_cell                               = 96 96 96            # Number of cells in x, y, and z directions
+amr.max_level                            = 0                   
+geometry.is_periodic                     = 0 1 0               
+xlo.type                                 = mass_inflow         
+xlo.density                              = 1.0                 
+xlo.velocity                             = 20.0 0.0 0.0        
+xhi.type                                 = pressure_outflow    
+zlo.type                                 = no_slip_wall        
+zhi.type                                 = no_slip_wall        
+
+# --- ABL parameters ---
+ICNS.source_terms                        =    ActuatorForcing  
+incflo.velocity                          = 20.0 0.0 0.0        
+ABLForcing.abl_forcing_height            = 0.0                 
+time.plot_interval                       = 1000                
+io.plot_file                             = plt                 
+io.KE_int                                = -1                  
+incflo.post_processing                   = sampling            
+
+# --- Sampling parameters ---
+sampling.output_frequency                = 100                 
+sampling.fields                          = velocity            
+
+#---- sample defs ----
+sampling.labels                          = T0_cl1 T1_cl1 T0_rp1 T1_rp1 T0_sw1 T1_sw1 Farm_hh
+sampling.T0_cl1.type                     = LineSampler         
+sampling.T0_cl1.num_points               = 11                  
+sampling.T0_cl1.start                    = 364.0 280.0 80.0    
+sampling.T0_cl1.end                      = 480.0 280.0 80.0    
+sampling.T1_cl1.type                     = LineSampler         
+sampling.T1_cl1.num_points               = 11                  
+sampling.T1_cl1.start                    = 364.0 680.0 80.0    
+sampling.T1_cl1.end                      = 480.0 680.0 80.0    
+sampling.T0_rp1.type                     = PlaneSampler        
+sampling.T0_rp1.num_points               = 11 11               
+sampling.T0_rp1.origin                   = 248.0 338.0 22.0    
+sampling.T0_rp1.axis1                    = 0.0 -116.0 0.0      
+sampling.T0_rp1.axis2                    = 0.0 0.0 116.0       
+sampling.T0_rp1.normal                   = 0.0 0.0 0.0         
+sampling.T1_rp1.type                     = PlaneSampler        
+sampling.T1_rp1.num_points               = 11 11               
+sampling.T1_rp1.origin                   = 248.0 738.0 22.0    
+sampling.T1_rp1.axis1                    = 0.0 -116.0 0.0      
+sampling.T1_rp1.axis2                    = 0.0 0.0 116.0       
+sampling.T1_rp1.normal                   = 0.0 0.0 0.0         
+sampling.T0_sw1.type                     = PlaneSampler        
+sampling.T0_sw1.num_points               = 13 5                
+sampling.T0_sw1.origin                   = 248.0 280.0 22.0    
+sampling.T0_sw1.axis1                    = 348.0 0.0 0.0       
+sampling.T0_sw1.axis2                    = 0.0 0.0 116.0       
+sampling.T0_sw1.normal                   = 0.0 -1.0 0.0        
+sampling.T0_sw1.offsets                  = 0.0 116.0           
+sampling.T1_sw1.type                     = PlaneSampler        
+sampling.T1_sw1.num_points               = 13 5                
+sampling.T1_sw1.origin                   = 248.0 680.0 22.0    
+sampling.T1_sw1.axis1                    = 348.0 0.0 0.0       
+sampling.T1_sw1.axis2                    = 0.0 0.0 116.0       
+sampling.T1_sw1.normal                   = 0.0 -1.0 0.0        
+sampling.T1_sw1.offsets                  = 0.0 116.0           
+sampling.Farm_hh.type                    = PlaneSampler        
+sampling.Farm_hh.num_points              = 13 9                
+sampling.Farm_hh.origin                  = 248.0 364.0 80.0    
+sampling.Farm_hh.axis1                   = 348.0 0.0 0.0       
+sampling.Farm_hh.axis2                   = 0.0 232.0 0.0       
+sampling.Farm_hh.normal                  = 0.0 0.0 0.0         
+
+#---- tagging defs ----
+tagging.labels                           = T0_level_0_zone T1_level_0_zone T0_level_1_zone T1_level_1_zone
+tagging.T0_level_0_zone.type             = GeometryRefinement  
+tagging.T0_level_0_zone.shapes           = T0_level_0_zone     
+tagging.T0_level_0_zone.level            = 0                   
+tagging.T0_level_0_zone.T0_level_0_zone.type = box                 
+tagging.T0_level_0_zone.T0_level_0_zone.origin = 364.0 396.0 -7.0    
+tagging.T0_level_0_zone.T0_level_0_zone.xaxis = 232.0 0.0 0.0       
+tagging.T0_level_0_zone.T0_level_0_zone.yaxis = 0.0 -232.0 0.0      
+tagging.T0_level_0_zone.T0_level_0_zone.zaxis = 0.0 0.0 203.0       
+tagging.T1_level_0_zone.type             = GeometryRefinement  
+tagging.T1_level_0_zone.shapes           = T1_level_0_zone     
+tagging.T1_level_0_zone.level            = 0                   
+tagging.T1_level_0_zone.T1_level_0_zone.type = box                 
+tagging.T1_level_0_zone.T1_level_0_zone.origin = 364.0 796.0 -7.0    
+tagging.T1_level_0_zone.T1_level_0_zone.xaxis = 232.0 0.0 0.0       
+tagging.T1_level_0_zone.T1_level_0_zone.yaxis = 0.0 -232.0 0.0      
+tagging.T1_level_0_zone.T1_level_0_zone.zaxis = 0.0 0.0 203.0       
+tagging.T0_level_1_zone.type             = GeometryRefinement  
+tagging.T0_level_1_zone.shapes           = T0_level_1_zone     
+tagging.T0_level_1_zone.level            = 1                   
+tagging.T0_level_1_zone.T0_level_1_zone.type = box                 
+tagging.T0_level_1_zone.T0_level_1_zone.origin = 422.0 338.0 -7.0    
+tagging.T0_level_1_zone.T0_level_1_zone.xaxis = 116.0 0.0 0.0       
+tagging.T0_level_1_zone.T0_level_1_zone.yaxis = 0.0 -116.0 0.0      
+tagging.T0_level_1_zone.T0_level_1_zone.zaxis = 0.0 0.0 203.0       
+tagging.T1_level_1_zone.type             = GeometryRefinement  
+tagging.T1_level_1_zone.shapes           = T1_level_1_zone     
+tagging.T1_level_1_zone.level            = 1                   
+tagging.T1_level_1_zone.T1_level_1_zone.type = box                 
+tagging.T1_level_1_zone.T1_level_1_zone.origin = 422.0 738.0 -7.0    
+tagging.T1_level_1_zone.T1_level_1_zone.xaxis = 116.0 0.0 0.0       
+tagging.T1_level_1_zone.T1_level_1_zone.yaxis = 0.0 -116.0 0.0      
+tagging.T1_level_1_zone.T1_level_1_zone.zaxis = 0.0 0.0 203.0       
+
+#---- actuator defs ----
+Actuator.labels                          = T0 T1               
+Actuator.T0.type                         = UniformCtDisk       
+Actuator.T0.base_position                = 480.0 280.0 0.0     
+Actuator.T0.rotor_diameter               = 116.0               
+Actuator.T0.hub_height                   = 80.0                
+Actuator.T0.yaw                          = 270.0               
+Actuator.T1.type                         = UniformCtDisk       
+Actuator.T1.base_position                = 480.0 680.0 0.0     
+Actuator.T1.rotor_diameter               = 116.0               
+Actuator.T1.hub_height                   = 80.0                
+Actuator.T1.yaw                          = 270.0               
+
+#---- extra params ----
+#== END AMR-WIND INPUT ==
