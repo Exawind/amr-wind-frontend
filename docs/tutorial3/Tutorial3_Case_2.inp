@@ -124,12 +124,18 @@ Actuator.T0.type                         = UniformCtDisk
 Actuator.T0.base_position                = 480.0 280.0 0.0     
 Actuator.T0.rotor_diameter               = 116.0               
 Actuator.T0.hub_height                   = 80.0                
+Actuator.T0.epsilon                      = 5.0                 
 Actuator.T0.yaw                          = 270.0               
+Actuator.T0.num_force_points             = 6                   
+Actuator.T0.thrust_coeff                 = 0.6                 
 Actuator.T1.type                         = UniformCtDisk       
 Actuator.T1.base_position                = 480.0 680.0 0.0     
 Actuator.T1.rotor_diameter               = 116.0               
 Actuator.T1.hub_height                   = 80.0                
+Actuator.T1.epsilon                      = 5.0                 
 Actuator.T1.yaw                          = 270.0               
+Actuator.T1.num_force_points             = 6                   
+Actuator.T1.thrust_coeff                 = 0.6                 
 
 #---- extra params ----
 #== END AMR-WIND INPUT ==

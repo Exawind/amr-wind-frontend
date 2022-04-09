@@ -372,12 +372,18 @@ Actuator.T0.type                         = UniformCtDisk
 Actuator.T0.base_position                = 480.0 280.0 0.0     
 Actuator.T0.rotor_diameter               = 116.0               
 Actuator.T0.hub_height                   = 80.0                
+Actuator.T0.epsilon                      = 5.0                 
 Actuator.T0.yaw                          = 225.0               
+Actuator.T0.num_force_points             = 6                   
+Actuator.T0.thrust_coeff                 = 0.6                 
 Actuator.T1.type                         = UniformCtDisk       
 Actuator.T1.base_position                = 480.0 680.0 0.0     
 Actuator.T1.rotor_diameter               = 116.0               
 Actuator.T1.hub_height                   = 80.0                
+Actuator.T1.epsilon                      = 5.0                 
 Actuator.T1.yaw                          = 225.0               
+Actuator.T1.num_force_points             = 6                   
+Actuator.T1.thrust_coeff                 = 0.6                 
 #---- extra params ----
 #== END AMR-WIND INPUT ==
 </pre>
@@ -651,12 +657,18 @@ wfarm_embedamrwindinput: |
     Actuator.T0.base_position                = 480.0 280.0 0.0
     Actuator.T0.rotor_diameter               = 116.0
     Actuator.T0.hub_height                   = 80.0
+    Actuator.T0.epsilon                      = 5.0
     Actuator.T0.yaw                          = 225.0
+    Actuator.T0.num_force_points             = 6
+    Actuator.T0.thrust_coeff                 = 0.6
     Actuator.T1.type                         = UniformCtDisk
     Actuator.T1.base_position                = 480.0 680.0 0.0
     Actuator.T1.rotor_diameter               = 116.0
     Actuator.T1.hub_height                   = 80.0
+    Actuator.T1.epsilon                      = 5.0
     Actuator.T1.yaw                          = 225.0
+    Actuator.T1.num_force_points             = 6
+    Actuator.T1.thrust_coeff                 = 0.6
     #---- extra params ----
     #== END AMR-WIND INPUT ==
 wfarm_embedturbinetype:
@@ -670,12 +682,16 @@ wfarm_embedturbinetype:
     -   Actuator_num_points_blade:
     -   Actuator_num_points_tower:
     -   Actuator_epsilon:
+        -   5.0
     -   Actuator_epsilon_tower:
     -   Actuator_openfast_start_time:
     -   Actuator_openfast_stop_time:
     -   Actuator_nacelle_drag_coeff:
     -   Actuator_nacelle_area:
     -   Actuator_output_frequency:
+    -   Actuator_thrust_coeff: 0.6
+    -   Actuator_wind_speed:
+    -   Actuator_num_force_points: 6
     -   turbinetype_filelocation: /gpfs/lcheung/tmp/createdocs/amrwind-frontend/turbines
     -   turbinetype_filedir:
 # ----- END Farm setup input file ------

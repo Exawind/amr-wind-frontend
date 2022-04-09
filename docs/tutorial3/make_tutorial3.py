@@ -77,7 +77,7 @@ t1 = threading.Thread(target=screenshot.start_instance,
                      args=(1,casedict, lock))
 t1.start()
 logging.info("Main    : started case thread")
-time.sleep(3)
+time.sleep(5)
 
 case=casedict[1]
 case.launchpopupwin('plotdomain', savebutton=False).okclose()

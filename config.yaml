@@ -220,6 +220,8 @@ predefinedlists:
     #frame:      frame_turbinefastlineglobals
     inputtype:  [float, float, float]
     defaultval: 
+    entryopt:
+      varlenlist:  True
     outputdef:
       AMR-Wind: epsilon
       help:     The spreading function in (x,y,z)
@@ -2721,8 +2723,6 @@ popupwindow:
     - <<: *PREDEFINED_EPSILON
       name:       Actuator_epsilon
       frame:      turbine_frame
-      entryopt:
-        varlenlist:  True
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
       frame:      turbine_frame
@@ -2861,6 +2861,8 @@ popupwindow:
       name:       Actuator_num_points_tower
     - <<: *PREDEFINED_EPSILON
       name:       Actuator_epsilon
+      entryopt:
+        varlenlist:  True
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
     - <<: *PREDEFINED_OPENFAST_START_TIME
@@ -2873,6 +2875,27 @@ popupwindow:
       name:       Actuator_nacelle_area
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
       name:       Actuator_output_frequency
+    - name:       Actuator_thrust_coeff
+      label:      Thrust coefficient
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: thrust_coeff
+        help:     "Thrust coefficient table: single Ct value, or list of values for a table"
+    - name:       Actuator_wind_speed
+      label:      Wind speed table
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: wind_speed
+        help:     "Wind speed table: if Ct is not a single value, list of wind speeds corresponding to Ct values"
+    - name:       Actuator_num_force_points
+      label:      Number of force points
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_force_points
+        help:     Number of radial force points to apply disk loading
     - name:       turbinetype_filelocation  # yaml file with the definitions
       label:      File location
       inputtype:  str
