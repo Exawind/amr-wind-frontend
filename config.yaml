@@ -1513,6 +1513,12 @@ inputwidgets:
     inputtype:  str
     defaultval: 
 
+  - name:       ablstats_usemapped
+    label:      Use mapped coords
+    frame:      frame_postproABL
+    inputtype:  bool
+    defaultval: True
+
   - name:       ablstats_profileplot
     label:      ABL Profile Stats
     frame:      frame_postproABL
@@ -1527,7 +1533,7 @@ inputwidgets:
     frame:      frame_postproABL
     inputtype:  listbox
     optionlist: "self.parent.ABLpostpro_getscalarslist()"
-    row:        8
+    row:        9
     listboxopt:
       selectmode: multiple
       height:     5
@@ -1535,7 +1541,7 @@ inputwidgets:
   - name:       ablstats_reportlabel
     label:      Print ABL report
     frame:      frame_postproABL
-    row:        10
+    row:        11
     labelonly:  True
 
   # ----------- Sample probe postprocessing -----------------
@@ -1975,28 +1981,28 @@ buttons:
   - name:    plotABLstatsprofile
     text:    Plot profiles
     frame:   frame_postproABL
-    row:     7
+    row:     8
     col:     1
     command: "self.ABLpostpro_plotprofiles"
 
   - name:    plotABLexportprofile
     text:    Export profiles
     frame:   frame_postproABL
-    row:     7
+    row:     8
     col:     2
     command: "self.ABLpostpro_exportprofiles"
 
   - name:    plotABLscalars
     text:    Plot scalars
     frame:   frame_postproABL
-    row:     9
+    row:     10
     col:     1
     command: "self.ABLpostpro_plotscalars"
 
   - name:    printABLstatsreport
     text:    Print report
     frame:   frame_postproABL
-    row:     10
+    row:     11
     col:     1
     command: "self.ABLpostpro_printreport"
 

@@ -17,7 +17,7 @@ stdvars = ['u',         'v',      'w',        'theta',
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
            u"v'v'_r",  u"v'w'_r", u"w'w'_r",
            u"u'theta'_r", u"v'theta'_r", u"w'theta'_r", 
-           'k_sgs']
+           'k_sgs', 'k_rans', 'sdr', 'eps', 'mueff']
 
 exprvars = { "u":'[u]',
              "v":'[v]',
@@ -33,6 +33,10 @@ exprvars = { "u":'[u]',
              u"v'theta'_r":'[vT]',
              u"w'theta'_r":'[wT]',
              'k_sgs':'[k_sgs]',
+             'k_rans':'[k_rans]',
+             'mueff':'[mueff]',
+             'sdr':'[sdr]',
+             'eps':'[eps]',
            }
 
 def timeaverage(t, dat, t1, t2):
@@ -61,13 +65,17 @@ def loadnetcdffile(filename):
         print("%s DOES NOT EXIST.")
         return None
 
-def loadProfileData(d, varslist=stdvars, group='mean_profiles', avgt=[]):
+def loadProfileData(d, varslist=stdvars, group='mean_profiles', avgt=[], 
+                    usemapped=True):
     alldat={}
-    #print(d['mean_profiles'].variables)
+    print(d['mean_profiles'].variables.keys())
     t = d.variables['time'][:]
     alldat['time'] = t
     alldat['avgt'] = avgt
-    alldat['z'] = d['mean_profiles'].variables['h'][:]
+    if usemapped and ('hmapped' in d['mean_profiles'].variables.keys()):
+        alldat['z'] = d['mean_profiles'].variables['hmapped'][:]
+    else:
+        alldat['z'] = d['mean_profiles'].variables['h'][:]
     for var in varslist:
         print('Loading '+var)
         x = d[group].variables[var][:,:]
@@ -104,7 +112,7 @@ def calculateObukhovL(allvars, ncdat=None, avgt=None):
     Oblength = -ustar**3/(k*g/allvars['theta']*allvars[u"w'theta'_r"])
     return z, Oblength
 
-def calculateExpr(expr, allvars, avgt, ncdat):
+def calculateExpr(expr, allvars, avgt, ncdat, usemapped=True):
     requiredvars = ['u', 'v']
     if not matchvarstimes(allvars, requiredvars, avgt):
         # Load the data from the ncdat file
@@ -176,6 +184,14 @@ statsprofiles=OrderedDict([
                    'header':'k_sgs',
                    'expr':'[k_sgs]', 
                   'funcstring':False}),
+    ('KRANS',     {'requiredvars':['k_rans'], 
+                   'header':'k_rans',
+                   'expr':'[k_rans]', 
+                   'funcstring':False}),
+    ('SDR_OMEGA',     {'requiredvars':['sdr'], 
+                   'header':'sdr',
+                   'expr':'[sdr]', 
+                   'funcstring':False}),
     ('ReStresses',{'requiredvars':[u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
                                    u"v'v'_r",  u"v'w'_r", u"w'w'_r",], 
                    'header':'uu uv uw vv vw ww',
@@ -184,6 +200,10 @@ statsprofiles=OrderedDict([
     ('Tfluxes',{'requiredvars':[u"u'theta'_r", u"v'theta'_r", u"w'theta'_r",], 
                    'header':'uT vT wT',
                    'expr':'[[uT], [vT], [wT]]', 
+                   'funcstring':False}),
+    ('MUEFF', {'requiredvars':['mueff'], 
+                   'header':'mueff',
+                   'expr':'[mueff]', 
                    'funcstring':False}),
     ('Alpha',    {'requiredvars':['u', 'v'],          
                   'header':'alpha',
@@ -197,7 +217,7 @@ statsprofiles=OrderedDict([
     
 class CalculatedProfile:
     def __init__(self, requiredvars, expr, ncdat, allvardata, avgt, header='',
-                 funcstring=False):
+                 funcstring=False, usemapped=True):
         self.requiredvars = requiredvars
         self.expr         = expr
         self.ncdat        = ncdat
@@ -206,20 +226,23 @@ class CalculatedProfile:
         self.vec          = None
         self.funcstring   = funcstring
         self.header       = header
+        self.usemapped    = usemapped
 
     @classmethod
-    def fromdict(cls, d, ncdat, allvardata, avgt):
+    def fromdict(cls, d, ncdat, allvardata, avgt, usemapped=True):
         return cls(d['requiredvars'], d['expr'], ncdat, allvardata, avgt, 
-                   header=d['header'], funcstring=d['funcstring'])
+                   header=d['header'], funcstring=d['funcstring'],
+                   usemapped=usemapped)
 
     def calculate(self, allvars=None, avgt=None):
         if allvars is None: allvars = self.allvardata
         if avgt    is None: avgt    = self.avgt
         if not matchvarstimes(allvars, self.requiredvars, avgt):
+            print("DEBUG: loading profile")
             # Load the data from the ncdat file
             var = loadProfileData(self.ncdat, 
                                   varslist=self.requiredvars, 
-                                  avgt=avgt)
+                                  avgt=avgt, usemapped=self.usemapped)
             self.allvardata = var
         else:
             var = allvars        
