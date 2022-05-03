@@ -417,6 +417,9 @@ def refine_createAllZones(self):
             #print(refinedict)
             if refinedict is not None:
                 self.add_tagging(refinedict)
+
+    # Automatically set the max_level value
+    self.autoMaxLevel()
     return
 
 # ----------- Functions for wind farm turbines -------------

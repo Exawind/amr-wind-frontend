@@ -763,6 +763,38 @@ class MyApp(tkyg.App, object):
     from farmfunctions import sampling_createAllProbes
     from farmfunctions import sweep_SetupRunParamSweep
 
+    def getMaxLevel(self):
+        max_level = 0
+        # Search refinement levels
+        allrefinements = self.listboxpopupwindict['listboxtagging']
+        alltags        = allrefinements.getitemlist()
+
+        #print(alltags)
+        for tag in alltags:
+            pdict = allrefinements.dumpdict('AMR-Wind',
+                                            subset=[tag],
+                                            keyfunc=lambda n, d1, d2: d2.name)
+            # Handle the Cartesian Box Refinements
+            if pdict['tagging_type'][0]=='CartBoxRefinement':
+                filename = pdict['tagging_static_refinement_def']
+                # Load the boxes
+                allboxes = self.readCartBoxFile(filename)
+                if len(allboxes)>max_level: max_level = len(allboxes)
+
+            if pdict['tagging_type'][0]=='GeometryRefinement':
+                if pdict['tagging_geom_type'][0]=='box':
+                    ilevel = pdict['tagging_level']
+                    if (ilevel is not None) and ilevel+1>max_level: 
+                        max_level = ilevel+1
+        return max_level
+
+    def autoMaxLevel(self):
+        """
+        Automatically set the maximum refinement level
+        """
+        max_level = self.getMaxLevel()
+        self.inputvars['max_level'].setval(max_level)
+        return
 
     def estimateMeshSize(self, **kwargs):
         # Get the domain size

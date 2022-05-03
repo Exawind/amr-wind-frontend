@@ -110,6 +110,29 @@ the list:
 
 ![{img_farm_turbine_created}]({img_farm_turbine_created})
 
+The last thing we need to do is set the density global for all of the
+uniform Ct disks.  Click the **[show]** button next to "Uniform Ct
+Disk global parameters", and make sure "Density" is set to `1.0`:
+
+![{img_uniformctdisk_density}]({img_uniformctdisk_density})
+
+### Set the Z boundary conditions
+
+On the horizontal X and Y boundaries, the wind sweep function will
+automatically set them to be inflow/outflow or periodic depending on
+the wind direction.  However, we need to set the upper and lower Z
+boundaries to be slip walls (for this uniform flow setup):
+
+| Input           | value      |
+|-----------------|------------|
+| zlo velocity BC | {zlo_type} |
+| zhi velocity BC | {zhi_type} |
+
+In the domain tab, click **[show]** on the "Boundary conditions on Z
+faces" window, and set the `zlo velocity BC` and `zhi velocity BC` to
+these settings:  
+
+![{img_zboundaries}]({img_zboundaries})
 
 ## Create wind farm refinement zones  
 

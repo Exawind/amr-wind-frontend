@@ -45,9 +45,11 @@ runjupyter= True
 savefigs  = True
 # ========================================
 
-farmtab = 8
-abltab  = 2
-simtab  = 0
+farmtab    = 8
+turbinetab = 4
+abltab     = 2
+domaintab  = 1
+simtab     = 0
 
 mdstr = ""
 mdvar = {}
@@ -157,7 +159,7 @@ if gennbfile:
 case.notebook.select(simtab)
 
 physicsmodels          = ['FreeStream', 'Actuator']
-dt                     = 0.25
+dt                     = 0.10
 mdvar['physicsmodels'] = physicsmodels
 mdvar['dt']            = dt
 
@@ -248,6 +250,39 @@ of `{domainsize}` and background mesh size of `{backgrounddeltax}`m."""
 ###########################
 
 ###########################
+# Set the z boundaries to slip wall
+case.notebook.select(domaintab)
+case.toggledframes['frame_zBC'].setstate(True)
+screenshot.scrollcanvas(case.notebook._tab['Domain'].canvas, 1.0)
+
+zlo_type                          = 'slip_wall'
+zhi_type                          = 'slip_wall'
+mdvar['zlo_type']                 = zlo_type
+mdvar['zhi_type']                 = zhi_type
+mdvar['img_zboundaries']          = imagedir+'/zlo_zhi_boundary.png'
+
+# Set the parameters
+case.setAMRWindInput('zlo_type',         zlo_type)
+case.setAMRWindInput('zhi_type',         zhi_type)
+
+if savefigs:
+    screenshot.Xvfb_screenshot(mdvar['img_zboundaries'], 
+                               crop=(0,425,515,scrheight))
+
+# ------------------
+if gennbfile:
+    txt="""We also need to set the upper and lower Z boundaries to
+`slip_wall`."""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt  = setAMRWindInputString(case, 'case', 'zlo_type')
+    txt += setAMRWindInputString(case, 'case', 'zhi_type')
+    NBADDCELL(nb, txt)
+###########################
+
+
+
+###########################
 fig, ax = plt.subplots(figsize=(5,5), facecolor='w', dpi=150)
 case.turbines_previewAllTurbines(ax=ax)
 plt.tight_layout()
@@ -270,7 +305,8 @@ case.turbines_previewAllTurbines(ax=ax)
 
 ###########################
 case.turbines_createAllTurbines()
-case.notebook.select(4)
+case.notebook.select(turbinetab)
+
 mdvar['img_farm_turbine_created'] = imagedir+'/farm_turbine_created.png'
 if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_farm_turbine_created'], 
@@ -289,6 +325,31 @@ print(case.listboxpopupwindict['listboxactuator'].getitemlist())
     NBADDCELL(nb, txt)
 ###########################
 
+###########################
+# Set Actuator_UniformCtDisk_density to 1.0
+case.notebook.select(turbinetab)
+case.toggledframes['frame_uniformctglobals'].setstate(True)
+screenshot.scrollcanvas(case.notebook._tab['Turbines'].canvas, 1.0)
+
+density = 1.0
+mdvar['Actuator_UniformCtDisk_density'] = density
+mdvar['img_uniformctdisk_density'] = imagedir+'/uniformctdisk_density.png'
+
+case.setAMRWindInput('Actuator_UniformCtDisk_density', density)
+if savefigs:
+    screenshot.Xvfb_screenshot(mdvar['img_uniformctdisk_density'], 
+                               crop=(0,425,515,scrheight))
+
+# ------------------
+if gennbfile:
+    txt="""We also need to set the density global for all of the uniform Ct
+disks."""
+    NBADDMARKDOWN(nb, txt.format(**mdvar))
+
+    txt  = setAMRWindInputString(case, 'case', 'Actuator_UniformCtDisk_density')
+    NBADDCELL(nb, txt)
+
+###########################
 
 
 ###########################
@@ -403,7 +464,8 @@ name, type, upstream, downstream, lateral, below, above, n1, n2, options
 cl1, centerline, 1,  0, none, none,  none,  11, 11, none
 rp1, rotorplane, 2,  0, none, none,  none,  11, 11, none
 sw1, streamwise, 2,  1, 1, 0.5,  0.5,  11, 11, usedx:0.25 noffsets:1
-hh,  hubheight,  2,  1, 1, 0,  none,  11, 11, usedx:0.25 center:farm orientation:x"""
+hh,  hubheight,400,400,400, 0,  none,  11, 11, usedx:10 units:meter center:farm orientation:x"""
+#hh,  hubheight,  2,  1, 1, 0,  none,  11, 11, usedx:0.25 center:farm orientation:x
 
 mdvar['samplingcsv']           = samplingcsv
 mdvar['img_farm_samplingspec'] = imagedir+'/farm_samplingspec.png'
