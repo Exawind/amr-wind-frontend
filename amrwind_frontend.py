@@ -981,7 +981,7 @@ class MyApp(tkyg.App, object):
         ny    = np.sin(theta)
         vertical    = np.array([0, 0, 1.0])
         streamwise  = np.array([nx, ny, 0.0])
-        crossstream = np.cross(streamwise, vertical)
+        crossstream = -np.cross(streamwise, vertical)
         return streamwise, crossstream, vertical
 
     # ---- ABL wind calculation ----------
