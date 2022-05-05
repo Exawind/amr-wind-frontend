@@ -33,6 +33,10 @@ exprvars = { "u":'[u]',
              u"v'theta'_r":'[vT]',
              u"w'theta'_r":'[wT]',
              'k_sgs':'[k_sgs]',
+             'k_rans':'[k_rans]',
+             'mueff':'[mueff]',
+             'sdr':'[sdr]',
+             'eps':'[eps]',
            }
 
 def timeaverage(t, dat, t1, t2):
