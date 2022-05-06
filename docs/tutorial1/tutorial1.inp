@@ -2,7 +2,6 @@
 time.stop_time                           = 100.0               # Max (simulated) time to evolve [s]
 time.max_step                            = -1                  
 time.fixed_dt                            = 0.1                 # Fixed timestep size (in seconds). If negative, then time.cfl is used
-time.cfl                                 = 0.95                
 incflo.physics                           = FreeStream Actuator # List of physics models to include in simulation.
 incflo.verbose                           = 0                   
 io.check_file                            = chk                 

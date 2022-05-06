@@ -5,7 +5,7 @@
 
 import logging
 import threading
-import os, sys
+import os, sys, shutil
 import time
 import matplotlib.pyplot    as plt
 
@@ -41,7 +41,7 @@ scrwidth  = 1280
 scrheight = 800
 imagedir  = 'images'
 mdtemplate= 'tutorial1gui_template.md'
-mdfile    = 'tutorial1gui_new.md'
+mdfile    = 'tutorial1gui.md'
 nbfile    = 'tutorial1python.ipynb'
 gennbfile = False
 runjupyter= False
@@ -221,7 +221,7 @@ turbine2['Actuator_yaw']           = mdvar['Actuator_yaw']
 turbine2['Actuator_density']       = mdvar['Actuator_density'] 
 
 turbine2 = case.turbinemodels_applyturbinemodel(turbine2, mdvar['use_turbine_type'],
-                                                docopy=False, updatefast=False)
+                                                docopy=True, updatefast=True)
 
 # Add the turbine to the simulation.
 case.add_turbine(turbine2, verbose=True)
@@ -277,12 +277,13 @@ SETINPUT(mdvar, case,  'sampling.output_frequency', 100)
 SETINPUT(mdvar, case,  'sampling.fields',           ['velocity'])
 case.notebook.select(samplingtab)
 
-mdvar['img_io_sampling']         = imagedir+'/io_sampling2.png'
-mdvar['img_io_sampling_done']    = imagedir+'/io_sampling_done2.png'
-mdvar['img_io_xyplane']          = imagedir+'/io_xyplane2.png'
+mdvar['img_io_sampling']         = imagedir+'/io_sampling.png'
+mdvar['img_io_sampling_done']    = imagedir+'/io_sampling_done.png'
+mdvar['img_io_xyplane_top']      = imagedir+'/io_xyplane_top.png'
+mdvar['img_io_xyplane']          = imagedir+'/io_xyplane.png'
 if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_io_sampling'], 
-                               crop=(0, 0, 300, 250))
+                               crop=(0, 210, 400, 500))
     
 sampleplane = case.get_default_samplingdict()
 
@@ -300,19 +301,92 @@ case.add_sampling(sampleplane, verbose=True)
 if savefigs:
     case.listboxpopupwindict['listboxsampling'].tkentry.selection_set(0)
     p=case.listboxpopupwindict['listboxsampling'].edit()
-    screenshot.scrollcanvas(p.scrolledframe.canvas, 1.0)
+    screenshot.Xvfb_screenshot(mdvar['img_io_xyplane_top'], 
+                               crop=(0, 0, 450, 200))
     p.popup_toggledframes['sample_plane_frame'].setstate(True)
+    screenshot.scrollcanvas(p.scrolledframe.canvas, 1.0)
     screenshot.Xvfb_screenshot(mdvar['img_io_xyplane'], 
-                               crop=(0, 0, 450, 450))
+                               crop=(0, 175, 450, 450))
     p.destroy()
 
 if savefigs:
     screenshot.Xvfb_screenshot(mdvar['img_io_sampling_done'], 
-                               crop=(0, 0, 300, 250))
+                               crop=(0, 210, 400, 500))
+
+###########################
+# Plot the domain
+# -------------------------
+p3 = case.launchpopupwin('plotdomain', savebutton=False)
+time.sleep(0.1)
+
+mdvar['img_plotdomain_basicfilled']    = imagedir+'/plotdomain_basicfilled.png'
+mdvar['img_plotdomain_selected1']      = imagedir+'/plotdomain_selected_box1turbine0.png'
+mdvar['img_plotdomain_domain_turbrefine'] = imagedir+'/plotdomain_domain_turbrefine.png'
+mdvar['img_plotdomain_domain_xyplane'] = imagedir+'/plotdomain_domain_xyplane.png'
+
+if savefigs:
+    screenshot.Xvfb_screenshot(mdvar['img_plotdomain_basicfilled'], 
+                               crop=screenshot.getwinpos(p3))
+
+p3.temp_inputvars['plot_refineboxes'].tkentry.selection_set(0)
+p3.temp_inputvars['plot_turbines'].tkentry.selection_set(0)
+if savefigs:
+    screenshot.Xvfb_screenshot(mdvar['img_plotdomain_selected1'], 
+                               crop=screenshot.getwinpos(p3))
+
+time.sleep(0.2)
+p3.okclose()
+
+# -- Create a figure and axes to plot domain --
+plt.rc('font', size=14)
+fig, ax = plt.subplots(figsize=(6,4), facecolor='w',dpi=100)
+# Set additional items to plot
+#case.popup_storteddata['plotdomain']['plot_sampleprobes']    = ['xyplane']
+case.popup_storteddata['plotdomain']['plot_turbines']        = ['turbine0']
+case.popup_storteddata['plotdomain']['plot_refineboxes']     = ['box1']
+# Plot the figure 
+case.plotDomain(ax=ax)
+plt.tight_layout()
+if savefigs:
+    plt.savefig(mdvar['img_plotdomain_domain_turbrefine'])
+
+# -- Create a figure and axes to plot domain --
+plt.rc('font', size=14)
+fig, ax = plt.subplots(figsize=(6,4), facecolor='w',dpi=100)
+# Set additional items to plot
+case.popup_storteddata['plotdomain']['plot_sampleprobes']    = ['xyplane']
+case.popup_storteddata['plotdomain']['plot_turbines']        = ['turbine0']
+case.popup_storteddata['plotdomain']['plot_refineboxes']     = []
+# Plot the figure 
+case.plotDomain(ax=ax)
+plt.tight_layout()
+if savefigs:
+    plt.savefig(mdvar['img_plotdomain_domain_xyplane'])
+
+
+###########################
+# Validate the inputs
+# -------------------------
+checkoutput=case.validate()
+mdvar['checkoutput'] = checkoutput
+
+###########################
+# Saving the input file
+# -------------------------
+outstr=case.writeAMRWindInput('')
+
+# Delete any empty lines
+mdvar['inputfilestr'] = os.linesep.join([s for s in outstr.splitlines() if s])
+
+outstr=case.writeAMRWindInput('tutorial1.inp')
 
 ###########################
 # WRAP UP AND FINISH
 # -------------------------
+
+# Delete the openfast directory
+if os.path.exists('turbine0_OpenFAST_NREL5MW'): 
+    shutil.rmtree('turbine0_OpenFAST_NREL5MW')
 
 # Write the markdown file
 logging.info("Main    : writing "+mdfile)

@@ -1,6 +1,29 @@
 # Tutorial 1: Setting up a turbine run  
 
 **Contents**  
+-   [Tutorial 1: Setting up a turbine
+    run](#tutorial-1-setting-up-a-turbine-run)
+    -   [Introduction](#introduction)
+    -   [Getting started](#getting-started)
+    -   [Set the simulation type and
+        properties](#set-the-simulation-type-and-properties)
+    -   [Domain and Boundary
+        conditions](#domain-and-boundary-conditions)
+    -   [ABL Wind direction](#abl-wind-direction)
+        -   [Plot the domain (optional)](#plot-the-domain-optional)
+    -   [Adding a turbine](#adding-a-turbine)
+    -   [Adding a refinement region](#adding-a-refinement-region)
+    -   [Adding a sampling plane](#adding-a-sampling-plane)
+    -   [Plotting the domain](#plotting-the-domain)
+    -   [Checking the inputs](#checking-the-inputs)
+    -   [Save the input file](#save-the-input-file)
+    -   [Running the job](#running-the-job)
+        -   [Running locally](#running-locally)
+        -   [Running on the cluster](#running-on-the-cluster)
+    -   [Postprocessing](#postprocessing)
+        -   [Plotting the FAST output](#plotting-the-fast-output)
+        -   [Plotting the sample plane](#plotting-the-sample-plane)
+
 
 ## Introduction
 
@@ -181,6 +204,8 @@ following fields:
 - Name: `xyplane` -- this can be arbitrary
 - Type: `PlaneSampler`
 
+![{img_io_xyplane_top}]({img_io_xyplane_top})
+
 Then expand the **Sample plane specifications** section and add the following:
 - Plane num points: `101 51`
 - Plane origin: `-1000 -500 0`
@@ -194,3 +219,163 @@ should see that `xyplane` has been added to the list of probes:
 
 ![{img_io_sampling_done}]({img_io_sampling_done})
 
+## Plotting the domain
+
+Now that the turbine, refinement regions, and sampling planes have
+been added, we can replot the domain and see how everything is
+configured. Under the **Plot** menu, select **Plot domain**:
+
+![{img_plotdomain_basicfilled}]({img_plotdomain_basicfilled})
+
+This window should now show that the turbines, sample planes, and grid 
+refinements which can be included in the plot.
+
+If `box1` and `turbine0` are selected, as in below:
+
+![{img_plotdomain_selected1}]({img_plotdomain_selected1})
+
+and then **[Plot Domain]** is
+pressed, the turbine and refinement configuration is shown:
+
+![{img_plotdomain_domain_turbrefine}]({img_plotdomain_domain_turbrefine})
+
+If `xplane` and `turbine0` are selected, you can see how the sampling
+probes cover the domain:
+
+![{img_plotdomain_domain_xyplane}]({img_plotdomain_domain_xyplane})
+
+## Checking the inputs
+
+Before running this case, we can check that the inputs have been set
+up correctly.  Under the **Run** menu, select **Check inputs**.
+
+The output in the terminal will show the results of the check:
+```
+{checkoutput}
+```
+
+If anything is set up incorrectly, it may show up as `FAIL` or `WARN`
+checks in the results.
+
+
+## Save the input file
+
+To write the input file for AMR-Wind, go to the **File** menu and
+select **Save input file** (or **Save input file As**).  This will
+open up the file dialog window, where you can provide the name of the
+file to save (`tutorial1.inp` in this case):
+
+![](images/savefile.png)
+
+After it saves the file, you should see the input file and the
+OpenFAST directory: 
+
+```bash
+$ ls -1
+turbine0_OpenFAST_NREL5MW
+tutorial1.inp
+```
+
+The file `tutorial1.inp` should look similar to:
+<details>
+  <summary>Expand input file</summary>
+<pre>
+{inputfilestr}
+</pre>
+</details>
+
+## Running the job
+To run the case, there are two possibilities.  The case can be run on
+the local machine, or a submission file can be generated to run on an
+HPC cluster.
+
+Note that the following instructions require that
+`amrwind_frontend.py` is set up correctly with the right paths and
+locations to the executable.
+
+<!-- NOTE THIS STUFF IS NOT YET AUTOMATICALLY GENERATED -->
+
+### Running locally
+
+This option can be used if there are sufficient resources on the local
+machine.
+
+Under the **Run** menu, select **Local run**.  If properly configured,
+most of the executable and paths should not need to be changed.
+Provide a **Log filename** (like `log.txt`) and set the number of
+processors in **N processors** (default `1`).
+
+Then press **[Save & Run]** to start the run
+
+![](images/localrun_menu.png)
+
+### Running on the cluster
+
+You can create a submission script for running on the HPC machines.
+Under the **Run** menu, select **Job submission**.  
+
+![](images/submitscript_basic_filledout.png)
+
+Fill in the following fields: 
+
+- **submit script filename**: `submit.sh`
+- **amr_wind executable**: `amr_wind` (Provide full path if necessary)
+- **job name**: `amrwind1` (can be arbitrary)
+- **Number of nodes**: `4`
+- **Run time**: `1:00:00` 
+
+
+To see what the submission script looks like, click on **[Preview
+script]** button.  Then click on **[Save script]** to write the file.
+
+To submit the job through the interface, hit **Submit job**, although
+it can also be done on the command line, e.g., through
+```bash
+$ bsub < submit.sh
+```
+or through SLURM systems: 
+```bash
+$ sbatch submit.sh
+```
+
+## Postprocessing
+
+### Plotting the FAST output
+
+Under the **Plot** menu, select **Fast outputs**.
+
+![](images/plotfast_emptywindow.png)
+
+Click on **[Add file]** and select the file
+`turbine0_OpenFAST_NREL5MW/nrel5mw_noservo.out`.  Then click on
+**[Load/Reload Data]** to load the data.
+
+Once the data is loaded, select one of the variables such as `Wind1VelX`:  
+
+![](images/plotfast_selectvars.png)
+
+Then press `[Plot]` to plot the FAST output:   
+
+![](images/plotfast_Wind1VelX.png)
+
+### Plotting the sample plane  
+
+In the **Postpro** tab, scroll down to the **Plot Sample Planes** tab.
+Then press **[Choose file]** and choose the file
+`post_processing/sampling00000.nc`, and press **[Load file]**.  This
+will load the NetCDF data file and show the available groups to plot.
+Select `xyplane` and press **[Load variables]**
+
+![](images/plotsample_loadncdata.png)
+
+This should load the available variables to plot.  Select `velocityx`
+in the **NetCDF vars** list, and choose `X` and `Y` as **Plot axis 1**
+and **Plot axis 2**, respectively.  (`AUTO` is the automatic option.)
+Under `Set current time`, put `10` (the last data sample).
+
+![](images/plotsample_loadvars.png)
+
+Then press **[Plot Sample]** to plot a contour of the x-velocity at
+the hub-height plane:
+
+![](images/plotsample_wake.png)

@@ -259,7 +259,7 @@ tutorial1.add_turbine(turbine, verbose=True)
 
 ### Adding a refinement window
 
-Refinement windows can be added in a similar fashion as turbines.  First we'll set `AMR-Wind` to use 1 level of refinement.
+Refinement windows can be added in a similar fashion as turbines.  First we'll set `AMR-Wind` to use `amr_max_level` level of refinement.
 
 
 ```python
