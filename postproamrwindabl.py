@@ -17,7 +17,7 @@ stdvars = ['u',         'v',      'w',        'theta',
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
            u"v'v'_r",  u"v'w'_r", u"w'w'_r",
            u"u'theta'_r", u"v'theta'_r", u"w'theta'_r", 
-           'k_sgs']
+           'k_sgs', 'k_rans', 'sdr', 'eps', 'mueff']
 
 exprvars = { "u":'[u]',
              "v":'[v]',
@@ -33,6 +33,10 @@ exprvars = { "u":'[u]',
              u"v'theta'_r":'[vT]',
              u"w'theta'_r":'[wT]',
              'k_sgs':'[k_sgs]',
+             'k_rans':'[k_rans]',
+             'mueff':'[mueff]',
+             'sdr':'[sdr]',
+             'eps':'[eps]',
            }
 
 def timeaverage(t, dat, t1, t2):
@@ -176,6 +180,14 @@ statsprofiles=OrderedDict([
                    'header':'k_sgs',
                    'expr':'[k_sgs]', 
                   'funcstring':False}),
+    ('KRANS',     {'requiredvars':['k_rans'], 
+                   'header':'k_rans',
+                   'expr':'[k_rans]', 
+                   'funcstring':False}),
+    ('SDR_OMEGA',     {'requiredvars':['sdr'], 
+                   'header':'sdr',
+                   'expr':'[sdr]', 
+                   'funcstring':False}),
     ('ReStresses',{'requiredvars':[u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
                                    u"v'v'_r",  u"v'w'_r", u"w'w'_r",], 
                    'header':'uu uv uw vv vw ww',
