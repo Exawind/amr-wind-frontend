@@ -1,3 +1,7 @@
+# Note to self: run on skybridge with
+#  $ module load canopy/2.1.9
+#  $ export PYTHONPATH=~/.local/lib/python2.7/site-packages/
+
 import logging
 import threading
 import os, sys
@@ -39,8 +43,9 @@ mdtemplate= 'tutorial2guisetup_template.md'
 mdfile    = 'tutorial2guisetup.md'
 nbfile    = 'tutorial2python.ipynb'
 gennbfile = False
-runjupyter= True
+runjupyter= False
 savefigs  = True
+inputfile = 'tutorial2.inp'
 # ========================================
 
 mdstr = ""
@@ -328,8 +333,8 @@ if savefigs:
 
 ###########################
 # -- Write the input file --
-inputfile = case.writeAMRWindInput('')
-mdvar['amrwindinput1'] = "\n".join([s for s in inputfile.split("\n") if s])
+inputstr = case.writeAMRWindInput(inputfile)
+mdvar['amrwindinput1'] = "\n".join([s for s in inputstr.split("\n") if s])
 
 
 ###########################
