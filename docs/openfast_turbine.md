@@ -262,7 +262,7 @@ of `libdiscon.so`:
 
 Finally, let's complete the process and set up turbine entries for
 amrwind-frontend to use.  This will follow the same process as in the
-[customization doc](customizing.md).  Create a file called
+[turbine repository doc](turbinerepo.md).  Create a file called
 `nrel28-127.yaml` (the name can be arbitrary) in the `turbines/`
 subdirectory of the amrwind-frontend repo.  Inside the yaml file, it
 should have entries like:
