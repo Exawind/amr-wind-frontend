@@ -50,7 +50,7 @@ called `OpenFAST_NREL2p8-127`.
 The OpenFAST model that you downloaded needs to be compatible with the
 version of OpenFAST used in AMR-Wind.  If you're unsure of what
 version was compiled in AMR-Wind, you can take a look at the output
-logs ofa sample run, and at the beginning of the run there is an
+logs of a sample run, and at the beginning of the run there is an
 OpenFAST informational section:
 
 ```

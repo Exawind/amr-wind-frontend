@@ -165,6 +165,33 @@ class MyApp(tkyg.App, object):
         if not isinstance(x, bool): return x
         return 'true' if x else 'false'
 
+    def tellMeAbout(self, name):
+        """
+        Query an AMR-Wind input or AMR-Wind frontend input
+        """
+        inputkey = None
+        if name in self.amrkeydict:
+            inputkey = self.amrkeydict[name]
+        if name in self.inputvars:
+            inputkey = name
+        # Check if it can't find anything
+        if inputkey is None:
+            print("Unknown input "+name)
+            return
+        # Set inputs
+        inputvar = self.inputvars[inputkey]
+        infodict = OrderedDict()
+        infodict['Internal name'] = inputvar.name
+        infodict['AMR-Wind name'] = str(None) if 'AMR-Wind' not in inputvar.outputdef else inputvar.outputdef['AMR-Wind']
+        infodict['Help'] = str(None) if 'help' not in inputvar.outputdef else inputvar.outputdef['help']
+        infodict['Variable type'] = str(inputvar.inputtype)
+        infodict['GUI Label']     = inputvar.label
+        infodict['Default value'] = str(inputvar.defaultval)
+        infodict['Option list']   = str(inputvar.optionlist) if inputvar.optionlist else None
+
+        for k, g in infodict.items(): print('%-20s: %s'%(k,g))
+        return
+
     def setAMRWindInput(self, name, val, updatectrlelem=True, **kwargs):
         """
         Use this function to set the AMR-Wind keyword name to value.
