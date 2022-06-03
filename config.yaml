@@ -1099,7 +1099,7 @@ inputwidgets:
     label:      Boundary plane IO mode
     frame:      frame_ABLboundaryplane
     inputtype:  str
-    optionlist: [0, 1]
+    optionlist: [-1, 0, 1]
     defaultval: -1
     outputdef:
       AMR-Wind: ABL.bndry_io_mode
@@ -1115,10 +1115,10 @@ inputwidgets:
     label:      Boundary planes
     frame:      frame_ABLboundaryplane
     inputtype:  listbox
-    optionlist: [xlo, ylo]
+    optionlist: [xlo, ylo, xhi, yhi]
     listboxopt:
       selectmode: multiple
-      height:   2
+      height:   4
     outputdef:
      AMR-Wind:  ABL.bndry_planes
 

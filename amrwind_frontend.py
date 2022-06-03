@@ -616,10 +616,18 @@ class MyApp(tkyg.App, object):
         return actuatordict, extradict
 
     def setInternalVars(self):
+        """
+        Set any internal variables necessary after loading AMR-Wind inputs
+        """
+        # Set the time control variables
         if self.inputvars['fixed_dt'].getval() > 0.0:
             self.inputvars['time_control'].setval(['const dt'])
         else:
             self.inputvars['time_control'].setval(['max cfl'])            
+        # Set the ABL boundary plane variables
+        if self.inputvars['ABL_bndry_io_mode'].getval() != "-1":
+            self.inputvars['ABL_useboundaryplane'].setval(True)
+        return
 
     def loadAMRWindInput(self, filename, string=False, printunused=False):
         if string:
