@@ -5,6 +5,8 @@
 - [Customizing `amrwind-frontend`](customizing.md)
 - [Basics](basics.md): Loading, saving, and working with input files
 - [Configuring turbine repository](turbinerepo.md)
+- [Install/using an OpenFAST turbine model](openfast_turbine.md)
+- [Accessing the built-in help in python mode](builtInHelp.md)
 
 ## Tutorial cases
 

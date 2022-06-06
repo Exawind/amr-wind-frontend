@@ -1064,6 +1064,7 @@ inputwidgets:
       - ['BoussinesqForcing', 'BoussinesqBuoyancy',  '']    
       - ['CoriolisForcing',   'CoriolisForcing',     '']
       - ['ActuatorForcing',   'ActuatorForcing',     '']
+      - ['ABLMeanBoussinesq', 'ABLMeanBoussinesq',   '']
     outputdef:
       AMR-Wind: ICNS.source_terms
 
@@ -1137,6 +1138,12 @@ inputwidgets:
     outputdef:
      AMR-Wind:  ABL.bndry_var_names
 
+  - name:       ABLMeanBoussinesq
+    label:      ABLMeanBoussinesq forcing
+    frame:      frame_ABLboundaryplane
+    inputtype:  bool
+    defaultval: 0
+    
   # ========== ABL specification ==============================
   - name:       ABL_velocity
     label:      Wind vector
