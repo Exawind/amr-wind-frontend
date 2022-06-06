@@ -1200,7 +1200,7 @@ class MyApp(tkyg.App, object):
         if isinstance(ablstats_avgz, str):
             avgz  = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
         report = postpro.printReport(self.abl_stats, avgz, avgt, verbose=True)
-        return
+        return report
 
     # ---- Sample probe postprocessing options ----
     def Samplepostpro_loadnetcdffile(self, ncfile=None):
