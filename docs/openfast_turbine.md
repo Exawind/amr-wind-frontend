@@ -3,6 +3,10 @@
 **Contents**
 - [Introduction](#introduction)
 - [Preliminaries](#preliminaries)
+  - [Downloading the model](#downloading-the-model)
+  - [Checking the OpenFAST version](#checking-the-openfast-version)
+  - [Going from OpenFAST v2.6 to v3.0.0](#going-from-openfast-v26-to-v300)
+  - [Going from OpenFAST v3.0.0 to v3.1.0](#going-from-openfast-v300-to-v310)
 - [Compiling ROSCO](#compiling-roscox)
 - [Editing the OpenFAST settings](#editing-the-openfast-settings)
 - [Configure the frontend entry](#configure-the-frontend-entry)
@@ -82,8 +86,10 @@ https://github.com/NREL/openfast-turbine-models.git are also set up
 for OpenFAST version 2.6.
 
 However, let's say that you'd like to use a newer version of OpenFAST,
-for instance, version 3.0.0.  In that case, we'll need to make a few
-edits to the turbine model.
+for instance, version 3.0.0 or version 3.1.0.  In that case, we'll
+need to make a few edits to the turbine model.
+
+### Going from OpenFAST v2.6 to v3.0.0
 
 In the OpenFAST v2.6 ServoDyn file (`NREL-2p8-127_ServoDyn.dat` in
 this example), there is a section that looks like this:
@@ -96,7 +102,8 @@ False                  CompTTMD    - Compute tower tuned mass damper {true/false
 "none"                 TTMDfile    - Name of the file for tower tuned mass damper (quoted string) [unused when CompTTMD is false]
 ```
 
-For OpenFAST v3.0.0, replace those lines in the ServoDyn file with this section:  
+For OpenFAST v3.0.0, replace those `TUNED MASS DAMPER` lines in the
+ServoDyn file with this section:
 
 ```
 ---------------------- STRUCTURAL CONTROL --------------------------------------
@@ -108,6 +115,69 @@ For OpenFAST v3.0.0, replace those lines in the ServoDyn file with this section:
 "unused"      TStCfiles    - Name of the files for tower structural controllers (quoted strings) [unused when NumTStC==0]
 0             NumSStC      - Number of substructure structural controllers (integer)
 "unused"      SStCfiles    - Name of the files for substructure structural controllers (quoted strings) [unused when NumSStC==0]
+```
+
+### Going from OpenFAST v3.0.0 to v3.1.0
+
+For OpenFAST v3.1.0, apply the changes above, but also make some
+additional changes related to the environmental conditions.
+
+In `NREL-2p8-127.fst`, add the following MHK and ENVIRONMENTAL
+CONDITIONS lines after the `CompIce` lines and before the `INPUT
+FILES` section.
+
+```
+0   		       MHK         - MHK turbine type (switch) {0=Not an MHK turbine; 1=Fixed MHK turbine; 2=Floating MHK turbine}
+---------------------- ENVIRONMENTAL CONDITIONS --------------------------------
+    9.80665   Gravity         - Gravitational acceleration (m/s^2)
+      1.225   AirDens         - Air density (kg/m^3)
+          0   WtrDens         - Water density (kg/m^3)
+  1.464E-05   KinVisc         - Kinematic viscosity of working fluid (m^2/s)
+        335   SpdSound        - Speed of sound in working fluid (m/s)
+     103500   Patm            - Atmospheric pressure (Pa) [used only for an MHK turbine cavitation check]
+       1700   Pvap            - Vapour pressure of working fluid (Pa) [used only for an MHK turbine cavitation check]
+          0   WtrDpth         - Water depth (m)
+          0   MSL2SWL         - Offset between still-water level and mean sea level (m) [positive upward]
+```
+
+Then in the `NREL-2p8-127_AeroDyn15.dat`, replace the `Environmental Conditions` sections with
+
+```
+======  Environmental Conditions  ===================================================================
+"default"     AirDens            - Air density (kg/m^3)
+"default"     KinVisc            - Kinematic air viscosity (m^2/s)
+"default"     SpdSound           - Speed of sound (m/s)
+"default"     Patm               - Atmospheric pressure (Pa) [used only when CavitCheck=True]
+"default"     Pvap               - Vapour pressure of fluid (Pa) [used only when CavitCheck=True]
+```
+
+(Note that `FluidDepth` is no longer needed in the AeroDyn file in v3.1.0).
+
+Then in `NREL-2p8-127_ElastoDyn.dat`, delete the following
+environmental condition and gravity lines:
+
+```
+---------------------- ENVIRONMENTAL CONDITION ---------------------------------
+9.81                   Gravity     - Gravitational acceleration (m/s^2)
+```
+
+Then in `NREL-2p8-127_ServoDyn.dat`, add the following lines after
+`NacYawF`, and before `STRUCTURAL CONTROL`:
+
+```
+---------------------- AERODYNAMIC FLOW CONTROL --------------------------------
+          0   AfCmode      - Airfoil control mode {0: none, 1: cosine wave cycle, 4: user-defined from Simulink/Labview, 5: user-defined from Bladed-style DLL} (switch)
+          0   AfC_Mean     - Mean level for cosine cycling or steady value (-) [used only with AfCmode==1]
+          0   AfC_Amp      - Amplitude for for cosine cycling of flap signal (-) [used only with AfCmode==1]
+          0   AfC_Phase    - Phase relative to the blade azimuth (0 is vertical) for for cosine cycling of flap signal (deg) [used only with AfCmode==1]
+```
+
+Also, after the `STRUCTURAL CONTROL` section, but before the `BLADED
+INTERFACE` section, add these lines for `CABLE CONTROL`:
+
+```
+---------------------- CABLE CONTROL -------------------------------------------
+          0   CCmode       - Cable control mode {0: none, 4: user-defined from Simulink/Labview, 5: user-defined from Bladed-style DLL} (switch)
 ```
 
 Then you should be set to run with the newer OpenFAST version.
