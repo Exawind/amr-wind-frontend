@@ -22,6 +22,17 @@ There are a couple of examples cases which demonstrate how to use
 - [Tutorial 3](tutorial3/README.md): How to set up a wind farm case
   with many wind turbines.
 
+## Case studies
 
+There are a couple of case studies 
+
+- [NREL 2.8-127 turbine
+  calibration](casestudies/NREL_2p8_127/README.md): Using
+  amrwind-frontend to set up an ADM run of the NREL 2.8-127, and
+  comparing the performance curves.
+
+- [SWIFT ABL run](casestudies/SWIFT/README.md): How to use
+  amrwind-frontend to set up a SWIFT Neutral ABL case, and postprocess
+  the results.
 
 
