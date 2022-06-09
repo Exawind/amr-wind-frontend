@@ -70,7 +70,9 @@ def FASTfile2dict(FASTfile):
                 line=fp.readline()
                 continue
             #linesplit=line.strip().split(", ")
-            linesplit=re.split('[, ;]+', line.strip())
+            linesplitX=re.split('[, ;]+', line.strip())
+            # Remove any empty tokens in linesplit
+            linesplit=[x.strip() for x in linesplitX if x.strip() != '']
 
             # Ignore any lines with less than two items
             if len(linesplit)<2:
