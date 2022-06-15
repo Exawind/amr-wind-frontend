@@ -142,6 +142,11 @@ frames:
     row:   5
     title: Uniform Ct Disk global parameters
     toggled: True
+  - name:  frame_joukowskyglobals
+    tab:   Turbines
+    row:   6
+    title: Joukowsky Disk global parameters
+    toggled: True
     
 # ********** PREDEFEINED ANCHORS ****************
 # Define things here which will be repeated later on
@@ -150,7 +155,7 @@ frames:
 predefinedlists:
   # Check amr-wind/incflo_enums.H
   bctypes:      &PREDEFINED_BCTYPES [pressure_inflow, pressure_outflow, mass_inflow, zero_gradient,  no_slip_wall, slip_wall, wall_model, fixed_gradient]
-  turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, UniformCtDisk, FlatPlateLine]
+  turbinetypes: &PREDEFINED_ACTUATORTYPES [TurbineFastLine, TurbineFastDisk, UniformCtDisk, JoukowskyDisk, FlatPlateLine]
 
   alwaysfalse:   &PREDEFINED_ALWAYSFALSE
     name:       default_alwaysfalse
@@ -1904,6 +1909,138 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.wind_speed
       help:     Wind speed table
+
+  # ------ Joukowsky Disk Globals -------------------
+  - <<: *PREDEFINED_ROTOR_DIAMETER
+    name:       Actuator_JoukowskyDisk_rotor_diameter
+    frame:      frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.rotor_diameter
+  - name:       Actuator_JoukowskyDisk_base_position
+    label:      Base position (x,y,z)
+    inputtype:  [float, float, float]
+    defaultval: 
+    frame:    frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.base_position
+      help:     Where the bottom of the tower sits
+  - <<: *PREDEFINED_HUB_HEIGHT
+    name:       Actuator_JoukowskyDisk_hub_height
+    frame:      frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.hub_height
+  - <<: *PREDEFINED_EPSILON
+    name:       Actuator_JoukowskyDisk_epsilon
+    frame:      frame_joukowskyglobals
+    #inputtype:  float
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.epsilon
+    entryopt:
+      varlenlist:  True
+  - <<: *PREDEFINED_OUTPUT_FREQUENCY
+    name:       Actuator_JoukowskyDisk_output_frequency
+    label:      Output frequency
+    frame:      frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.output_frequency
+  - <<: *PREDEFINED_DENSITY
+    name:       Actuator_JoukowskyDisk_density
+    frame:      frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.density
+  - <<: *PREDEFINED_YAW
+    name:       Actuator_JoukowskyDisk_yaw
+    frame:      frame_joukowskyglobals
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.yaw
+  - name:       Actuator_JoukowskyDisk_sample_yaw
+    label:      Sample yaw
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.sample_yaw
+      help:     Turbine sampling yaw direction [deg]
+  - name:       Actuator_JoukowskyDisk_diameters_to_sample
+    label:      Sample distance
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.diameters_to_sample
+      help:     Number of rotor diameters to sample upstream for velocity
+  - name:       Actuator_JoukowskyDisk_num_points_r
+    label:      Num r pts sample
+    frame:      frame_joukowskyglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.num_points_r
+      help:     Number of radial force points to sample for velocity and force
+  - name:       Actuator_JoukowskyDisk_num_points_t
+    label:      Num theta pts sample
+    frame:      frame_joukowskyglobals
+    inputtype:  int
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.num_points_t
+      help:     Number of theta force points to sample for velocity and force
+  - name:       Actuator_JoukowskyDisk_thrust_coeff
+    label:      Thrust coefficient
+    frame:      frame_joukowskyglobals
+    inputtype:  str
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.thrust_coeff
+      help:     Thrust coefficient table
+  - name:       Actuator_JoukowskyDisk_angular_velocity
+    label:      Angular velocity table
+    frame:      frame_joukowskyglobals
+    inputtype:  str
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.angular_velocity
+      help:     Angular velocity table [rad/s]
+  - name:       Actuator_JoukowskyDisk_wind_speed
+    label:      Wind speed table
+    frame:      frame_joukowskyglobals
+    inputtype:  str
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.wind_speed
+      help:     Wind speed table
+  - name:       Actuator_JoukowskyDisk_num_blades
+    label:      Num of turbine blades
+    frame:      frame_joukowskyglobals
+    inputtype:  int
+    defaultval: 3
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.num_blades
+      help:     Number of wind turbine blades
+  - name:       Actuator_JoukowskyDisk_vortex_core_size
+    label:      Vortex core size
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.vortex_core_size
+  - name:       Actuator_JoukowskyDisk_use_tip_correction
+    label:      Use tip correction
+    frame:      frame_joukowskyglobals
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.use_tip_correction
+      help:     Turn on tip correction
+  - name:       Actuator_JoukowskyDisk_use_root_correction
+    label:      Use root correction
+    frame:      frame_joukowskyglobals
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.use_root_correction
+      help:     Turn on root correction
+
 
   # =========== Local preferences here =================
   # ------------ Submission script template -------------

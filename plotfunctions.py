@@ -416,6 +416,7 @@ def plotDomain(self, ax=None):
             turbtype = default_type if 'Actuator_type' not in tdict else tdict['Actuator_type']
             turbtype = turbtype[0] if isinstance(turbtype, list) else turbtype
             turbhh   = default_hh  if tdict['Actuator_hub_height'] is None else tdict['Actuator_hub_height']
+            turbhh   = 0.0 if turbhh is None else turbhh
             turbD    = default_turbD if tdict['Actuator_rotor_diameter'] is None else tdict['Actuator_rotor_diameter']
 
             basepos  = tdict['Actuator_base_position']
