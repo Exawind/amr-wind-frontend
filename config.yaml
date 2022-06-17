@@ -2803,7 +2803,7 @@ popupwindow:
       title:      Turbine specifications
       row:        4
     - name:       uniformCt_frame
-      title:      Uniform Ct disk parameters
+      title:      Joukowsky and Unif Ct params
       toggled:    True
       row:        5
     inputwidgets:
@@ -2948,6 +2948,61 @@ popupwindow:
       outputdef:
         AMR-Wind: wind_speed
         help:     "Wind speed table: if Ct is not a single value, list of wind speeds corresponding to Ct values"
+    - name:       Actuator_angular_velocity
+      label:      Angular velocity table
+      frame:      uniformCt_frame
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: angular_velocity
+        help:     Angular velocity table [rad/s] for Joukowsky Disk
+    - name:       Actuator_num_points_r
+      label:      Num r pts sample
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_r
+        help:     Number of radial force points to sample for velocity and force for Joukowsky Disk
+    - name:       Actuator_num_points_t
+      label:      Num theta pts sample
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_t
+        help:     Number of theta force points to sample for velocity and force for Joukowsky Disk
+    - name:       Actuator_num_blades
+      label:      Num of turbine blades
+      frame:      uniformCt_frame
+      inputtype:  int
+      defaultval: 3
+      outputdef:
+        AMR-Wind: num_blades
+        help:     Number of wind turbine blades for Joukowsky Disk
+    - name:       Actuator_vortex_core_size
+      label:      Vortex core size
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: vortex_core_size
+    - name:       Actuator_use_tip_correction
+      label:      Use tip correction
+      frame:      uniformCt_frame
+      inputtype:  bool
+      defaultval: True
+      outputdef:
+        AMR-Wind: Actuator.use_tip_correction
+        help:     Turn on tip correction
+    - name:       Actuator_use_root_correction
+      label:      Use root correction
+      frame:      uniformCt_frame
+      inputtype:  bool
+      defaultval: True
+      outputdef:
+        AMR-Wind: Actuator.use_root_correction
+        help:     Turn on root correction
 
     buttons:
       - name: preload_turbinetype
@@ -3033,6 +3088,13 @@ popupwindow:
       outputdef:
         AMR-Wind: wind_speed
         help:     "Wind speed table: if Ct is not a single value, list of wind speeds corresponding to Ct values"
+    - name:       Actuator_angular_velocity
+      label:      Angular velocity table
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        AMR-Wind: angular_velocity
+        help:     Angular velocity table [rad/s] for Joukowsky Disk
     - name:       Actuator_num_force_points
       label:      Number of force points
       inputtype:  int
@@ -3053,6 +3115,48 @@ popupwindow:
       defaultval: 
       outputdef:
         amrwind_frontend: turbinetype_filedir
+    - name:       Actuator_num_points_r
+      label:      Num r pts sample
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_r
+        help:     Number of radial force points to sample for velocity and force for Joukowsky Disk
+    - name:       Actuator_num_points_t
+      label:      Num theta pts sample
+      inputtype:  int
+      defaultval: 
+      outputdef:
+        AMR-Wind: num_points_t
+        help:     Number of theta force points to sample for velocity and force for Joukowsky Disk
+    - name:       Actuator_num_blades
+      label:      Num of turbine blades
+      inputtype:  int
+      defaultval: 3
+      outputdef:
+        AMR-Wind: num_blades
+        help:     Number of wind turbine blades for Joukowsky Disk
+    - name:       Actuator_vortex_core_size
+      label:      Vortex core size
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: vortex_core_size
+    - name:       Actuator_use_tip_correction
+      label:      Use tip correction
+      inputtype:  bool
+      defaultval: True
+      outputdef:
+        AMR-Wind: Actuator.use_tip_correction
+        help:     Turn on tip correction
+    - name:       Actuator_use_root_correction
+      label:      Use root correction
+      inputtype:  bool
+      defaultval: True
+      outputdef:
+        AMR-Wind: Actuator.use_root_correction
+        help:     Turn on root correction
+
 
   # === Set up a local run ===
   localrun:
