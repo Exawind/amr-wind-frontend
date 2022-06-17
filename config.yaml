@@ -1869,30 +1869,22 @@ inputwidgets:
     outputdef:
       AMR-Wind: Actuator.UniformCtDisk.diameters_to_sample
       help:     Number of rotor diameters to sample upstream for velocity
-  - name:       Actuator_UniformCtDisk_num_force_points
-    label:      Num force points
+  - name:       Actuator_UniformCtDisk_num_points_r
+    label:      Num r pts sample
     frame:      frame_uniformctglobals
     inputtype:  int
     defaultval: 
     outputdef:
-      AMR-Wind: Actuator.UniformCtDisk.num_force_points
-      help:     Number of radial force points to apply disk loading
-  - name:       Actuator_UniformCtDisk_num_vel_points_r
-    label:      Num vel r pts sample
+      AMR-Wind: Actuator.UniformCtDisk.num_points_r
+      help:     Number of radial force points to sample 
+  - name:       Actuator_UniformCtDisk_num_points_t
+    label:      Num theta pts sample
     frame:      frame_uniformctglobals
     inputtype:  int
     defaultval: 
     outputdef:
-      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_r
-      help:     Number of radial force points to sample for velocity
-  - name:       Actuator_UniformCtDisk_num_vel_points_t
-    label:      Num vel theta pts sample
-    frame:      frame_uniformctglobals
-    inputtype:  int
-    defaultval: 
-    outputdef:
-      AMR-Wind: Actuator.UniformCtDisk.num_vel_points_t
-      help:     Number of theta force points to sample for velocity
+      AMR-Wind: Actuator.UniformCtDisk.num_points_t
+      help:     Number of theta force points to sample 
   - name:       Actuator_UniformCtDisk_thrust_coeff
     label:      Thrust coefficient
     frame:      frame_uniformctglobals
@@ -2908,30 +2900,6 @@ popupwindow:
       outputdef:
         AMR-Wind: diameters_to_sample
         help:     Number of rotor diameters to sample upstream for velocity
-    - name:       Actuator_num_force_points
-      label:      Number of force points
-      frame:      uniformCt_frame
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_force_points
-        help:     Number of radial force points to apply disk loading
-    - name:       Actuator_num_vel_points_r
-      label:      Num vel r pts sample
-      frame:      uniformCt_frame
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_vel_points_r
-        help:     Number of radial force points to sample for velocity
-    - name:       Actuator_num_vel_points_t
-      label:      Num vel theta pts sample
-      frame:      uniformCt_frame
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_vel_points_t
-        help:     Number of theta force points to sample for velocity
     - name:       Actuator_thrust_coeff
       label:      Thrust coefficient table
       frame:      uniformCt_frame
@@ -2963,7 +2931,7 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: num_points_r
-        help:     Number of radial force points to sample for velocity and force for Joukowsky Disk
+        help:     Number of radial force points to sample for velocity and force
     - name:       Actuator_num_points_t
       label:      Num theta pts sample
       frame:      uniformCt_frame
@@ -2971,7 +2939,7 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: num_points_t
-        help:     Number of theta force points to sample for velocity and force for Joukowsky Disk
+        help:     Number of theta force points to sample for velocity and force
     - name:       Actuator_num_blades
       label:      Num of turbine blades
       frame:      uniformCt_frame
@@ -3095,13 +3063,6 @@ popupwindow:
       outputdef:
         AMR-Wind: angular_velocity
         help:     Angular velocity table [rad/s] for Joukowsky Disk
-    - name:       Actuator_num_force_points
-      label:      Number of force points
-      inputtype:  int
-      defaultval: 
-      outputdef:
-        AMR-Wind: num_force_points
-        help:     Number of radial force points to apply disk loading
     - name:       turbinetype_filelocation  # yaml file with the definitions
       label:      File location
       inputtype:  str
@@ -3121,14 +3082,14 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: num_points_r
-        help:     Number of radial force points to sample for velocity and force for Joukowsky Disk
+        help:     Number of radial force points to sample for velocity and force
     - name:       Actuator_num_points_t
       label:      Num theta pts sample
       inputtype:  int
       defaultval: 
       outputdef:
         AMR-Wind: num_points_t
-        help:     Number of theta force points to sample for velocity and force for Joukowsky Disk
+        help:     Number of theta force points to sample for velocity and force
     - name:       Actuator_num_blades
       label:      Num of turbine blades
       inputtype:  int
