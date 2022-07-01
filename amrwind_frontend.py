@@ -1102,13 +1102,15 @@ class MyApp(tkyg.App, object):
         return
 
     def ABLpostpro_plotprofiles(self, ax=None, plotvars=None, avgt=None, 
-                                doplot=True):
+                                doplot=True, usemapped=None):
         # Get the list of selected quantities
         if plotvars is None:
             plotvars = self.inputvars['ablstats_profileplot'].getval()
         if avgt is None:
             avgt         = self.inputvars['ablstats_avgt'].getval()
         if ax is None: ax=self.setupfigax()
+        if usemapped is None: 
+            usemapped = self.inputvars['ablstats_usemapped'].getval()
 
         returndict = {}
 
@@ -1116,7 +1118,8 @@ class MyApp(tkyg.App, object):
         for var in plotvars:
             prof=postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
                                                     self.abl_stats,
-                                                    self.abl_profiledata, avgt)
+                                                    self.abl_profiledata, avgt,
+                                                    usemapped=usemapped)
             z, plotdat = prof.calculate()
             self.abl_profiledata = prof.allvardata.copy()
             N = np.shape(plotdat)
