@@ -68,7 +68,6 @@ def loadnetcdffile(filename):
 def loadProfileData(d, varslist=stdvars, group='mean_profiles', avgt=[], 
                     usemapped=True):
     alldat={}
-    print(d['mean_profiles'].variables.keys())
     t = d.variables['time'][:]
     alldat['time'] = t
     alldat['avgt'] = avgt
@@ -238,7 +237,6 @@ class CalculatedProfile:
         if allvars is None: allvars = self.allvardata
         if avgt    is None: avgt    = self.avgt
         if not matchvarstimes(allvars, self.requiredvars, avgt):
-            print("DEBUG: loading profile")
             # Load the data from the ncdat file
             var = loadProfileData(self.ncdat, 
                                   varslist=self.requiredvars, 
