@@ -797,7 +797,6 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    #defaultval: fixed_gradient
     outputdef:
       AMR-Wind: xhi.temperature_type
 
@@ -1166,8 +1165,6 @@ inputwidgets:
     ctrlelem:
       - input:  ABL_windspeed
       - input:  ABL_winddir
-#      - input:  ABL_velocity
-#        activewhen: ['', 0]
 
   - name:       ABL_windspeed
     label:      Wind speed
@@ -1323,7 +1320,6 @@ inputwidgets:
     label:      Temp profile z
     frame:      frame_ABLTprof
     inputtype:  str
-    #defaultval: 0.0 650.0 750.0 1000.0
     outputdef:
       AMR-Wind: ABL.temperature_heights
     entryopt:
@@ -1333,7 +1329,6 @@ inputwidgets:
     label:      Temp profile val
     frame:      frame_ABLTprof
     inputtype:  str
-    #defaultval: 300.0 300.0 308.0 308.75 
     outputdef:
       AMR-Wind: ABL.temperature_values
     entryopt:
@@ -1464,7 +1459,6 @@ inputwidgets:
     row:        3
     inputtype:  listbox
     optionlist: [sampling]
-#    defaultval: sampling
     listboxopt:
       selectmode: multiple
     outputdef:
@@ -2070,24 +2064,6 @@ inputwidgets:
     defaultval: turbines
 
 
-  # # =========== Junk stuff here ========================
-  # - name: input_3
-  #   label: "list of options"
-  #   tab:  Junk
-  #   inputtype: str
-  #   optionlist: ['optionA', 'optionB']
-  #   defaultval: 'optionA'
-
-  # - name: label1
-  #   label: "This is some label"
-  #   labelonly: True
-  #   tab:  Junk
-
-  # - name: label2
-  #   label: "Some more helpful advice"
-  #   labelonly: True
-  #   tab:  Junk
-
 buttons:
   - name:    calculateWindVector
     text:    Calc W. Vec
@@ -2107,7 +2083,6 @@ buttons:
     text: dump input file
     tab:  Expert
     command: self.dumpAMRWindInputGUI
-      #"partial(self.writeAMRWindInput, '', verbose=True)"
 
   - name:    loadABLstatsfile
     text:    Load file
@@ -2191,7 +2166,6 @@ popupwindow:
         row:        0
       - name:       plot_framesampleprobes
         title:      Select sample probes
-        #toggled:    True
         row:        1
       - name:       plot_framesampleprobes1
         frame:      plot_framesampleprobes
@@ -2200,7 +2174,6 @@ popupwindow:
           borderwidth: 0
       - name:       plot_framerefineboxes
         title:      Select refinement zones
-        #toggled:    True
         row:        2
       - name:       plot_framerefineboxes1
         frame:      plot_framerefineboxes
@@ -2209,7 +2182,6 @@ popupwindow:
           borderwidth: 0
       - name:       plot_frameturbines
         title:      Select turbines
-        #toggled:    True
         row:        3
       - name:       plot_frameturbines1
         frame:      plot_frameturbines
@@ -2228,11 +2200,6 @@ popupwindow:
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
-      # - name:       spacer1
-      #   labelonly:  True
-      # - name:       spacer2
-      #   label:      Click on objects below to include in plot
-      #   labelonly:  True
       - name:       plot_sampleprobes
         frame:      plot_framesampleprobes
         label:      #Plot sample probes
@@ -2277,7 +2244,6 @@ popupwindow:
         col:     1
         text:    Select all
         command: partial(self.savethenexec, "self.temp_inputvars['plot_sampleprobes'].tkentry.select_set(0, Tk.END)") 
-        #partial(self.savethenexec, 'self.master.donothing_button()')
       - name:    deleteall_sample
         frame:   plot_framesampleprobes1
         row:     0
@@ -2416,14 +2382,12 @@ popupwindow:
       inputtype:  str
       defaultval: newsample
       frame:      probetype_frame
-      # row:        1
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
       optionlist: [ProbeSampler, LineSampler, PlaneSampler]
       defaultval: LineSampler
       frame:      probetype_frame
-      # row:        2
       listboxopt:
         width:    12
       outputdef:
@@ -2454,22 +2418,16 @@ popupwindow:
       label:      Choose text file with (x,y,z) probe points
       labelonly:  True
       frame:      probe_file_frame
-      # row:        3
     - name:       sampling_pf_probe_location_file
       label:      Filename
       inputtype:  filename
       defaultval:
       frame:      probe_file_frame
-      # row:        4
       entryopt:
         width:    20
       outputdef:
         AMR-Wind: probe_location_file
     # -- sample line ---
-    # - name:       sampling_l_label
-    #   label:      Line probe specifications
-    #   labelonly:  True
-    #   row:        5
     - name:       sampling_l_num_points
       label:      Line num points
       inputtype:  int
@@ -2587,14 +2545,12 @@ popupwindow:
       inputtype:  str
       defaultval: newrefinement
       frame:      header_frame
-      #row:        1
     - name:       tagging_type
       label:      Type 
       inputtype:  listbox
       optionlist: [CartBoxRefinement, FieldRefinement, GeometryRefinement, QCriterionRefinement, VorticityRefinement]
       defaultval: CartBoxRefinement
       frame:      header_frame
-      #row:        2
       listboxopt:
         width:    25
       outputdef:
@@ -2679,9 +2635,6 @@ popupwindow:
       outputdef:
         AMR-Wind: values
     # --- Geometry tagging ---
-    #- name:       tagging_label_geom
-    #  label:      Geometric shape refinement
-    #  labelonly:  True
     - name:       tagging_shapes
       label:      Geometry Names
       inputtype:  str
@@ -2791,7 +2744,6 @@ popupwindow:
     height:       660                # optional
     frames:
     - name:       turbinename_frame
-#      title:      Expert options
       row:        2
     - name:       expert_frame
       title:      Expert options
@@ -2821,7 +2773,6 @@ popupwindow:
       optionlist: "self.parent.listboxpopupwindict['listboxturbinetype'].getitemlist()"
       defaultval: ""
       frame:      turbinename_frame
-      #row:        2
     - name:       copy_turb_files
       label:      Copy turbine files
       inputtype:  bool
@@ -2989,8 +2940,6 @@ popupwindow:
         text: Update FAST now
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
         frame: expert_frame
-        # row:  4
-        # col:  2
       - name: saveandupdatefast_files
         text: Save & Update FAST
         command: "partial(self.savethenexec, 'self.parent.turbinemodels_checkupdateFAST(window=self)')"
@@ -3188,14 +3137,6 @@ popupwindow:
           width:    25
         fileopenopt:             
           selecttype: saveas       # open/saveas/directory [optional]
-      # - name:       submitscript_logfile
-      #   label:      Log filename
-      #   inputtype:  filename
-      #   defaultval: 
-      #   fileopenopt:             
-      #     selecttype: saveas       # open/saveas/directory [optional]
-      #   outputdef:
-      #     replacevar: submitscript_logfile
       - name:       submitscript_exe
         label:      amr_wind executable
         inputtype:  filename
