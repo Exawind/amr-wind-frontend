@@ -128,7 +128,9 @@ class Check_3_1_0():
 
     def check(self, fstfile, verbose=False):
         checkvars = ['NumBStC', 'BStCfiles', 'NumNStC', 'NStCfiles', 
-                     'NumTStC', 'TStCfiles', 'NumSStC', 'SStCfiles']
+                     'NumTStC', 'TStCfiles', 'NumSStC', 'SStCfiles',
+                     'AfCmode', 'AfC_Mean',  'AfC_Amp', 'AfC_Phase',
+                     'CCmode']
         match1, l1 = checkIfVarsInFile(fstfile, 'ServoFile', checkvars,
                                        verbose=verbose)
         checkvars = ['MHK', 'Gravity', 'AirDens', 'WtrDens', 'KinVisc', 
@@ -136,10 +138,12 @@ class Check_3_1_0():
         match2, l2 = checkIfVarsInFile(fstfile, '', checkvars, verbose=verbose)
         match3, l3 = checkIfVarsInFile(fstfile, 'AeroFile', ['FluidDepth'], 
                                        flipbool=True, verbose=verbose)
+        match4, l4 = checkIfVarsInFile(fstfile, 'EDFile', ['Gravity'], 
+                                       flipbool=True, verbose=verbose)
 
         # Combine the lists
-        l         = l1 + l2 + l3
-        result    = mergeMatchList([match1, match2, match3])
+        l         = l1 + l2 + l3 + l4
+        result    = mergeMatchList([match1, match2, match3, match4])
         return result, l
 
 # ========================================================================
