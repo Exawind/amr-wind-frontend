@@ -442,3 +442,25 @@ def plotDomain(self, ax=None):
     #self.figcanvas.show()
 
     return
+
+# -------------------------------------------------------------
+def plotGenericProfile(self, xvar, yvar, useInputVar=True, ax=None):
+    """
+    Plots a profile given by the xvar and yvar string variables
+    """
+    # Clear and resize figure
+    if ax is None: ax=self.setupfigax()
+
+    # Get the strings
+    xstr = self.getAMRWindInput(xvar) if useInputVar else xvar
+    ystr = self.getAMRWindInput(yvar) if useInputVar else yvar
+
+    # Convert the strings to arrays
+    xarr = np.array([float(x) for x in xstr.split()])
+    yarr = np.array([float(y) for y in ystr.split()])
+
+    # Plto it
+    ax.plot(xarr, yarr)
+    
+    self.figcanvas.draw()
+    return

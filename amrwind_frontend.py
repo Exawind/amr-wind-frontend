@@ -785,7 +785,7 @@ class MyApp(tkyg.App, object):
         if clear: ax.clear()
         return ax
 
-    from plotfunctions import plotDomain, readCartBoxFile
+    from plotfunctions import plotDomain, readCartBoxFile, plotGenericProfile
 
     # import all wind farm functions
     from farmfunctions import button_loadcsv
