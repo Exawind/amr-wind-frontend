@@ -82,6 +82,9 @@ frames:
   - name:  frame_Boussinesq
     tab:   ABL
     title: Boussinesq forces
+  - name:  frame_Bodyforce
+    tab:   ABL
+    title: Body forces
   - name:  frame_ABLTprof
     tab:   ABL
     title: ABL temperature profiles
@@ -94,7 +97,7 @@ frames:
   - name:  frame_ABLboundaryplane
     tab:   ABL
     title: ABL Boundary Plane
-    row:   10
+    row:   11
 
   # ==== IO frames ==== 
   - name:  frame_IOplotting
@@ -1059,6 +1062,14 @@ inputwidgets:
     ctrlelem:  
       - frame:  frame_Boussinesq
 
+  - name:       BodyForcing
+    label:      add Body force
+    frame:      frame_ABLforcing
+    inputtype:  bool
+    defaultval: 0
+    ctrlelem:
+      - frame:  frame_Bodyforce
+
   - name:       ICNS_source_terms
     label:    
     frame:      frame_ABLforcing
@@ -1068,6 +1079,7 @@ inputwidgets:
       - ['BoussinesqForcing', 'BoussinesqBuoyancy',  '']    
       - ['CoriolisForcing',   'CoriolisForcing',     '']
       - ['ActuatorForcing',   'ActuatorForcing',     '']
+      - ['BodyForcing',       'BodyForcing',         '']
       - ['ABLMeanBoussinesq', 'ABLMeanBoussinesq',   '']
     outputdef:
       AMR-Wind: ICNS.source_terms
@@ -1094,7 +1106,7 @@ inputwidgets:
   - name:       ABL_useboundaryplane
     label:      Use boundary plane I/O
     tab:        ABL
-    row:        9
+    row:        10
     inputtype:  bool
     ctrlelem:
       - frame:      frame_ABLboundaryplane
@@ -1315,6 +1327,13 @@ inputwidgets:
     defaultval: 300.0
     outputdef:
       AMR-Wind: BoussinesqBuoyancy.reference_temperature 
+
+  - name:       BodyForce_magnitude
+    label:      Body force magnitude
+    frame:      frame_Bodyforce
+    inputtype:  [float, float, float]
+    outputdef:
+      AMR-Wind: BodyForce.magnitude
 
   - name:       temperature_heights
     label:      Temp profile z
@@ -1685,6 +1704,10 @@ inputwidgets:
         activewhen: ['TurbineFastLine', 1]
       - frame:  frame_turbinefastdiskglobals
         activewhen: ['TurbineFastDisk', 1]          
+      - frame:  frame_uniformctglobals
+        activewhen: ['UniformCtDisk', 1]
+      - frame:  frame_joukowskyglobals
+        activewhen: ['JoukowskyDisk', 1]
 
   # ------ TurbineFastLine Globals -------------------
   - <<: *PREDEFINED_ROTOR_DIAMETER
