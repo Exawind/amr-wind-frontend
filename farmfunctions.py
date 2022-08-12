@@ -1217,12 +1217,15 @@ def sweep_SetupRunParamSweep(self, verbose=False):
         AMRinputfile = casename+".inp"
         self.writeAMRWindInput(AMRinputfile)
 
-        # Handle submission
-        submit = self.inputvars['sweep_submitjob'].getval()
-        if submit:
-            # TO-DO: handle case submission
-            print('NOT IMPLEMENTED: case submission')
-        case['submitted'] = False
+        # Write the submission file
+        writesubmit = self.inputvars['sweep_createsubmitscript'].getval()
+        dosubmit    = self.inputvars['sweep_submitjob'].getval()
+        if writesubmit:
+            AMRsubmitfile = casename+".sh"
+            self.submitscript_savescript(scriptfilename=AMRsubmitfile, 
+                                         submit=dosubmit)
+
+        case['submitted'] = dosubmit
         
 
         # Update the run list

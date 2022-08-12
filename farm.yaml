@@ -428,6 +428,7 @@ inputwidgets:
     frame:      frame_runsweep2
     label:      Create submission script
     inputtype:  bool
+    defaultval: False
     outputdef:
       help:      Create a submission script for each case
       farmsetup: sweep_createsubmitscript

@@ -1723,7 +1723,8 @@ class MyApp(tkyg.App, object):
                            title='Preview submit script')
         return
 
-    def submitscript_savescript(self, window=None, submit=False, guimesg=False):
+    def submitscript_savescript(self, window=None, submit=False, guimesg=False,
+                                scriptfilename=None):
         if len(self.savefile)==0: self.saveAMRWindInputGUI()
         submitscript = self.submitscript_makescript(self.savefile, 
                                                     window=window)
@@ -1734,7 +1735,10 @@ class MyApp(tkyg.App, object):
 
         # Save the script
         submitparams   = self.popup_storteddata['submitscript']
-        filename       = submitparams['submitscript_filename']
+        if scriptfilename is None:
+            filename       = submitparams['submitscript_filename']
+        else:
+            filename       = scriptfilename
         if len(filename)>0:
             f=open(filename, "w")
             f.write(formattedscript)
