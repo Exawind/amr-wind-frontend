@@ -2079,6 +2079,11 @@ buttons:
     col:     2
     command: self.ABL_calculateWDirWS
 
+  - name:    plotABLTprofile
+    text:    Plot profile
+    frame:   frame_ABLTprof
+    command: partial(self.plotGenericProfile, 'temperature_values', 'temperature_heights', title='Temperature Profile', xlabel='Temperature [K]', ylabel='z [m]')
+
   - name: writeInput
     text: dump input file
     tab:  Expert

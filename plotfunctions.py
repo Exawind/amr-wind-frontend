@@ -444,7 +444,8 @@ def plotDomain(self, ax=None):
     return
 
 # -------------------------------------------------------------
-def plotGenericProfile(self, xvar, yvar, useInputVar=True, ax=None):
+def plotGenericProfile(self, xvar, yvar, useInputVar=True, ax=None, 
+                       title='', xlabel='', ylabel=''):
     """
     Plots a profile given by the xvar and yvar string variables
     """
@@ -459,8 +460,11 @@ def plotGenericProfile(self, xvar, yvar, useInputVar=True, ax=None):
     xarr = np.array([float(x) for x in xstr.split()])
     yarr = np.array([float(y) for y in ystr.split()])
 
-    # Plto it
+    # Plot it
     ax.plot(xarr, yarr)
+    if xlabel != '': ax.set_xlabel(xlabel)
+    if ylabel != '': ax.set_ylabel(ylabel)
+    if title  != '': ax.set_title(title)
     
     self.figcanvas.draw()
     return
