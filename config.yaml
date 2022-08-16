@@ -456,8 +456,8 @@ inputwidgets:
     label:      Godunov type
     frame:      frame_godunov
     inputtype:  str
-    optionlist: [ppm, ppm_nolim, weno]
-    defaultval: weno
+    optionlist: [ppm, ppm_nolim, weno, weno_z]
+    defaultval: weno_z
     outputdef:
       AMR-Wind: incflo.godunov_type
 
