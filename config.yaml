@@ -2946,7 +2946,7 @@ popupwindow:
       inputtype:  bool
       defaultval: True
       outputdef:
-        AMR-Wind: Actuator.use_tip_correction
+        AMR-Wind: use_tip_correction
         help:     Turn on tip correction
     - name:       Actuator_use_root_correction
       label:      Use root correction
@@ -2954,7 +2954,7 @@ popupwindow:
       inputtype:  bool
       defaultval: True
       outputdef:
-        AMR-Wind: Actuator.use_root_correction
+        AMR-Wind: use_root_correction
         help:     Turn on root correction
 
     buttons:
@@ -3098,14 +3098,14 @@ popupwindow:
       inputtype:  bool
       defaultval: True
       outputdef:
-        AMR-Wind: Actuator.use_tip_correction
+        AMR-Wind: use_tip_correction
         help:     Turn on tip correction
     - name:       Actuator_use_root_correction
       label:      Use root correction
       inputtype:  bool
       defaultval: True
       outputdef:
-        AMR-Wind: Actuator.use_root_correction
+        AMR-Wind: use_root_correction
         help:     Turn on root correction
 
 
