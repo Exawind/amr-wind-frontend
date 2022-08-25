@@ -3025,6 +3025,13 @@ popupwindow:
       name:       Actuator_nacelle_area
     - <<: *PREDEFINED_OUTPUT_FREQUENCY
       name:       Actuator_output_frequency
+    - name:       Actuator_diameters_to_sample
+      label:      Sample distance
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        AMR-Wind: diameters_to_sample
+        help:     Number of rotor diameters to sample upstream for velocity
     - name:       Actuator_thrust_coeff
       label:      Thrust coefficient
       inputtype:  str
