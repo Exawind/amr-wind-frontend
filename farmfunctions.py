@@ -223,7 +223,7 @@ def calc_FarmAvgProp(self):
     keystr       = lambda n, d1, d2: d2.name
     #print(alltags)
     acceptableTurbTypes = ['TurbineFastLine', 'TurbineFastDisk',
-                           'UniformCtDisk' ]
+                           'UniformCtDisk' , 'JoukowskyDisk']
     Nturbs       = 0
     AvgHH        = 0.0
     AvgTurbD     = 0.0
@@ -240,6 +240,8 @@ def calc_FarmAvgProp(self):
             #AvgTurbD  += tdict['Actuator_rotor_diameter']
             #print(tdict['Actuator_base_position'])
             #print(tdict['Actuator_hub_height'])
+        else:
+            print('ERROR: '+tdict['Actuator_type']+' is not a recognized disk type')
     if Nturbs>0:
         AvgHH     /= Nturbs
         AvgTurbD  /= Nturbs
