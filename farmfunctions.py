@@ -537,12 +537,16 @@ def turbines_createAllTurbines(self):
         # WARNING
         print("ERROR: Farm domain size is not valid!")
         return
+    if self.inputvars['turbines_freespace'].getval():
+        groundoffset = -0.5*domainsize[2]
+    else:
+        groundoffset = 0.0
     corner1 = [AvgCenter[0] - 0.5*domainsize[0],
                AvgCenter[1] - 0.5*domainsize[1],
-               0.0]
+               0.0+groundoffset]
     corner2 = [AvgCenter[0] + 0.5*domainsize[0],
                AvgCenter[1] + 0.5*domainsize[1],
-               domainsize[2]]
+               domainsize[2]+groundoffset]
     self.inputvars['prob_lo'].setval(corner1)
     self.inputvars['prob_hi'].setval(corner2)
 

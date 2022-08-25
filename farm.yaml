@@ -253,6 +253,15 @@ inputwidgets:
       help:     Size of the computational domain in meters
       farmsetup: turbines_domainsize
 
+  - name:       turbines_freespace
+    frame:      frame_farmturbines2
+    label:      Free space
+    inputtype:  bool
+    defaultval: False
+    outputdef:
+      help:     Make the domain free space (no bround)
+      farmsetup: turbines_freespace
+
   - name:       turbines_backgroundmeshsize
     frame:      frame_farmturbines2
     label:      Background mesh size [m]
