@@ -3039,13 +3039,13 @@ popupwindow:
       outputdef:
         AMR-Wind: wind_speed
         help:     "Wind speed table: if Ct is not a single value, list of wind speeds corresponding to Ct values"
-    - name:       Actuator_angular_velocity
-      label:      Angular velocity table
+    - name:       Actuator_rpm
+      label:      Rotor speed table
       inputtype:  str
       defaultval: 
       outputdef:
-        AMR-Wind: angular_velocity
-        help:     Angular velocity table [rad/s] for Joukowsky Disk
+        AMR-Wind: rpm
+        help:     Rotor speed table [rpm] table for Joukowsky Disk
     - name:       turbinetype_filelocation  # yaml file with the definitions
       label:      File location
       inputtype:  str
