@@ -25,7 +25,7 @@ frames:
   - name:  frame_godunov
     tab:   Simulation
     row:   4
-    title: Godunov parameters
+    title: Godunov and incflo parameters
   - name:  frame_incflo
     tab:   Simulation
     row:   5
@@ -460,6 +460,16 @@ inputwidgets:
     defaultval: weno_z
     outputdef:
       AMR-Wind: incflo.godunov_type
+
+  - name:       diffusion_type
+    label:      Diffusion scheme
+    frame:      frame_godunov
+    inputtype:  str
+    optionlist: [0, 1, 2]
+    defaultval:
+    outputdef:
+      AMR-Wind: incflo.diffusion_type
+      help:     Type of diffusion scheme used.  0 = explicit diffusion, 1 = Crank-Nicolson, 2 = fully implicit
 
   # ---------- Turbulence parameters --------------------------
   - name:       turbulence_model
