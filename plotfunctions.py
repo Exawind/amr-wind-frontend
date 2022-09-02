@@ -216,15 +216,16 @@ def plotDomain(self, ax=None):
     ax.set_ylim([Cy-Ly*0.55, Cy+Ly*0.55])
 
     if plotparams['plot_windnortharrows']:
-        # Plot the wind vector
-        arrowlength = 0.1*np.linalg.norm([Lx, Ly])
-        plotwindvec = np.array(windvec)
-        plotwindvec = plotwindvec/np.linalg.norm(plotwindvec)*arrowlength
-        windcenter = [Cx, Cy, windh]
-        if np.linalg.norm([plotwindvec[ix], plotwindvec[iy]])>0.0:
-            ax.arrow(windcenter[ix], windcenter[iy], 
-                     plotwindvec[ix], plotwindvec[iy], 
-                     width=0.05*arrowlength)
+        if (windvec is not None) and (windh is not None):
+            # Plot the wind vector
+            arrowlength = 0.1*np.linalg.norm([Lx, Ly])
+            plotwindvec = np.array(windvec)
+            plotwindvec = plotwindvec/np.linalg.norm(plotwindvec)*arrowlength
+            windcenter = [Cx, Cy, windh]
+            if np.linalg.norm([plotwindvec[ix], plotwindvec[iy]])>0.0:
+                ax.arrow(windcenter[ix], windcenter[iy], 
+                         plotwindvec[ix], plotwindvec[iy], 
+                         width=0.05*arrowlength)
 
         # Plot the north arrow
         northlength = 0.1*np.linalg.norm([Lx, Ly])
