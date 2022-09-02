@@ -1206,6 +1206,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABLForcing.abl_forcing_height
 
+  - name:       velocity_timetable
+    label:      Velocity time table
+    frame:      frame_ABLphysics
+    inputtype:  filename
+    row:        7
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABLForcing.velocity_timetable
+
   - name:       kappa
     label:      kappa
     frame:      frame_ABLprop
