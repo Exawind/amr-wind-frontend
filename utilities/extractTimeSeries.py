@@ -11,10 +11,11 @@ def findMatchingPt(ptlist, p, eps):
     # Error out
     raise Exception("error in findMatchingPt") 
         
-def writeTimeSeries(ncdat, xvec, yvec, zvec, savestring, 
-                    group='p_h', useindices=False, verbose=True):
+def getTimeSeries(ncdat, xvec, yvec, zvec, group, 
+                  savestring='', useindices=False, verbose=True):
     """
-    Average the spectra over multiple x, y, z locations
+    Extract the velocity time-history multiple x, y, z locations from
+    planar probe data.
     """
     #Nt     = ncdat.dimensions['num_time_steps'].size
     Npts   = ncdat[group].dimensions['num_points'].size
@@ -27,6 +28,7 @@ def writeTimeSeries(ncdat, xvec, yvec, zvec, savestring,
     Navg   = 0
     zerocol = np.zeros(len(t))
     all_ulongavgs = []
+    returndat = {}
     for x in xvec:
         for y in yvec:
             for z in zvec:
@@ -62,9 +64,12 @@ def writeTimeSeries(ncdat, xvec, yvec, zvec, savestring,
                                      icol, jcol, kcol, 
                                      xcol, ycol, zcol, 
                                      u, v, w))
-                fname=savestring%(x,y,z)
-                np.savetxt(fname, savedat.transpose())
-                if verbose: print("saved "+fname)
+                returndat[(x,y,z)] = savedat
+                if savestring != '':
+                    fname=savestring%(x,y,z)
+                    np.savetxt(fname, savedat.transpose())
+                    if verbose: print("saved "+fname)
+    return returndat
 
 
 # ========================================================================
@@ -157,5 +162,5 @@ or
     print("zpts           = "+repr(zpts))
 
     ncdata   = Dataset(filename, 'r')
-    writeTimeSeries(ncdata, xpts, ypts, zpts, savefile, 
-                    group=group, useindices=useindices, verbose=True)
+    getTimeSeries(ncdata, xpts, ypts, zpts, group, savestring=savefile,
+                    useindices=useindices, verbose=True);
