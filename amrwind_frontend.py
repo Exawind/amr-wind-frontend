@@ -267,6 +267,8 @@ class MyApp(tkyg.App, object):
         Write out the input file for AMR-Wind
         TODO: Do more sophisticated output control later
         """
+        self.postLoad_SetOnOffCtrlElem()
+
         inputdict = self.getDictFromInputs('AMR-Wind')
 
         # Get the sampling outputs
@@ -635,6 +637,11 @@ class MyApp(tkyg.App, object):
             self.inputvars['ABL_useboundaryplane'].setval(True)
         return
 
+    def postLoad_SetOnOffCtrlElem(self):
+        self.inputvars['zlo_type'].onoffctrlelem(None)
+        self.inputvars['zlo_temperature_type'].onoffctrlelem(None)
+        return
+
     def loadAMRWindInput(self, filename, string=False, printunused=False):
         if string:
             amrdict=self.AMRWindStringToDict(filename)
@@ -671,6 +678,8 @@ class MyApp(tkyg.App, object):
         for key,  inputvar in self.inputvars.items():
             if self.inputvars[key].ctrlelem is not None:
                 self.inputvars[key].onoffctrlelem(None)
+
+        self.postLoad_SetOnOffCtrlElem()
 
         self.extradictparams = extradict
         return extradict

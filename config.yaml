@@ -801,7 +801,7 @@ inputwidgets:
     frame:      frame_xBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    defaultval: no_slip_wall
+    defaultval: 
     outputdef:
       AMR-Wind: xhi.type
 
@@ -848,7 +848,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    defaultval: no_slip_wall
+    defaultval: 
     outputdef:
       AMR-Wind: ylo.type
 
@@ -857,7 +857,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    defaultval: wall_model
+    defaultval: 
     outputdef:
       AMR-Wind: ylo.temperature_type
 
@@ -896,7 +896,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    defaultval: no_slip_wall
+    defaultval: 
     outputdef:
       AMR-Wind: yhi.type
 
@@ -905,7 +905,7 @@ inputwidgets:
     frame:      frame_yBC
     inputtype:  str
     optionlist: *PREDEFINED_BCTYPES
-    defaultval: fixed_gradient
+    defaultval: 
     outputdef:
       AMR-Wind: yhi.temperature_type
 
@@ -947,6 +947,11 @@ inputwidgets:
     defaultval: no_slip_wall
     outputdef:
       AMR-Wind: zlo.type
+    ctrlelem:
+      - frame:      frame_ABLprop
+        activewhen: ['', 'wall_model']
+      - frame:      frame_ABLTprof
+        activewhen: ['', 'wall_model']
 
   - name:       zlo_temperature_type
     label:      "zlo temp BC"
@@ -956,6 +961,11 @@ inputwidgets:
     defaultval: #wall_model
     outputdef:
       AMR-Wind: zlo.temperature_type
+    ctrlelem:
+      - frame:      frame_ABLprop
+        activewhen: ['', 'wall_model']
+      - frame:      frame_ABLTprof
+        activewhen: ['', 'wall_model']
 
   - name:       zlo_density
     label:      "zlo density"
