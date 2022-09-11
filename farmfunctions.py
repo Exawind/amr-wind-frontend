@@ -401,7 +401,7 @@ def refine_createAllZones(self):
     self.ABL_calculateWDirWS()
 
     # Delete all old zones (if necessary)
-    if self.inputvars['refine_deleteprev']:
+    if self.inputvars['refine_deleteprev'].getval():
         alltagging  = self.listboxpopupwindict['listboxtagging']
         alltagging.deleteall()
 
@@ -582,7 +582,7 @@ def turbines_createAllTurbines(self):
         self.inputvars['physics'].setval(physicsterms)
 
     # Delete all old turbines (if necessary)
-    if self.inputvars['refine_deleteprev']:
+    if self.inputvars['refine_deleteprev'].getval():
         allturbines.deleteall()
 
     # Add all turbines
@@ -1082,7 +1082,7 @@ def sampling_createAllProbes(self, verbose=False):
     self.ABL_calculateWDirWS()
 
     # Delete all old zones (if necessary)
-    if self.inputvars['sampling_deleteprev']:
+    if self.inputvars['sampling_deleteprev'].getval():
         allsampling  = self.listboxpopupwindict['listboxsampling']
         allsampling.deleteall()
 
