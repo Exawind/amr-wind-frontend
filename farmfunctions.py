@@ -537,32 +537,36 @@ def turbines_createAllTurbines(self):
     AvgCenter = getTurbAvgCenter(self, alldf)    
     #print("AvgCenter = "+repr(AvgCenter))
 
-    # Get the farm domain size
-    domainsize   = self.inputvars['turbines_domainsize'].getval()    
-    if domainsize is None:
-        # WARNING
-        print("ERROR: Farm domain size is not valid!")
-        return
-    if self.inputvars['turbines_freespace'].getval():
-        groundoffset = -0.5*domainsize[2]
-    else:
-        groundoffset = 0.0
-    corner1 = [AvgCenter[0] - 0.5*domainsize[0],
-               AvgCenter[1] - 0.5*domainsize[1],
-               0.0+groundoffset]
-    corner2 = [AvgCenter[0] + 0.5*domainsize[0],
-               AvgCenter[1] + 0.5*domainsize[1],
-               domainsize[2]+groundoffset]
-    self.inputvars['prob_lo'].setval(corner1)
-    self.inputvars['prob_hi'].setval(corner2)
+    createnewdomain = self.inputvars['turbines_createnewdomain'].getval()
 
-    # Set the mesh size (if necessary)
-    backgrounddx = self.inputvars['turbines_backgroundmeshsize'].getval()
-    if backgrounddx is not None:
-        Nx = int(domainsize[0]/backgrounddx)
-        Ny = int(domainsize[1]/backgrounddx)
-        Nz = int(domainsize[2]/backgrounddx)
-        self.inputvars['n_cell'].setval([Nx, Ny, Nz])
+    # Set prob_lo/prob_hi/n_cell if necessary
+    if createnewdomain:
+        # Get the farm domain size
+        domainsize   = self.inputvars['turbines_domainsize'].getval()    
+        if domainsize is None:
+            # WARNING
+            print("ERROR: Farm domain size is not valid!")
+            return
+        if self.inputvars['turbines_freespace'].getval():
+            groundoffset = -0.5*domainsize[2]
+        else:
+            groundoffset = 0.0
+            corner1 = [AvgCenter[0] - 0.5*domainsize[0],
+                       AvgCenter[1] - 0.5*domainsize[1],
+                       0.0+groundoffset]
+            corner2 = [AvgCenter[0] + 0.5*domainsize[0],
+                       AvgCenter[1] + 0.5*domainsize[1],
+                       domainsize[2]+groundoffset]
+        self.inputvars['prob_lo'].setval(corner1)
+        self.inputvars['prob_hi'].setval(corner2)
+
+        # Set the mesh size (if necessary)
+        backgrounddx = self.inputvars['turbines_backgroundmeshsize'].getval()
+        if backgrounddx is not None:
+            Nx = int(domainsize[0]/backgrounddx)
+            Ny = int(domainsize[1]/backgrounddx)
+            Nz = int(domainsize[2]/backgrounddx)
+            self.inputvars['n_cell'].setval([Nx, Ny, Nz])
 
     # Make sure to add turbines to simulation
     source_terms = self.inputvars['ICNS_source_terms'].getval()
@@ -570,6 +574,12 @@ def turbines_createAllTurbines(self):
         source_terms.append('ActuatorForcing')
         self.inputvars['ICNS_source_terms'].setval(source_terms)
     #print(source_terms)
+
+    # Make sure to add Actuator to icns.physics
+    physicsterms = self.inputvars['physics'].getval()
+    if 'Actuator' not in physicsterms:
+        physicsterms.append('Actuator')
+        self.inputvars['physics'].setval(physicsterms)
 
     # Delete all old turbines (if necessary)
     if self.inputvars['refine_deleteprev']:
@@ -639,16 +649,27 @@ def turbines_previewAllTurbines(self, ax=None):
     alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
     #for turb in alldf: print("%10s %f %f %10s"%(turb['name'], turb['x'], turb['y'], turb['type']))
 
-    # Calculate the farm center
-    AvgCenter = getTurbAvgCenter(self, alldf)    
-    #print("AvgCenter = "+repr(AvgCenter))
+    createnewdomain = self.inputvars['turbines_createnewdomain'].getval()
+
+    # Set prob_lo/prob_hi/n_cell if necessary
+    if createnewdomain:
+        # Calculate the farm center
+        AvgCenter = getTurbAvgCenter(self, alldf)    
+        #print("AvgCenter = "+repr(AvgCenter))
             
-    # Get the farm domain size
-    domainsize   = self.inputvars['turbines_domainsize'].getval()    
-    if domainsize is None:
-        # WARNING
-        print("ERROR: Farm domain size is not valid!")
-        return
+        # Get the farm domain size
+        domainsize   = self.inputvars['turbines_domainsize'].getval()    
+        if domainsize is None:
+            # WARNING
+            print("ERROR: Farm domain size is not valid!")
+            return
+    else:
+        corner1 = self.inputvars['prob_lo'].getval()
+        corner2 = self.inputvars['prob_hi'].getval()
+        domainsize = np.array(corner2) - np.array(corner1)
+        AvgCenter  = (np.array(corner2) + np.array(corner1))*0.5
+
+    # Set the corner points
     corner1 = [AvgCenter[0] - 0.5*domainsize[0],
                AvgCenter[1] - 0.5*domainsize[1],
                0.0]

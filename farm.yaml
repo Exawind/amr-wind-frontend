@@ -253,6 +253,15 @@ inputwidgets:
       help:     Size of the computational domain in meters
       farmsetup: turbines_domainsize
 
+  - name:       turbines_createnewdomain
+    frame:      frame_farmturbines2
+    label:      Create new domain
+    inputtype:  bool
+    defaultval: True
+    outputdef:
+      help:     Delete previous domain and level 0 mesh, and create new one
+      farmsetup: turbines_createnewdomain
+
   - name:       turbines_freespace
     frame:      frame_farmturbines2
     label:      Free space
