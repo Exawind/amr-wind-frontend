@@ -551,12 +551,12 @@ def turbines_createAllTurbines(self):
             groundoffset = -0.5*domainsize[2]
         else:
             groundoffset = 0.0
-            corner1 = [AvgCenter[0] - 0.5*domainsize[0],
-                       AvgCenter[1] - 0.5*domainsize[1],
-                       0.0+groundoffset]
-            corner2 = [AvgCenter[0] + 0.5*domainsize[0],
-                       AvgCenter[1] + 0.5*domainsize[1],
-                       domainsize[2]+groundoffset]
+        corner1 = [AvgCenter[0] - 0.5*domainsize[0],
+                   AvgCenter[1] - 0.5*domainsize[1],
+                   0.0+groundoffset]
+        corner2 = [AvgCenter[0] + 0.5*domainsize[0],
+                   AvgCenter[1] + 0.5*domainsize[1],
+                   domainsize[2]+groundoffset]
         self.inputvars['prob_lo'].setval(corner1)
         self.inputvars['prob_hi'].setval(corner2)
 
