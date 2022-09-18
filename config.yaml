@@ -1185,7 +1185,7 @@ inputwidgets:
     label:      Wind vector
     frame:      frame_ABLphysics
     inputtype:  [float, float, float] 
-    defaultval: [10.0, 0.0, 0.0]
+    defaultval: #[10.0, 0.0, 0.0]
     outputdef:
       AMR-Wind: incflo.velocity
 
@@ -1300,6 +1300,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABL.mo_gamma_h
       help:     Monin-Obukhov Gamma h parameter
+
+  - name:       log_law_height
+    label:      Log law height
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.log_law_height
 
   - name:       random_gauss_mean
     label:      Random Gauss mean
