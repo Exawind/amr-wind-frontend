@@ -16,7 +16,7 @@ What can it do?
 ## Downloading 
 You can obtain `amrwind-frontend` by downloading it from github directly:
 ```bash
-$ git clone --recursive git@github.com:lawrenceccheung/amrwind-frontend.git
+$ git clone --recursive git@github.com:Exawind/amr-wind-frontend.git
 ```
 ### Dependencies
 

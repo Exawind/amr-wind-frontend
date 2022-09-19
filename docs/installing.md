@@ -5,21 +5,27 @@
 You can obtain `amrwind-frontend` by downloading it from github directly with a `git clone` command:
 
 ```bash
-$ git clone --recursive git@github.com:lawrenceccheung/amrwind-frontend.git
-Cloning into 'amrwind-frontend'...
-remote: Enumerating objects: 1340, done.
-remote: Counting objects: 100% (173/173), done.
-remote: Compressing objects: 100% (145/145), done.
-remote: Total 1340 (delta 66), reused 118 (delta 27), pack-reused 1167
-Receiving objects: 100% (1340/1340), 4.22 MiB | 11.56 MiB/s, done.
-Resolving deltas: 100% (763/763), done.
+$ git clone --recursive git@github.com:Exawind/amr-wind-frontend.git
+Cloning into 'amr-wind-frontend'...
+Warning: the ECDSA host key for 'github.com' differs from the key for the IP address '140.82.113.4'
+Offending key for IP in /ascldap/users/lcheung/.ssh/known_hosts:111
+Matching host key in /ascldap/users/lcheung/.ssh/known_hosts:132
+X11 forwarding request failed on channel 0
+remote: Enumerating objects: 1460, done.
+remote: Counting objects: 100% (1460/1460), done.
+remote: Compressing objects: 100% (602/602), done.
+remote: Total 1460 (delta 856), reused 1455 (delta 851), pack-reused 0
+Receiving objects: 100% (1460/1460), 4.17 MiB | 0 bytes/s, done.
+Resolving deltas: 100% (856/856), done.
 Submodule 'tkyamlgui' (https://github.com/lawrenceccheung/tkyamlgui.git) registered for path 'tkyamlgui'
-Cloning into '/gpfs/lcheung/2022/amrwind-frontend-tutorial/amrwind-frontend/tkyamlgui'...
-remote: Enumerating objects: 331, done.        
-remote: Total 331 (delta 0), reused 0 (delta 0), pack-reused 331        
-Receiving objects: 100% (331/331), 61.82 KiB | 711.00 KiB/s, done.
+Cloning into 'tkyamlgui'...
+remote: Enumerating objects: 334, done.
+remote: Counting objects: 100% (3/3), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 334 (delta 0), reused 1 (delta 0), pack-reused 331
+Receiving objects: 100% (334/334), 77.67 KiB | 0 bytes/s, done.
 Resolving deltas: 100% (212/212), done.
-Submodule path 'tkyamlgui': checked out '856069ce5097a38c1eb4eeb6ad8ef1b2e13c44c4'
+Submodule path 'tkyamlgui': checked out 'd3a9d0543e5a8367d3a9c11980b33aeb7d0e902c'
 ```
 
 Then, if that command worked out properly, you should be able to do:  
