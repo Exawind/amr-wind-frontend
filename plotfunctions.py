@@ -8,6 +8,7 @@
 """
 Plotting functions
 """
+import os
 import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
@@ -439,6 +440,14 @@ def plotDomain(self, ax=None):
 
             plotTurbine(ax, basepos, turbhh, turbD, yaw, ix, iy,
                         lw=1, color='k', alpha=0.75)
+
+    # Plot the turbines
+    # ---------------------------
+    if plotparams['plot_florissoln']:
+        if not os.path.isfile(self.inputvars['floris_inputfile'].getval()):
+            print('Need to run Farm > Setup FLORIS > Generate')
+        else:
+            print('Plotting wakes')
 
     # --------------------------------
     # Set some plot formatting parameters
