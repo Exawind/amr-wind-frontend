@@ -484,7 +484,7 @@ inputwidgets:
     label:      YAML file
     inputtype:  str #filename
     row:        1
-    defaultval: 'floris.inp'
+    defaultval: 'floris.yaml'
     entryopt:
       width:    25
     fileopenopt:
@@ -492,7 +492,6 @@ inputwidgets:
       kwargs:
         filetypes:
           - ["YAML files", "*.yaml"]
-          - ["input files", "*.inp"]
           - ["all files", "*.*"]
     outputdef:
       help:     YAML file with FLORIS settings
