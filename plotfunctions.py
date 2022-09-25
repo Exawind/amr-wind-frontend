@@ -441,13 +441,48 @@ def plotDomain(self, ax=None):
             plotTurbine(ax, basepos, turbhh, turbD, yaw, ix, iy,
                         lw=1, color='k', alpha=0.75)
 
-    # Plot the turbines
-    # ---------------------------
+    # Plot the FLORIS wake solution
+    # -----------------------------
     if plotparams['plot_florissoln']:
-        if not os.path.isfile(self.inputvars['floris_inputfile'].getval()):
-            print('Need to run Farm > Setup FLORIS > Generate')
+        try:
+            from floris.tools import FlorisInterface
+        except ImportError:
+            print('Need to install FLORIS')
         else:
-            print('Plotting wakes')
+            inpfile = self.inputvars['floris_inputfile'].getval()
+            if not os.path.isfile(inpfile):
+                print('Need to run Farm > Setup FLORIS > Generate')
+            else:
+                print('Running FLORIS')
+                fi = FlorisInterface(inpfile)
+
+                # can optionally override wind speed/dir here
+                #fi.reinitialize(wind_directions=[wdir], wind_speeds=[wspd])
+
+                # setup yaw (offset) angles, relative to wind direction
+                self.ABL_calculateWDirWS()
+                wdir = self.inputvars['ABL_winddir'].getval()
+                yaw_angles = []
+                allturbines  = self.listboxpopupwindict['listboxactuator']
+                alltags      = allturbines.getitemlist()
+                keystr       = lambda n, d1, d2: d2.name
+                for turb in alltags:
+                    tdict = allturbines.dumpdict('AMR-Wind', subset=[turb], keyfunc=keystr)
+                    yaw_angles.append(wdir - tdict['Actuator_yaw'])
+                yaw_angles = np.array([[yaw_angles]])
+
+                # finally, run FLORIS
+                fi.calculate_wake(yaw_angles=yaw_angles)
+                nx = self.inputvars['n_cell'].getval()[0]
+                ny = self.inputvars['n_cell'].getval()[1]
+                zhub = 90.0 # TODO update this
+                horizontal_plane = fi.calculate_horizontal_plane(
+                    x_resolution=nx,
+                    y_resolution=ny,
+                    height=zhub,
+                    yaw_angles=yaw_angles)
+
+                print('Plotting wakes')
 
     # --------------------------------
     # Set some plot formatting parameters
