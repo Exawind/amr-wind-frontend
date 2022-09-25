@@ -457,11 +457,12 @@ def plotDomain(self, ax=None):
                 fi = FlorisInterface(inpfile)
 
                 # can optionally override wind speed/dir here
+                self.ABL_calculateWDirWS()
+                wspd = self.inputvars['ABL_windspeed'].getval()
+                wdir = self.inputvars['ABL_winddir'].getval()
                 #fi.reinitialize(wind_directions=[wdir], wind_speeds=[wspd])
 
                 # setup yaw (offset) angles, relative to wind direction
-                self.ABL_calculateWDirWS()
-                wdir = self.inputvars['ABL_winddir'].getval()
                 yaw_angles = []
                 allturbines  = self.listboxpopupwindict['listboxactuator']
                 alltags      = allturbines.getitemlist()
@@ -482,7 +483,29 @@ def plotDomain(self, ax=None):
                     height=zhub,
                     yaw_angles=yaw_angles)
 
+                # calculate normalized wind speed
+                print('Postprocessing FLORIS')
+                df = horizontal_plane.df.set_index(['x1','x2'])
+                floris_vel = np.sqrt(df['u']**2 + df['v']**2) / wspd
+                floris_vel = floris_vel.sort_index().unstack()
+
+                # rotate grid from wind frame back to inertial frame
+                # note: currently FLORIS v3.2 does not provide this function
+                xx,yy = np.meshgrid(floris_vel.index, floris_vel.columns, indexing='ij')
+                coordinates = fi.floris.grid.turbine_coordinates_array  # shape==(Nturb,3)
+                x_center_of_rotation = (np.min(coordinates[:,0]) + np.max(coordinates[:,0])) / 2
+                y_center_of_rotation = (np.min(coordinates[:,1]) + np.max(coordinates[:,1])) / 2
+                x_delta = xx - x_center_of_rotation
+                y_delta = yy - y_center_of_rotation
+                wind_delta = np.radians(wdir - 270)
+                xx0 =  x_delta * np.cos(wind_delta) + y_delta * np.sin(wind_delta) + x_center_of_rotation
+                yy0 = -x_delta * np.sin(wind_delta) + y_delta * np.cos(wind_delta) + y_center_of_rotation
+
                 print('Plotting wakes')
+                cm = ax.contour(xx0, yy0, floris_vel,
+                                levels=[0.5, 0.75, 0.9, 0.95, 0.99, 0.995],
+                                linewidths=0.5)
+                #cb = ax.colorbar(cm)
 
     # --------------------------------
     # Set some plot formatting parameters
