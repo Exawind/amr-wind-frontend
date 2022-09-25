@@ -812,6 +812,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
     from farmfunctions import sampling_createAllProbes
     from farmfunctions import sweep_SetupRunParamSweep
+    from farmfunctions import floris_setup
 
     def getMaxLevel(self):
         max_level = 0

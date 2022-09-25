@@ -1281,6 +1281,41 @@ def sweep_SetupRunParamSweep(self, verbose=False):
         
     return
 
+def floris_setup(self, templatefile='floris_template.yaml', verbose=False):
+    if not useruamel:
+        print('Ruamel not found, FLORIS inputs not generated')
+        return
+
+    # Go thorugh all turbines
+    layout_x = []
+    layout_y = []
+    allturbines  = self.listboxpopupwindict['listboxactuator']
+    alltags      = allturbines.getitemlist()
+    keystr       = lambda n, d1, d2: d2.name
+    for turb in alltags:
+        tdict = allturbines.dumpdict('AMR-Wind', subset=[turb], keyfunc=keystr)
+        layout_x.append(tdict['Actuator_base_position'][0])
+        layout_y.append(tdict['Actuator_base_position'][1])
+
+    # modify template
+    with open(templatefile,'r') as f:
+        inp = yaml.load(f, yaml.RoundTripLoader) # _should_ preserve comments
+    inp['farm']['layout_x'] = layout_x
+    inp['farm']['layout_y'] = layout_y
+    self.ABL_calculateWDirWS()
+    wspd = self.inputvars['ABL_windspeed'].getval()
+    wdir = self.inputvars['ABL_winddir'].getval()
+    inp['flow_field']['wind_speeds'] = [wspd]
+    inp['flow_field']['wind_directions'] = [wdir]
+
+    # write new input file
+    florisfile = self.inputvars['floris_inputfile'].getval()
+    with open(florisfile,'w') as f:
+        yaml.dump(inp, f, Dumper=yaml.RoundTripDumper)
+    print('wrote FLORIS input file',florisfile)
+
+    return
+
 # ----------- Functions related to I/O  ----------------
 def writeFarmSetupYAML(self, filename, verbose=True):
     """
