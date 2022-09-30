@@ -1082,7 +1082,7 @@ inputwidgets:
     ctrlelem:  
       - frame:  frame_Boussinesq
 
-  - name:       BodyForcing
+  - name:       BodyForce
     label:      add Body force
     frame:      frame_ABLforcing
     inputtype:  bool
@@ -1099,7 +1099,7 @@ inputwidgets:
       - ['BoussinesqForcing', 'BoussinesqBuoyancy',  '']    
       - ['CoriolisForcing',   'CoriolisForcing',     '']
       - ['ActuatorForcing',   'ActuatorForcing',     '']
-      - ['BodyForcing',       'BodyForcing',         '']
+      - ['BodyForce',         'BodyForce',         '']
       - ['ABLMeanBoussinesq', 'ABLMeanBoussinesq',   '']
     outputdef:
       AMR-Wind: ICNS.source_terms
