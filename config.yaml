@@ -108,6 +108,10 @@ frames:
     tab:   IO
     row:   4
     title: Sampling probes
+  - name:  frame_IOaveraging
+    tab:   IO
+    row:   5
+    title: Averaging options
 
   # ==== Refinement frames ==== 
   - name:  frame_refinement
@@ -1514,7 +1518,7 @@ inputwidgets:
     tab:        IO
     row:        3
     inputtype:  listbox
-    optionlist: [sampling]
+    optionlist: [sampling, averaging]
     listboxopt:
       selectmode: multiple
     outputdef:
@@ -1522,6 +1526,8 @@ inputwidgets:
     ctrlelem:
       - frame:  frame_IOsampling
         activewhen: ['sampling', 1]
+      - frame:  frame_IOaveraging
+        activewhen: ['averaging', 1]
 
   - name:       comment_sampling
     frame:      frame_IOsampling
@@ -1543,12 +1549,55 @@ inputwidgets:
     label:      Variables
     frame:      frame_IOsampling
     inputtype:  listbox
-    optionlist: [velocity, temperature, actuator_src_term]
+    optionlist: [velocity, temperature, actuator_src_term, velocity_mean, temperature_mean]
     defaultval: velocity
     listboxopt:
       selectmode: multiple
+      height:   3
+
     outputdef:
       AMR-Wind: sampling.fields
+
+  - name:       comment_averaging
+    frame:      frame_IOaveraging
+    inputtype:  str
+    defaultval: "\n# --- Averaging parameters ---"
+    visible:    False
+    outputdef:
+      AMR-Wind: '#comment_averaging'
+
+  - name:       averaging_type
+    label:      Averaging type
+    frame:      frame_IOaveraging
+    inputtype:  str
+    optionlist: [TimeAveraging]
+    defaultval: TimeAveraging
+    outputdef:
+      AMR-Wind: averaging.type
+
+  - name:       averaging_window
+    label:      Averaging window
+    frame:      frame_IOaveraging
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: averaging.averaging_window
+
+  - name:       averaging_start_time
+    label:      Averaging start time
+    frame:      frame_IOaveraging
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: averaging.averaging_start_time
+
+  - name:       averaging_stop_time
+    label:      Averaging stop time
+    frame:      frame_IOaveraging
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: averaging.averaging_stop_time
 
   # =========== Postprocessing stuff here ====================
   # ----------- ABL postprocessing -----------------
