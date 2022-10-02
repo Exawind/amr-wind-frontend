@@ -995,6 +995,45 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
+    # --- Create rotorplane sampling plane --- 
+    elif probetype == 'rotorplane':
+        # Calculate the geometry
+        upstream   = scale*float(pdict['upstream'])
+        below      = scale*float(pdict['below'])
+        above      = scale*float(pdict['above'])
+        lateral    = scale*float(pdict['lateral'])
+
+        origin     = probecenter - upstream*streamwise
+        origin     = origin - lateral*crossstream - below*vert
+
+        # Calculate dimensions
+        L1         = 2.0*lateral
+        L2         = (above + below)
+
+        # Calculate the grid points
+        if usedx is None:
+            N1 = int(pdict['n1'])
+            N2 = int(pdict['n2'])
+        else:
+            N1 = int(round((L1)/(scale*float(usedx))))+1
+            N2 = int(round((L2)/(scale*float(usedx))))+1
+
+        # Set up the sampling dict
+        sampledict['sampling_name']         = probename
+        sampledict['sampling_type']         = 'PlaneSampler'
+        sampledict['sampling_p_num_points'] = [N1, N2]
+        sampledict['sampling_p_origin']     = origin
+        sampledict['sampling_p_axis1']      = L1*crossstream
+        sampledict['sampling_p_axis2']      = L2*vert
+        # Calculate offsets
+        noffsets   = int(getdictval(pdict['options'], 'noffsets', defaultopt))
+        if noffsets>0:
+            downstream = scale*float(pdict['downstream'])        
+            offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
+            offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offsets'] = offsetstr
+
     # --- Create streamwise sampling planes --- 
     elif probetype == 'streamwise':
         # Calculate the geometry
