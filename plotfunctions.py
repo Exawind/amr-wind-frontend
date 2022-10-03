@@ -301,9 +301,10 @@ def plotDomain(self, ax=None):
                 pts = np.array(pts)
                 ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
         legendprobes=ax.legend(title="Sampling probes", fontsize=10,
-                               loc='upper right')
-        for legend_handle in legendprobes.legendHandles:
-            legend_handle._legmarker.set_markersize(9)
+                               loc='upper right', markerscale=6)
+        # This marker size thing is broken now:
+        #for legend_handle in legendprobes.legendHandles:
+        #    legend_handle._legmarker.set_markersize(9)
         plt.setp(legendprobes.get_title(),fontsize=10)
         ax.add_artist(legendprobes)
 
