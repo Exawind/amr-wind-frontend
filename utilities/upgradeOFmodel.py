@@ -130,6 +130,14 @@ def register_upgradefunction(f, curver, targetver):
 
 @register_upgradefunction((2,5), (2,6))
 def upgrade_2_5(fstfile, verbosity, **kwargs):
+    """
+    Upgrade OpenFAST model from 2.5 to 2.6
+    """
+    # Get the input files
+    AeroDynFile   = OpenFAST.getFileFromFST(fstfile, 'AeroFile')
+    TwrShadowTF   = OpenFAST.getVarFromFST(AeroDynFile, 'TwrShadow').upper()
+    TwrShadowVal  = 1 if TwrShadowTF == 'TRUE' else 0
+    OpenFAST.editFASTfile(AeroDynFile, {'TwrShadow':TwrShadowVal})
     return
 
 @register_upgradefunction((2,6), (3,0))
@@ -296,7 +304,8 @@ if __name__ == "__main__":
 
     # Get the current version of the input file
     initverinfo, match = findOFversion.findversion(filename, verbosity=verbose)
-    print(initverinfo, match.name)
+    #print(initverinfo, match.name)
+    print("Current model version: v%i.%i"%(initverinfo['major'], initverinfo['minor']))
 
     # make sure the model matches a version
     if match != findOFversion.versionmatch.MATCH:
@@ -306,9 +315,9 @@ if __name__ == "__main__":
     # make sure the target version is acceptible
     targetversion = {'major':major, 'minor':minor}
     if checkallowedversions(targetversion):
-        print("Target version "+repr(targetversion)+" OK")
+        print("Target version v%i.%i: OK"%(targetversion['major'], targetversion['minor']))
     else:
-        print("Target version "+repr(targetversion)+" NOT OK")
+        print("Target version v%i.%i: NOT OK"%(targetversion['major'], targetversion['minor']))
 
     #print(upgradefunctionlist)
     #upgrade_2_6(filename, verbose)

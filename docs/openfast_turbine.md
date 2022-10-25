@@ -182,6 +182,23 @@ INTERFACE` section, add these lines for `CABLE CONTROL`:
 
 Then you should be set to run with the newer OpenFAST version.
 
+#### Automated upgrade script
+
+There's a lot of edits in the steps mentioned above, so to make things
+easier, there is a `upgradeOFmodel.py` script available to
+automatically upgrade an OpenFAST model.  For instance, to
+automatically upgrade an OpenFAST model from v2.6 to v3.2, run:
+
+```bash
+$ utilities/upgradeOFmodel.py OpenFAST2p6_test/NREL-2p8-127.fst --major 3 --minor 2
+Current model version: v2.6
+Target version v3.2: OK
+**** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.0
+**** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.1
+**** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.2
+
+```
+
 ## Compiling ROSCO
 
 The next thing we need to do is to get a compiled version of the
