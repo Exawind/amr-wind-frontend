@@ -29,6 +29,8 @@ else:
     from tkinter import filedialog as filedialog
 
 from plotfunctions import plotRectangle
+import OpenFASTutil as OpenFAST
+
 
 # Load UTM library
 try:
@@ -509,6 +511,37 @@ def turbines_getAllTurbineTypes(self):
             includedturbtypes.append(turbtype)
     return includedturbtypes
 
+def isInt(s):
+    try:
+        int(s)
+        return True
+    except:
+        return False
+
+def isFloat(s):
+    try:
+        float(s)
+        return True
+    except:
+        return False
+
+def convertString(s):
+    if isInt(s):   return int(s)
+    if isFloat(s): return float(s)
+    else:          return s
+
+def extractkeystartingwith(d, key, removeprefix=False):
+    """
+    Extract all keys from dict that start with key
+    """
+    returndict = OrderedDict()
+    for k, v in d.items():
+        if k.startswith(key):
+            newkey = k.replace(key, '', 1) if removeprefix else k
+            returndict[newkey] = convertString(v)
+    return returndict
+
+
 def turbines_createAllTurbines(self):
     """
     Create all of the turbines from csv input
@@ -635,6 +668,37 @@ def turbines_createAllTurbines(self):
                                                         turbtype,
                                                         docopy=True, 
                                                         updatefast=True)
+
+        # Process options if using OpenFAST model
+        if turbdict['Actuator_type'] in ['TurbineFastDisk', 'TurbineFastDisk']:
+            fstfile = turbdict['Actuator_openfast_input_file']
+            options = turb['options']
+            #print("turbine fst file: "+fstfile)
+            #print("turbine options: "+repr(options))
+            # Make any edits to the FST file
+            FSToptions = extractkeystartingwith(options, 'FSTparam_', removeprefix=True)
+            if bool(FSToptions):
+                print(FSToptions)
+                OpenFAST.editFASTfile(fstfile, FSToptions)
+            # Make any edits to AeroDyn
+            ADoptions = extractkeystartingwith(options, 'ADparam_', removeprefix=True)
+            if bool(ADoptions):
+                print(ADoptions)
+                ADfile   = OpenFAST.getFileFromFST(fstfile,'AeroFile')
+                OpenFAST.editFASTfile(ADfile, ADoptions)
+            # Make any edits to ServoDyn
+            SDoptions = extractkeystartingwith(options, 'SDparam_', removeprefix=True)
+            if bool(SDoptions):
+                print(SDoptions)
+                SDfile   = OpenFAST.getFileFromFST(fstfile,'ServoFile')
+                OpenFAST.editFASTfile(SDfile, SDoptions)
+            # Make any edits to ElastoDyn
+            EDoptions = extractkeystartingwith(options, 'EDparam_', removeprefix=True)
+            if bool(EDoptions):
+                print(EDoptions)
+                EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
+                OpenFAST.editFASTfile(EDfile, EDoptions)
+
 
         # Add the turbine to the list
         self.add_turbine(turbdict, verbose=False)
