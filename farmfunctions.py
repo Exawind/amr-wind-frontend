@@ -355,7 +355,7 @@ def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
 
     # Get the name
     zonename = 'Farm_level_%i_zone'%(zonedict['level'])
-    zonecenter = np.array([usecenter[0], usecenter[1], AvgHH])
+    zonecenter = np.array([usecenter[0], usecenter[1], usecenter[2]+AvgHH])
     refinedict = refine_calcZone(zonename, zonedict, zonecenter, 
                                  streamwise, crossstream, vert, scale)
 
@@ -448,7 +448,7 @@ def convertLatLong(x, y, useutm, coordsys, stoponerror=True):
     return turbx, turby
 
 
-def getTurbAvgCenter(self, turbdf, updatewidget=True, convertlatlong=True):
+def getTurbAvgCenter(self, turbdf, updatewidget=False, convertlatlong=True):
     """
     Calculate the farm center based on turbine locations
     """
@@ -587,7 +587,8 @@ def turbines_createAllTurbines(self):
 
     # Add all turbines
     # Get the turbine list
-    allturbtypes = self.listboxpopupwindict['listboxturbinetype'].getitemlist()
+    allturbinemodels = self.listboxpopupwindict['listboxturbinetype']
+    allturbtypes     = allturbinemodels.getitemlist()
 
     # Get the wind direction
     self.ABL_calculateWDirWS()
@@ -601,13 +602,26 @@ def turbines_createAllTurbines(self):
             print("ERROR: turbine type %s not found for turbine %s"%(turbtype,turb['name']))
             continue
 
+        modelparams = allturbinemodels.dumpdict('AMR-Wind',
+                                                subset=[turbtype],
+                                                keyfunc=lambda n, d1, d2: d2.name)
+        model_zHH   = modelparams['Actuator_hub_height']
+
         # Set the turbine xy
         turbx, turby = convertLatLong(turb['x'], turb['y'], useutm, coordsys)
 
         # ==== Set the turbine dictionary ====
         turbdict = self.get_default_actuatordict()
         turbdict['Actuator_name']          = turb['name']
-        turbdict['Actuator_base_position'] = [turbx, turby, 0.0]
+
+        # Set the hub-height
+        try:      # Hub-height specified in CSV
+            hubheight = float(turb['hubheight'])
+            turbdict['Actuator_hub_height'] = hubheight
+        except:   # Hub-height left alone
+            hubheight = model_zHH
+
+        turbdict['Actuator_base_position'] = [turbx, turby, hubheight - model_zHH]
 
         # Set the yaw
         try:
@@ -621,13 +635,6 @@ def turbines_createAllTurbines(self):
                                                         turbtype,
                                                         docopy=True, 
                                                         updatefast=True)
-
-        # Set the hub-height 
-        try:
-            hubheight = float(turb['hubheight'])
-            turbdict['Actuator_hub_height'] = hubheight
-        except:
-            pass
 
         # Add the turbine to the list
         self.add_turbine(turbdict, verbose=False)
@@ -933,7 +940,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     # Get the name and probe type
     probename = '%s_%s'%("Farm", pdict['name'])
     probetype = pdict['type'].lower().strip()
-    probecenter = np.array([usecenter[0], usecenter[1], AvgHH])
+    probecenter = np.array([usecenter[0], usecenter[1], usecenter[2]+AvgHH])
 
     sampledict = {}
     # --- Create centerline sampling probes --- 
