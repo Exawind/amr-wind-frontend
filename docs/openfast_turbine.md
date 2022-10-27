@@ -196,7 +196,6 @@ Target version v3.2: OK
 **** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.0
 **** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.1
 **** UPGRADING OpenFAST2p6_test/NREL-2p8-127.fst TO v3.2
-
 ```
 
 ## Compiling ROSCO
@@ -303,6 +302,28 @@ nice and neat.
 ```bash
 $ cp -av libdiscon.so ~/amrwind-frontend/turbines/OpenFAST_NREL2p8-127/
 ```
+
+### ROSCO versions and the DISCON inputs
+
+One additional note about the ROSCO controller and its inputs which is
+relevant to setting up OpenFAST turbine models.  The ROSCO controller
+expects its inputs to be provided via a `DISCON` controller file.
+Unfortunately, each version of ROSCO expects a slightly different
+format for the DISCON input file.
+
+To handle the differences between version 2.3 of ROSCO and version 2.6
+of ROSCO, there is an upgrade utility to automatically modify a v2.3
+DISCON input file and make it compatible with v2.6.
+
+The utility is called `upgradeDISCON23to26.py` and can be used in this
+way:
+
+```bash
+$ python ./utilities/upgradeDISCON23to26.py -v DISCON_V23.IN 
+```
+
+The `-v` flag indicates verbose mode, and provides information about
+what parameters it is inserting/including.
 
 ## Editing the OpenFAST settings
 
