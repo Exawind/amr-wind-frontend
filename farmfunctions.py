@@ -349,15 +349,30 @@ def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 
     # Set the farm center
-    if self.inputvars['turbines_autocalccenter'].getval() == True:
-        usecenter = autofarmcenter
+    center=getdictval(zonedict['options'], 'center', defaultopt).lower()
+    if center == 'specified':
+        defaultctr = {'centerx':0.0, 'centery':0.0, 'centerz':0.0}
+        # Use a specified center location
+        centerx = float(getdictval(zonedict['options'], 'centerx', defaultctr))
+        centery = float(getdictval(zonedict['options'], 'centery', defaultctr))
+        centerz = float(getdictval(zonedict['options'], 'centerz', defaultctr))
+        zonecenter = np.array([centerx, centery, centerz])
+        if 'name' in zonedict['options']:
+            zonename = zonedict['options']['name']
+        else:
+            zonename = 'Farm_level_%i_center_%.1f_%.1f_%.1f'%(zonedict['level'], centerx, centery, centerz)
     else:
-        usecenter = self.inputvars['turbines_farmcenter'].getval()
+        # Use the farm center
+        if self.inputvars['turbines_autocalccenter'].getval() == True:
+            usecenter = autofarmcenter
+            centerz   = usecenter[2] + AvgHH
+        else:
+            usecenter = self.inputvars['turbines_farmcenter'].getval()
+            centerz   = AvgHH
+        zonecenter = np.array([usecenter[0], usecenter[1], centerz])
+        # Get the name
+        zonename = 'Farm_level_%i_zone'%(zonedict['level'])
 
-
-    # Get the name
-    zonename = 'Farm_level_%i_zone'%(zonedict['level'])
-    zonecenter = np.array([usecenter[0], usecenter[1], usecenter[2]+AvgHH])
     refinedict = refine_calcZone(zonename, zonedict, zonecenter, 
                                  streamwise, crossstream, vert, scale)
 
