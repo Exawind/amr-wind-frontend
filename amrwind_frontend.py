@@ -846,7 +846,7 @@ class MyApp(tkyg.App, object):
         self.inputvars['max_level'].setval(max_level)
         return
 
-    def estimateMeshSize(self, **kwargs):
+    def estimateMeshSize(self, verbose=True, **kwargs):
         # Get the domain size
         prob_lo   = self.inputvars['prob_lo'].getval()
         prob_hi   = self.inputvars['prob_hi'].getval()
@@ -900,9 +900,10 @@ class MyApp(tkyg.App, object):
                         vol    = np.abs(np.dot(np.cross(xaxis, yaxis), zaxis))
                         ncells = int(vol/level_cellv[ilevel+1])
                         level_ncells[ilevel+1] += ncells
-                        print("Refinement %s: level %i: %i cells"%(tag, 
-                                                                   ilevel+1,
-                                                                   ncells))
+                        if verbose:
+                            print("Refinement %s: level %i: %i cells"%(tag, 
+                                                                       ilevel+1,
+                                                                       ncells))
                     else:
                         # Refinement not applied
                         print("Refinement %s ignored. Level %i cells, max level %i"%(tag, ilevel+1, max_level)) 
@@ -920,9 +921,10 @@ class MyApp(tkyg.App, object):
                         vol    = np.pi*(outerR**2 - innerR**2)*cylL
                         ncells = int(vol/level_cellv[ilevel+1])
                         level_ncells[ilevel+1] += ncells
-                        print("Refinement %s: level %i: %i cells"%(tag, 
-                                                                   ilevel+1,
-                                                                   ncells))
+                        if verbose:
+                            print("Refinement %s: level %i: %i cells"%(tag, 
+                                                                       ilevel+1,
+                                                                       ncells))
                     else:
                         # Refinement not applied
                         print("Refinement %s ignored. Level %i cells, max level %i"%(tag, ilevel+1, max_level)) 
@@ -942,8 +944,9 @@ class MyApp(tkyg.App, object):
                         boxV    = boxdL[0]*boxdL[1]*boxdL[2]
                         ncells  = int(boxV/level_cellv[ilevel+1])
                         level_ncells[ilevel+1] += ncells
-                        print(" box %i level %i: %i cells"%(ibox, ilevel+1,
-                                                            ncells))
+                        if verbose:
+                            print(" box %i level %i: %i cells"%(ibox, ilevel+1,
+                                                                ncells))
 
         #for k, g in allrefinedicts.items(): print(k)
         # Print a summary of Ncells at each level
