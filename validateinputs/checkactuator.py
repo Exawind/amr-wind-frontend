@@ -160,7 +160,7 @@ class Check_Actuator_FST_Aerodyn():
 
             # Check Density
             checkdensity = {'subname':subname}
-            AirDens = float(OpenFASTutil.getVarFromFST(AeroFileWPath,'AirDens'))
+            AirDens  = OpenFASTutil.getDensity(fstfile, verbose=False)
             incflo_density = app.inputvars['density'].getval()
             if abs(AirDens - incflo_density) > 1.0E-6:
                 checkdensity['result'] = status.WARN

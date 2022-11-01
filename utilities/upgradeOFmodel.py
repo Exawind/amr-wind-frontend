@@ -19,14 +19,6 @@ import argparse
 from enum import Enum
 import fileinput
 
-# list of all allowed versions
-allowedversions = [(2, 5),
-                   (2, 6),
-                   (3, 0),
-                   (3, 1),
-                   (3, 2),
-               ]
-
 def verinfo2tuple(verinfo):
     return (verinfo['major'], verinfo['minor'])
 
@@ -35,7 +27,7 @@ def checkallowedversions(verinfo):
     Check to make sure that the version in verinfo is allowed
     """
     verlist = verinfo2tuple(verinfo) 
-    if verlist in allowedversions:
+    if verlist in findOFversion.allowedversions:
         return True
     else:
         return False

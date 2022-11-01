@@ -11,6 +11,11 @@ from collections            import OrderedDict
 import numpy as np
 import fileinput
 
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+utilpath   = os.path.join(scriptpath, 'utilities')
+sys.path.insert(1, utilpath)
+import findOFversion as findOFversion
+
 def is_number(s):
     try:
         complex(s) # for int, long, float and complex
@@ -178,3 +183,35 @@ def loadalldata(allfiles):
                 print("Data sizes doesn't match")
                 sys.exit(1)
     return adat, header0, units0, names
+
+def getDensity(fstfile, verbose=False):
+    # Get the version of the fstfile
+    ver, match = findOFversion.findversion(fstfile)
+    if verbose: print("Version: "+repr(ver))
+    if (match != findOFversion.versionmatch.MATCH):
+        print("No matching version found for "+fstfile)
+        sys.exit(1)
+        return
+    # Get the AeroFile
+    AeroFile      = getVarFromFST(fstfile, 'AeroFile').strip('"')
+    AeroFileWPath = os.path.join(os.path.dirname(fstfile), AeroFile)
+    AirDens       = getVarFromFST(AeroFileWPath,'AirDens')
+
+    verindex   = findOFversion.convertversiontoindex((ver['major'], ver['minor']))
+    ver31index = findOFversion.convertversiontoindex((3,1))
+    if verindex < ver31index:
+        # Just get density from the AeroFile
+        if verbose: print("Density from aerofile: %f"%float(AirDens))
+        return float(AirDens)
+    else:
+        # Check the density from AeroFile
+        AirDensString = AirDens.replace('"', '').replace("'",'').lower()
+        if verbose: print("Density from aerofile: %s"%AirDensString)
+        if AirDensString == "default":
+            # Get density from fst file
+            fstdensity = getVarFromFST(fstfile, 'AirDens')
+            if verbose: print("Using density from fst file: %s"%fstdensity)
+            return float(fstdensity)
+        else:
+            return float(AirDensString)
+    return

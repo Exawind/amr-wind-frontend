@@ -17,6 +17,20 @@ import OpenFASTutil as OpenFAST
 import argparse
 from enum import Enum
 
+# list of all allowed versions
+allowedversions = [(2, 5),
+                   (2, 6),
+                   (3, 0),
+                   (3, 1),
+                   (3, 2),
+               ]
+
+def convertversiontoindex(vertuple):
+    if vertuple in allowedversions:
+        return allowedversions.index(vertuple)
+    else:
+        return -1
+
 # The list of all version checks is kept and built here
 verchecklist = []
 def register_versioncheck(f):
