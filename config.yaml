@@ -1549,7 +1549,7 @@ inputwidgets:
     label:      Variables
     frame:      frame_IOsampling
     inputtype:  listbox
-    optionlist: [velocity, temperature, actuator_src_term, velocity_mean, temperature_mean]
+    optionlist: [velocity, temperature, tke, actuator_src_term, velocity_mean, temperature_mean]
     defaultval: velocity
     listboxopt:
       selectmode: multiple
