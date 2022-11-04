@@ -20,7 +20,8 @@ def findMatchingPt(ptlist, p, eps):
     raise Exception("error in findMatchingPt") 
         
 def getTimeSeries(ncdat, xvec, yvec, zvec, group, 
-                  savestring='', useindices=False, verbose=True):
+                  savestring='', useindices=False, verbose=True,
+                  extravars=[]):
     """
     Extract the velocity time-history multiple x, y, z locations from
     planar probe data.
@@ -33,6 +34,9 @@ def getTimeSeries(ncdat, xvec, yvec, zvec, group,
     allvx  = ncdat[group].variables['velocityx']
     allvy  = ncdat[group].variables['velocityy']
     allvz  = ncdat[group].variables['velocityz']
+    allextra = {}
+    for v in extravars:
+        allextra[v] = ncdat[group].variables[v]
     Navg   = 0
     zerocol = np.zeros(len(t))
     all_ulongavgs = []
@@ -65,6 +69,10 @@ def getTimeSeries(ncdat, xvec, yvec, zvec, group,
                 if verbose: print("extracted v")
                 w = allvz[:,ipt]
                 if verbose: print("extracted w")
+                extradat = {}
+                for vvar in extravars:
+                    extradat[vvar] = allextra[vvar][:,ipt]
+                    if verbose: print("extracted "+vvar)
                 xcol = xyzpt[0]*np.ones(len(t))
                 ycol = xyzpt[1]*np.ones(len(t))
                 zcol = xyzpt[2]*np.ones(len(t))
@@ -72,6 +80,8 @@ def getTimeSeries(ncdat, xvec, yvec, zvec, group,
                                      icol, jcol, kcol, 
                                      xcol, ycol, zcol, 
                                      u, v, w))
+                for vvar in extravars:
+                    savedat = np.vstack((savedat, extradat[vvar]))
                 returndat[(x,y,z)] = savedat
                 if savestring != '':
                     fname=savestring%(x,y,z)
@@ -152,6 +162,15 @@ or
         required=True,
     )
 
+    parser.add_argument(
+        "-v",
+        "--vars",
+        nargs='+',
+        default='',
+        help="additional vars to extract (in addition to velocity)",
+        dest='extravars',
+    )
+
     # Load the options
     args = parser.parse_args()
     filename  = args.ncfile
@@ -161,6 +180,7 @@ or
     xpts      = [float(x) for x in args.xpts]
     ypts      = [float(y) for y in args.ypts]
     zpts      = [float(z) for z in args.zpts]
+    extravars = args.extravars
     print("netcdf file    = "+filename)
     print("netcdf group   = "+group)
     print("output format  = "+savefile)
@@ -168,7 +188,8 @@ or
     print("xpts           = "+repr(xpts))
     print("ypts           = "+repr(ypts))    
     print("zpts           = "+repr(zpts))
+    print("extra vars     = "+repr(extravars))
 
     ncdata   = Dataset(filename, 'r')
     getTimeSeries(ncdata, xpts, ypts, zpts, group, savestring=savefile,
-                    useindices=useindices, verbose=True);
+                    useindices=useindices, extravars=extravars, verbose=True);
