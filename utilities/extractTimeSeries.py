@@ -170,6 +170,14 @@ or
         help="additional vars to extract (in addition to velocity)",
         dest='extravars',
     )
+    parser.add_argument(
+        "-m",
+        "--mmap",
+        dest='mmap',
+        help="Load entire netcdf file in memory",
+        default=False,
+        action='store_true'
+    )
 
     # Load the options
     args = parser.parse_args()
@@ -177,6 +185,7 @@ or
     savefile  = args.outfile
     group     = args.group
     useindices= args.useindices
+    mmap      = args.mmap
     xpts      = [float(x) for x in args.xpts]
     ypts      = [float(y) for y in args.ypts]
     zpts      = [float(z) for z in args.zpts]
@@ -189,7 +198,16 @@ or
     print("ypts           = "+repr(ypts))    
     print("zpts           = "+repr(zpts))
     print("extra vars     = "+repr(extravars))
+    print("mmap           = "+repr(mmap))
 
-    ncdata   = Dataset(filename, 'r')
+    print("Reading dataset from "+filename)
+    if mmap:
+        with open(filename, 'rb') as f:
+            mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ, flags=mmap.MAP_PRIVATE)
+            ncread = mm.read()
+        ncdata = Dataset('inmemory.nc', memory=ncread)
+    else:
+        ncdata = Dataset(filename, 'r')
+    print("Done")
     getTimeSeries(ncdata, xpts, ypts, zpts, group, savestring=savefile,
                     useindices=useindices, extravars=extravars, verbose=True);
