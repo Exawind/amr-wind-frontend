@@ -12,9 +12,17 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from netCDF4 import Dataset
+import mmap
 
-def loadDataset(filename):
-    return Dataset(filename, 'r')
+def loadDataset(filename, usemmap=False):
+    if usemmap:
+        print("Loading entire file into memory...")
+        with open(filename, 'rb') as f:
+            mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ, flags=mmap.MAP_PRIVATE)
+            ncread = mm.read()
+        return Dataset('inmemory.nc', memory=ncread)
+    else:
+        return Dataset(filename, 'r')
 
 def getGroups(ncdat):
     return [k for k, g in ncdat.groups.items()]

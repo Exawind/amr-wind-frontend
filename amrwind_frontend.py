@@ -1224,7 +1224,8 @@ class MyApp(tkyg.App, object):
         return report
 
     # ---- Sample probe postprocessing options ----
-    def Samplepostpro_loadnetcdffile(self, ncfile=None):
+    def Samplepostpro_loadnetcdffile(self, ncfile=None, usemmap=None):
+        # Get the filename
         if ncfile is None:
             samplefile = self.inputvars['sampling_file'].getval()
         else:
@@ -1232,10 +1233,15 @@ class MyApp(tkyg.App, object):
         if len(samplefile)==0:
             print("Empty filename, choose file first")
             return
+        if usemmap is None:
+            loadinmemory = self.inputvars['samplingprobe_usemmap'].getval()
+        else:
+            loadinmemory = usemmap
+        # Close the previous file
         if self.sample_ncdat is not None:
             self.sample_ncdat.close()
         print("Loading %s"%samplefile)
-        self.sample_ncdat = ppsample.loadDataset(samplefile)
+        self.sample_ncdat = ppsample.loadDataset(samplefile, usemmap=loadinmemory)
         # Update the groups
         tkentry = self.inputvars['samplingprobe_groups'].tkentry
         groups  = self.Samplepostpro_getgroups()

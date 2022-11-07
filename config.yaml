@@ -1686,10 +1686,19 @@ inputwidgets:
           - ["NETCDF files", "*.nc"]
           - ["all files", "*.*"]
 
+  - name:       samplingprobe_usemmap
+    label:      Load in memory
+    frame:      frame_postprosampling
+    inputtype:  bool
+    defaultval: True
+    row:        3
+    outputdef:
+      help:     "Load entire netcdf file in memory. WARNING: COULD USE A LOT OF MEMORY"
+
   - name:       samplingprobe_info_label
     label:      Available Data
     frame:      frame_postprosampling
-    row:        3
+    row:        4
     labelonly:  True
 
   - name:       samplingprobe_groups
@@ -1698,13 +1707,13 @@ inputwidgets:
     inputtype:  listbox
     optionlist: "parent.Samplepostpro_getgroups()"
     listboxopt:
-      height:   4
+      height:   5
       selectmode: multiple
 
   - name:       samplingprobe_variables
     label:      NetCDF vars
     frame:      frame_postprosampling
-    row:        6
+    row:        7
     inputtype:  listbox
     optionlist: "parent.Samplepostpro_getvars()"
     listboxopt:
@@ -2243,21 +2252,21 @@ buttons:
   - name:    loadSamplevars
     text:    Load variables
     frame:   frame_postprosampling
-    row:     5
+    row:     6
     col:     1
     command: "self.Samplepostpro_getvars"
 
   - name:    Sampleprobe_prevtime
     text:    "<Prev"
     frame:   frame_postprosampling
-    row:     13
+    row:     14
     col:     0
     command: "self.Samplepostpro_getprevtime"
 
   - name:    Sampleprobe_nexttime
     text:    "Next>"
     frame:   frame_postprosampling
-    row:     13
+    row:     14
     col:     2
     command: "self.Samplepostpro_getnexttime"
 
