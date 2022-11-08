@@ -1105,12 +1105,17 @@ class MyApp(tkyg.App, object):
     def ABLpostpro_getscalarslist(self):
         return postpro.scalarvars[1:]
 
-    def ABLpostpro_loadnetcdffile(self, ablfile=None, updatetimes=False):
+    def ABLpostpro_loadnetcdffile(self, ablfile=None, updatetimes=False,
+                                  usemmap=None):
         if ablfile is None:
             ablfile = self.inputvars['ablstats_file'].getval()
         if self.abl_stats is not None:
             self.abl_stats.close()
-        self.abl_stats = postpro.loadnetcdffile(ablfile)
+        if usemmap is None:
+            loadinmemory = False
+        else:
+            loadinmemory = usemmap
+        self.abl_stats = postpro.loadnetcdffile(ablfile, usemmap=loadinmemory)
         print("Loading %s"%ablfile)
         mint = min(self.abl_stats['time'])
         maxt = max(self.abl_stats['time']) 

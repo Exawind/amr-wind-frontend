@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import os.path as path
 from collections            import OrderedDict 
 from scipy import interpolate
+import mmap
 
 scalarvars=[u'time', u'Q', u'Tsurf', u'ustar', u'wstar', u'L', u'zi', u'abl_forcing_x', u'abl_forcing_y']
 
@@ -64,9 +65,17 @@ def timeaverage(t, dat, t1, t2):
             avgdat = avgdat + 0.5*dt*(datfiltered[i+1,:] + datfiltered[i,:])
     return avgdat/(tend-tstart)
 
-def loadnetcdffile(filename):
+def loadnetcdffile(filename, usemmap=False):
     if path.exists(filename):
-        return Dataset(filename)
+        if usemmap:
+            print("Loading entire file into memory...")
+            with open(filename, 'rb') as f:
+                mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ,
+                               flags=mmap.MAP_PRIVATE)
+                ncread = mm.read()
+                return Dataset('inmemory.nc', memory=ncread)
+        else:
+            return Dataset(filename)
     else:
         print("%s DOES NOT EXIST.")
         return None
