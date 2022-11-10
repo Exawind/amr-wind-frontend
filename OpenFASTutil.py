@@ -99,11 +99,15 @@ def FASTfile2dict(FASTfile):
             # Handle the outlist
             if linesplit[0]=="OutList":
                 outlistline = fp.readline()
+                outlistlinesplit = outlistline.strip().split()
+                firstword   = "" if len(outlistlinesplit)==0 else outlistlinesplit[0]
                 outlist     = []
-                while outlistline.strip().split()[0] != "END":
+                while firstword != "END":
                     outlist.append(outlistline.strip())
                     outlistline = fp.readline()
-                    #print(outlistline.strip().split()[0] != "END")
+                    outlistlinesplit = outlistline.strip().split()
+                    firstword   = "" if len(outlistlinesplit)==0 else outlistlinesplit[0]
+
                 d["OutList"] = outlist
                 line = fp.readline()
                 continue
