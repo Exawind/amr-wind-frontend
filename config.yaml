@@ -800,6 +800,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: xlo.tke_type
 
+  - name:       xlo_tke
+    label:      "xlo TKE"
+    frame:      frame_xBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: xlo.tke
+
   - name:       xhi_type
     label:      "xhi velocity BC"
     frame:      frame_xBC
@@ -846,6 +853,13 @@ inputwidgets:
     defaultval: #None
     outputdef:
       AMR-Wind: xhi.tke_type
+
+  - name:       xhi_tke
+    label:      "xhi TKE"
+    frame:      frame_xBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: xhi.tke
 
   - name:       ylo_type
     label:      "ylo velocity BC"
@@ -895,6 +909,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: ylo.tke_type
 
+  - name:       ylo_tke
+    label:      "ylo TKE"
+    frame:      frame_yBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: ylo.tke
+
   - name:       yhi_type
     label:      "yhi velocity BC"
     frame:      frame_yBC
@@ -942,6 +963,13 @@ inputwidgets:
     defaultval: #None
     outputdef:
       AMR-Wind: yhi.tke_type
+
+  - name:       yhi_tke
+    label:      "yhi TKE"
+    frame:      frame_yBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: yhi.tke
 
   - name:       zlo_type
     label:      "zlo velocity BC"
@@ -1001,6 +1029,13 @@ inputwidgets:
     outputdef:
       AMR-Wind: zlo.tke_type
 
+  - name:       zlo_tke
+    label:      "zlo TKE"
+    frame:      frame_zBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: zlo.tke
+
   - name:       zhi_type
     label:      "zhi velocity BC"
     frame:      frame_zBC
@@ -1048,6 +1083,13 @@ inputwidgets:
     defaultval: #slip_wall
     outputdef:
       AMR-Wind: zhi.tke_type
+
+  - name:       zhi_tke
+    label:      "zhi TKE"
+    frame:      frame_zBC
+    inputtype:  float
+    outputdef:
+      AMR-Wind: zhi.tke
 
   # ============================================================
   # ========== ABL forcing selection ==========================

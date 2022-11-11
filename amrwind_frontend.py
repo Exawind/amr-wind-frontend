@@ -1800,6 +1800,109 @@ class MyApp(tkyg.App, object):
                                    title=title)    
         return
 
+    # ---- Boundary plane restart stuff ----
+    def boundaryplane_restartGUI(self):
+        return
+
+    def boundaryplane_restart(self, 
+                              setIOmode=1, 
+                              bndryfiles='',
+                              inflowplanes=[],
+                              autooutflow=True,
+                              forcingdict={},
+                              autoset_ABLForcing=True,
+                              autoset_ABLMeanBoussinesq=True,
+                              verbose=False):
+        """Automatically sets the boundary conditions and parameters required
+        to restart using boundary planes.
+        """
+
+        def printverbose(suffix, key):
+            print(suffix+" "+key+" = "+repr(self.inputvars[key].getval()))
+            return
+
+        # Define the opposite face from a certain face
+        oppositeface = {  
+            'xlo':'xhi', 'xhi':'xlo',
+            'ylo':'yhi', 'yhi':'ylo',
+            'zlo':'zhi', 'zhi':'zlo',
+        }
+
+        # Set the boundary plane IO mode and files
+        if setIOmode:
+            self.inputvars['ABL_bndry_io_mode'].setval(str(setIOmode))
+            if verbose: printverbose('SET','ABL_bndry_io_mode')
+
+        if len(bndryfiles)>0:
+            self.inputvars['ABL_bndry_file'].setval(bndryfiles)
+            if verbose: printverbose('SET','ABL_bndry_file')
+        
+        # Set the boundary conditions
+        ## First set the correct periodicity arguments
+        if ('xlo' in inflowplanes) or ('xhi' in inflowplanes):
+            self.inputvars['is_periodicx'].setval(False)
+            if verbose: printverbose('SET', 'is_periodicx')
+        if ('ylo' in inflowplanes) or ('yhi' in inflowplanes):
+            self.inputvars['is_periodicy'].setval(False)
+            if verbose: printverbose('SET', 'is_periodicy')
+        ## Set the inflow mass flow BC
+        for face in inflowplanes:
+            density = self.inputvars['density'].getval()
+            self.inputvars[face+'_type'].setval('mass_inflow')
+            self.inputvars[face+'_density'].setval(density)
+            self.inputvars[face+'_temperature'].setval(0.0)
+            self.inputvars[face+'_tke'].setval(0.0)
+            if verbose: 
+                printverbose('SET', face+'_type')
+                printverbose('SET', face+'_density')
+                printverbose('SET', face+'_temperature')
+                printverbose('SET', face+'_tke')
+            
+        ## Set the outflow boundary conditions
+        if autooutflow:
+            for face in inflowplanes:
+                oface = oppositeface[face]
+                self.inputvars[oface+'_type'].setval('pressure_outflow')
+                self.inputvars[oface+'_density'].setval(None)   # UPDATE THIS!
+                self.inputvars[oface+'_temperature'].setval(None)
+                self.inputvars[oface+'_tke'].setval(None)
+                if verbose: 
+                    printverbose('SET', oface+'_type')
+                    printverbose('SET', oface+'_density')
+                    printverbose('SET', oface+'_temperature')
+                    printverbose('SET', oface+'_tke')
+
+        # Set the body force
+        if len(forcingdict)>0:
+            # Calculate the body force
+            ncfile = forcingdict['ablstatfile']
+            tavg   = forcingdict['tavg']
+            abl_ncdat = postpro.loadnetcdffile(ncfile)
+            ABL_X_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_x',tavg)
+            ABL_Y_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_y',tavg)
+            ABL_Z_FORCE = 0.0
+            ABL_F_VEC   = [ABL_X_FORCE, ABL_Y_FORCE, ABL_Z_FORCE]
+            # Set the body force
+            self.inputvars['BodyForce'].setval(True)
+            self.inputvars['BodyForce_magnitude'].setval(ABL_F_VEC)
+            if verbose: 
+                printverbose('SET','BodyForce')
+                printverbose('SET','BodyForce_magnitude')
+
+        # Set the ABL forcing off
+        if autoset_ABLForcing:
+            self.inputvars['ABLForcing'].setval(False)
+            if verbose: printverbose('SET','ABLForcing')
+
+        # Set the ABLMeanBoussinesq term
+        if autoset_ABLMeanBoussinesq:
+            self.inputvars['ABLMeanBoussinesq'].setval(True)
+            if verbose: printverbose('SET','ABLMeanBoussinesq')
+
+        # Set the ABL mode to local
+        
+        return
+
 if __name__ == "__main__":
     title='AMR-Wind'
     localconfigdir=os.path.join(scriptpath,'local')
