@@ -360,7 +360,7 @@ def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
         if 'name' in zonedict['options']:
             zonename = zonedict['options']['name']
         else:
-            zonename = 'Farm_level_%i_center_%.1f_%.1f_%.1f'%(zonedict['level'], centerx, centery, centerz)
+            zonename = 'Farm_level_%i_center_%.0f_%.0f_%.0f'%(zonedict['level'], centerx, centery, centerz)
     else:
         # Use the farm center
         if self.inputvars['turbines_autocalccenter'].getval() == True:
