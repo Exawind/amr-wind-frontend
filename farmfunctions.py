@@ -408,6 +408,10 @@ def refine_createAllZones(self):
         #print("AvgCenter = "+repr(AvgCenter))
         #print("AvgTurbD  = "+repr(AvgTurbD))
         #print("AvgHH     = "+repr(AvgHH))
+    else:
+        AvgHH        = 0.0
+        AvgTurbD     = 0.0
+        AvgCenter    = np.array([0.0, 0.0, 0.0])
 
     # Get all turbine properties
     allturbines  = self.listboxpopupwindict['listboxactuator']
