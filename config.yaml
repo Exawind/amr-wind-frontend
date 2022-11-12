@@ -237,6 +237,26 @@ predefinedlists:
     outputdef:
       AMR-Wind: epsilon
       help:     The spreading function in (x,y,z)
+  epsilon_min: &PREDEFINED_EPSILON_MIN
+    name:       epsilon min
+    label:      Epsilon min
+    inputtype:  [float, float, float]
+    defaultval: 
+    entryopt:
+      varlenlist:  True
+    outputdef:
+      AMR-Wind: epsilon_min
+      help:     The min spreading function in (x,y,z) for FLLC
+  epsilon_chord: &PREDEFINED_EPSILON_CHORD
+    name:       epsilon chord
+    label:      Epsilon chord
+    inputtype:  [float, float, float]
+    defaultval: 
+    entryopt:
+      varlenlist:  True
+    outputdef:
+      AMR-Wind: epsilon_chord
+      help:     The chord spreading function in (x,y,z) for FLLC
   epsilon_tower: &PREDEFINED_EPSILON_TOWER
     name:       epsilon_tower
     label:      Epsilon tower
@@ -261,6 +281,13 @@ predefinedlists:
     defaultval: 
     outputdef:
       AMR-Wind: openfast_stop_time
+  fllc: &PREDEFINED_FLLC
+    name:       fllc
+    label:      Use FLLC
+    inputtype:  bool
+    defaultval:
+    outputdef:
+      AMR-Wind: fllc
   nacelle_drag_coeff: &PREDEFINED_NACELLE_DRAG_COEFF
     name:       nacelle_drag_coeff
     label:      Nacelle Cd
@@ -1732,7 +1759,7 @@ inputwidgets:
     label:      Load in memory
     frame:      frame_postprosampling
     inputtype:  bool
-    defaultval: True
+    defaultval: False
     row:        3
     outputdef:
       help:     "Load entire netcdf file in memory. WARNING: COULD USE A LOT OF MEMORY"
@@ -1872,6 +1899,16 @@ inputwidgets:
     frame:      frame_turbinefastlineglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.epsilon
+  - <<: *PREDEFINED_EPSILON_MIN
+    name:       Actuator_TurbineFastLine_epsilon_min
+    frame:      frame_turbinefastlineglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.epsilon_min
+  - <<: *PREDEFINED_EPSILON_CHORD
+    name:       Actuator_TurbineFastLine_epsilon_chord
+    frame:      frame_turbinefastlineglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.epsilon_chord
   - <<: *PREDEFINED_EPSILON_TOWER 
     name:       Actuator_TurbineFastLine_epsilon_tower
     frame:      frame_turbinefastlineglobals
@@ -1887,6 +1924,11 @@ inputwidgets:
     frame:      frame_turbinefastlineglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastLine.openfast_stop_time
+  - <<: *PREDEFINED_FLLC
+    name:       Actuator_TurbineFastLine_fllc
+    frame:      frame_turbinefastlineglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastLine.fllc
   - <<: *PREDEFINED_NACELLE_DRAG_COEFF
     name:       Actuator_TurbineFastLine_nacelle_drag_coeff
     frame:      frame_turbinefastlineglobals
@@ -1934,6 +1976,16 @@ inputwidgets:
     frame:      frame_turbinefastdiskglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.epsilon
+  - <<: *PREDEFINED_EPSILON_MIN
+    name:       Actuator_TurbineFastDisk_epsilon_min
+    frame:      frame_turbinefastdiskglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.epsilon_min
+  - <<: *PREDEFINED_EPSILON_CHORD
+    name:       Actuator_TurbineFastDisk_epsilon_chord
+    frame:      frame_turbinefastdiskglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.epsilon_chord
   - <<: *PREDEFINED_EPSILON_TOWER
     name:       Actuator_TurbineFastDisk_epsilon_tower
     frame:      frame_turbinefastdiskglobals
@@ -1949,6 +2001,11 @@ inputwidgets:
     frame:      frame_turbinefastdiskglobals
     outputdef:
       AMR-Wind: Actuator.TurbineFastDisk.openfast_stop_time
+  - <<: *PREDEFINED_FLLC
+    name:       Actuator_TurbineFastDisk_fllc
+    frame:      frame_turbinefastdiskglobals
+    outputdef:
+      AMR-Wind: Actuator.TurbineFastDisk.fllc
   - <<: *PREDEFINED_NACELLE_DRAG_COEFF
     name:       Actuator_TurbineFastDisk_nacelle_drag_coeff
     frame:      frame_turbinefastdiskglobals
@@ -2981,6 +3038,12 @@ popupwindow:
     - <<: *PREDEFINED_EPSILON
       name:       Actuator_epsilon
       frame:      turbine_frame
+    - <<: *PREDEFINED_EPSILON_MIN
+      name:       Actuator_epsilon_min
+      frame:      turbine_frame
+    - <<: *PREDEFINED_EPSILON_CHORD
+      name:       Actuator_epsilon_chord
+      frame:      turbine_frame
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
       frame:      turbine_frame
@@ -2989,6 +3052,9 @@ popupwindow:
       frame:      turbine_frame
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
       name:       Actuator_openfast_stop_time
+      frame:      turbine_frame
+    - <<: *PREDEFINED_FLLC
+      name:       Actuator_fllc
       frame:      turbine_frame
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
       name:       Actuator_nacelle_drag_coeff
@@ -3135,6 +3201,8 @@ popupwindow:
       label:      Comment
       inputtype:  str
       defaultval: 
+      entryopt:
+        width:    16
     # The following are predefined from anchors
     - <<: *PREDEFINED_ACTUATORSELECTION
     - <<: *PREDEFINED_OPENFAST_INPUT_FILE
@@ -3150,12 +3218,18 @@ popupwindow:
       name:       Actuator_epsilon
       entryopt:
         varlenlist:  True
+    - <<: *PREDEFINED_EPSILON_MIN
+      name:       Actuator_epsilon_min
+    - <<: *PREDEFINED_EPSILON_CHORD
+      name:       Actuator_epsilon_chord
     - <<: *PREDEFINED_EPSILON_TOWER
       name:       Actuator_epsilon_tower
     - <<: *PREDEFINED_OPENFAST_START_TIME
       name:       Actuator_openfast_start_time
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
       name:       Actuator_openfast_stop_time
+    - <<: *PREDEFINED_FLLC
+      name:       Actuator_fllc
     - <<: *PREDEFINED_NACELLE_DRAG_COEFF
       name:       Actuator_nacelle_drag_coeff
     - <<: *PREDEFINED_NACELLE_AREA
