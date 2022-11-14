@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import sys, os, csv
 import re
+import shlex
 from collections            import OrderedDict 
 try:
     from  tkyamlgui import moretypes
@@ -146,7 +147,7 @@ def parseoptions(optionstr):
     the form "key1:val1 key2:val2"
     """
     sanitizestr = optionstr if isinstance(optionstr, str) else str(optionstr)
-    allopts = sanitizestr.split()
+    allopts = shlex.split(sanitizestr.replace(';',','))
     optdict = OrderedDict()
     for opt in allopts:
         optsplit = opt.split(':')
@@ -687,6 +688,21 @@ def turbines_createAllTurbines(self):
                                                         turbtype,
                                                         docopy=True, 
                                                         updatefast=True)
+
+        # Set any AMR-Wind options
+        AMRoptions = extractkeystartingwith(turb['options'], 'AMRparam_', removeprefix=True)
+
+        def tryeval(s) :
+            try:
+                x = eval(s)
+            except:
+                x = s
+            return x
+
+        if bool(AMRoptions):
+            for key, val in AMRoptions.items():
+                turbdict[key] =  tryeval(val)
+                print("Setting "+key+" to "+repr(turbdict[key]))
 
         # Process options if using OpenFAST model
         if turbdict['Actuator_type'] in ['TurbineFastDisk', 'TurbineFastDisk']:
