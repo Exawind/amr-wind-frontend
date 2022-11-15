@@ -70,6 +70,21 @@ def deletelines(txtfile, dellines):
             sys.stdout.write(str(line))            
     return
 
+def extractlines(filename, linenums):
+    with open(filename) as file:
+        lines = [line.rstrip() for line in file]
+    n1=linenums[0]-1
+    n2=linenums[1]
+    return lines[n1:n2]
+
+def findlinewith(filename, substring):
+    with open(filename) as file:
+        lines = [line.rstrip() for line in file]
+    for ix, x in enumerate(lines):
+        if substring in x:
+            return ix+1
+    return -1
+
 def testreplacelines():
     origtxt="""1\n2\n3\n4\n5\n6\n"""
     newlines="""A
@@ -242,6 +257,83 @@ def upgrade_3_1(fstfile, verbosity, **kwargs):
     # Nothing needed here
     return
 
+def upgrade_AD_to_dev(fstfile, verbosity, **kwargs):
+    """
+    Upgrade OpenFAST AD model to include dev inputs
+    """
+    # Get the input files
+    AeroDynFile   = OpenFAST.getFileFromFST(fstfile, 'AeroFile')
+
+    BouyancyAD="""\
+False         Buoyancy           - AD DEV
+"""
+
+    ExtraAD="""\
+======  TEMP LINE BREAK ==============================================================================
+        1.0   VolHub
+        0.0   HubCenBx
+======  TEMP LINE BREAK ==============================================================================
+        1.0   VolNac
+0.0 0.0 0.0   NacCenB
+======  TEMP LINE BREAK ==============================================================================
+False         TFinAero
+"None"        TFinFile
+"""
+
+    TwrCb = " 0.0E+00"
+
+    # Get NumTwrNds
+    NumTwrNds = int(OpenFAST.getVarFromFST(AeroDynFile, 'NumTwrNds'))
+
+    with open(AeroDynFile) as file:
+        ADlines = [line.rstrip() for line in file]
+    ADfirstword = [x.strip().split()[0].lower() for x in ADlines if len(x.strip().split())>0]
+
+    # --- Remove RtAeroCp and RtAeroCt from OutList ---
+    OutList = OpenFAST.getVarFromFST(AeroDynFile, 'OutList')
+    # Make new OutList
+    newoutlist = ' '.join(OutList)
+    newoutlist = newoutlist.replace('"','').replace(',','\n')
+    newoutlist = newoutlist.replace('RtAeroCp','')
+    newoutlist = newoutlist.replace('RtAeroCt','')
+    newoutlist = '\n'.join(newoutlist.split())
+    newoutlist += '\n'
+
+    l1 = ADfirstword.index('outlist')+2
+    l2 = ADfirstword.index('end')
+    replacelines(AeroDynFile, [l1, l2], newoutlist)
+    if verbosity>0: 
+        print("Changing AeroDyn OutList to")
+        print(newoutlist)
+
+    # --- Add TwrCb to Tower nodes ---
+    #print("NumTwrNds = "+repr(NumTwrNds))
+    linestart = ADfirstword.index('twrelev')+3
+    linenums = [linestart, linestart+NumTwrNds-1]
+    nodelines= extractlines(AeroDynFile, linenums)
+    newnodelines = ''
+    for x in nodelines: 
+        newnodelines += x+TwrCb+'\n'
+    replacelines(AeroDynFile, linenums, newnodelines)
+    if verbosity>0: 
+        print("Changing tower nodes to")
+        print(newnodelines)
+
+    # --- Add ExtraAD ---
+    line_insert = findlinewith(AeroDynFile, 'ADBlFile(3)')
+    insertlines(AeroDynFile, line_insert, ExtraAD)
+    if verbosity>0:
+        print("ADDED")
+        print(ExtraAD)
+
+    # --- Add Bouyancy ---
+    insertlines(AeroDynFile, 12, BouyancyAD)
+    if verbosity>0:
+        print("ADDED")
+        print(BouyancyAD)
+
+    return
+
 def repeatedupgrade(fstfile, initver, targetver, verbosity, maxupgrades=10):
     """
     Perform multiple upgrades on an OpenFAST input file
@@ -282,6 +374,10 @@ if __name__ == "__main__":
                         help="Minor version",
                         required=True,
                         default=1)
+    parser.add_argument('--ADdev', 
+                        help="Upgrade Aerodyn to OpenFAST dev version",
+                        default=False,
+                        action='store_true')
     parser.add_argument('-v', '--verbose', 
                         action='count', 
                         help="Verbosity level (multiple levels allowed)",
@@ -293,6 +389,7 @@ if __name__ == "__main__":
     verbose   = args.verbose
     major     = int(args.major)
     minor     = int(args.minor)
+    ADdev     = args.ADdev
 
     # Get the current version of the input file
     initverinfo, match = findOFversion.findversion(filename, verbosity=verbose)
@@ -321,3 +418,6 @@ if __name__ == "__main__":
                     verinfo2tuple(initverinfo), verinfo2tuple(targetversion), 
                     verbose)
     
+    if ADdev:
+        upgrade_AD_to_dev(filename, verbose)
+

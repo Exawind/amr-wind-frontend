@@ -108,7 +108,11 @@ def FASTfile2dict(FASTfile):
                     outlistlinesplit = outlistline.strip().split()
                     firstword   = "" if len(outlistlinesplit)==0 else outlistlinesplit[0]
 
-                d["OutList"] = outlist
+                # Check how many other Outlists there are:
+                keylist = [k for k,g in d.items()]
+                numOutList=len([x for x in keylist if x.startswith('OutList')])
+                suffix = repr(numOutList) if numOutList>0 else ''
+                d["OutList"+suffix] = outlist
                 line = fp.readline()
                 continue
 
