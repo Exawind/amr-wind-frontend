@@ -296,6 +296,9 @@ False         TFinAero
     newoutlist = newoutlist.replace('"','').replace(',','\n')
     newoutlist = newoutlist.replace('RtAeroCp','')
     newoutlist = newoutlist.replace('RtAeroCt','')
+    newoutlist = newoutlist.replace('RtAeroFyh','')
+    newoutlist = newoutlist.replace('RtAeroFzh','')
+    newoutlist = newoutlist.replace('RtAeroPwr','')
     newoutlist = '\n'.join(newoutlist.split())
     newoutlist += '\n'
 
