@@ -14,6 +14,7 @@ basepath   = os.path.dirname(scriptpath)
 sys.path.insert(1, scriptpath)
 sys.path.insert(1, basepath)
 import OpenFASTutil as OpenFAST
+import upgradeOFmodel
 import argparse
 from enum import Enum
 
@@ -101,9 +102,15 @@ class Check_2_5_0():
         if verbose:
             print(" Checking if TwrShadow in %s is not an integer"%probefile)
             print("  TwrShadow=%s [%s]"%(aerodict['TwrShadow'],not l2))
+
+        # Check version 2.4 stuff
+        checkvars = ['CompAA','AA_InputFile','OLAFInputFileName']
+        match3, l3 = checkIfVarsInFile(fstfile, 'AeroFile', checkvars,
+                                       verbose=verbose)
+
         # Combine lists
-        match = mergeMatchList([match1, match2])
-        l  = l1 + [l2]
+        match = mergeMatchList([match1, match2, match3])
+        l  = l1 + [l2] + l3
         return match, l
 
 @register_versioncheck
@@ -124,9 +131,30 @@ class Check_2_6_0():
             print(" Checking if TwrShadow in %s is integer"%probefile)
             print("  TwrShadow=%s [%s]"%(aerodict['TwrShadow'],l2))
         match2 = versionmatch.MATCH if l2 else versionmatch.NOMATCH
+
+        # Check TwrTI column
+        AeroDynFile   = OpenFAST.getFileFromFST(fstfile, 'AeroFile')
+        with open(AeroDynFile) as file:
+            ADlines = [line.rstrip() for line in file]
+        ADfirstword = [x.strip().split()[0].lower() for x in ADlines if len(x.strip().split())>0]
+        linestart = ADfirstword.index('twrelev')+3
+        NumTwrNds = int(OpenFAST.getVarFromFST(AeroDynFile, 'NumTwrNds'))
+        linenums  = [linestart, linestart+NumTwrNds-1]
+        nodelines = upgradeOFmodel.extractlines(AeroDynFile, linenums)
+        match3    = versionmatch.MATCH
+        l3        = True
+        for line in nodelines:
+            if (len(line.split()) != 4):
+                match3 = versionmatch.NOMATCH
+                l3     = False
+                break
+        if verbose:
+            print(" Checking if TwrTI column exists in %s"%AeroDynFile)
+            print("  TwrTI column: [%s]"%repr(l3))
+
         # Combine lists
-        match = mergeMatchList([match1, match2])
-        l  = l1 + [l2]
+        match = mergeMatchList([match1, match2, match3])
+        l  = l1 + [l2] + [l3]
         return match, l
 
 @register_versioncheck
@@ -176,7 +204,7 @@ def findversion(filename, verbosity=0):
         if match == versionmatch.MATCH: 
             return f().version, match
     # no match found, return empty
-    return {}, version.NOMATCH
+    return {}, versionmatch.NOMATCH
 
 # ========================================================================
 #

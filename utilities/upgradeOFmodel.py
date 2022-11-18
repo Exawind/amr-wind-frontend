@@ -145,6 +145,24 @@ def upgrade_2_5(fstfile, verbosity, **kwargs):
     TwrShadowTF   = OpenFAST.getVarFromFST(AeroDynFile, 'TwrShadow').upper()
     TwrShadowVal  = 1 if TwrShadowTF == 'TRUE' else 0
     OpenFAST.editFASTfile(AeroDynFile, {'TwrShadow':TwrShadowVal})
+
+    # Add the TwrTI column
+    TwrTI = " 1.0E-1"
+    with open(AeroDynFile) as file:
+        ADlines = [line.rstrip() for line in file]
+    ADfirstword = [x.strip().split()[0].lower() for x in ADlines if len(x.strip().split())>0]
+    linestart   = ADfirstword.index('twrelev')+3
+    NumTwrNds   = int(OpenFAST.getVarFromFST(AeroDynFile, 'NumTwrNds'))
+    linenums    = [linestart, linestart+NumTwrNds-1]
+    nodelines   = extractlines(AeroDynFile, linenums)
+    newnodelines= ''
+    for x in nodelines:
+        newnodelines += x+TwrTI+'\n'
+    replacelines(AeroDynFile, linenums, newnodelines)
+    if verbosity>0:
+        print("Adding TwrTI")
+        print(newnodelines)
+
     return
 
 @register_upgradefunction((2,6), (3,0))
