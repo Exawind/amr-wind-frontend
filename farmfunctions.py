@@ -1016,6 +1016,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     units   = getdictval(pdict['options'], 'units', defaultopt).lower()
     orient  = getdictval(pdict['options'], 'orientation', defaultopt).lower()
     usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
+    center  = getdictval(pdict['options'], 'center', defaultopt).lower()
 
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
@@ -1031,15 +1032,29 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 
     # Set the farm center
-    if self.inputvars['turbines_autocalccenter'].getval() == True:
-        usecenter = AvgCenter
+    if center == 'specified':
+        # Use the specified center
+        defaultctr = {'centerx':0.0, 'centery':0.0, 'centerz':0.0}
+        # Use a specified center location
+        centerx = float(getdictval(pdict['options'], 'centerx', defaultctr))
+        centery = float(getdictval(pdict['options'], 'centery', defaultctr))
+        centerz = float(getdictval(pdict['options'], 'centerz', defaultctr))
+        probecenter = np.array([centerx, centery, centerz])
     else:
-        usecenter = self.inputvars['turbines_farmcenter'].getval()
+        print('AvgCenter = '+repr(AvgCenter))
+        # Use the farm center
+        if self.inputvars['turbines_autocalccenter'].getval() == True:
+            usecenter = AvgCenter
+            centerz   = usecenter[2] + AvgHH
+        else:
+            usecenter = self.inputvars['turbines_farmcenter'].getval()
+            usecenter.append(0.0)
+            centerz   = AvgHH
+        probecenter = np.array([usecenter[0], usecenter[1], usecenter[2]+AvgHH])
 
     # Get the name and probe type
     probename = '%s_%s'%("Farm", pdict['name'])
     probetype = pdict['type'].lower().strip()
-    probecenter = np.array([usecenter[0], usecenter[1], usecenter[2]+AvgHH])
 
     sampledict = {}
     # --- Create centerline sampling probes --- 
@@ -1190,7 +1205,7 @@ def sampling_createAllProbes(self, verbose=False):
     # Default dictionary for optional inputs
     defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y
                   'units':'diameter',        # diameter/meter
-                  'center':'turbine',        # turbine/farm
+                  'center':'turbine',        # turbine/farm/specified
                   'usedx':None,              # use this mesh size
                   'noffsets':0               # number of offsets
                  }
@@ -1222,6 +1237,10 @@ def sampling_createAllProbes(self, verbose=False):
     #print(allcenters)
     if 'farm' in allcenters:
         AvgCenter, AvgTurbD, AvgHH = calc_FarmAvgProp(self)
+    else:
+        AvgHH        = 100.0
+        AvgTurbD     = 100.0
+        AvgCenter    = np.array([0.0, 0.0, 0.0])
 
     # Get the wind direction
     self.ABL_calculateWDirWS()
@@ -1244,9 +1263,10 @@ def sampling_createAllProbes(self, verbose=False):
                 if verbose: print(sampledict)
                 if sampledict is not None:
                     self.add_sampling(sampledict, verbose=verbose)
-        elif center=='farm':
+        elif (center=='farm') or (center=='specified'):
             sampledict = sampling_createDictForFarm(self, probe, 
-                                                    AvgCenter, AvgTurbD, AvgHH, defaultopt)
+                                                    AvgCenter, AvgTurbD, AvgHH,
+                                                    defaultopt)
             if verbose: print(sampledict)
             if sampledict is not None:
                 self.add_sampling(sampledict, verbose=verbose)
