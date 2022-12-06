@@ -841,6 +841,8 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     units   = getdictval(pdict['options'], 'units', defaultopt).lower()
     orient  = getdictval(pdict['options'], 'orientation', defaultopt).lower()
     usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
+    outputto= getdictval(pdict['options'], 'outputto', defaultopt)
+    outputfreq= getdictval(pdict['options'], 'outputfreq', defaultopt)
 
     # Set scale and orientation axes
     scale = turbD if units=='diameter' else 1.0
@@ -871,7 +873,12 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     probetype = pdict['type'].lower().strip()
 
     sampledict = {}
-    sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
+    # Set the output postprocessing object
+    if outputto is None:
+        sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
+    else:
+        self.addPostProSamplingObject(outputto, output_freq=outputfreq)
+        sampledict['sampling_outputto'] = [outputto]
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
         # Calculate the start, end, and number of points
@@ -1018,6 +1025,8 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     orient  = getdictval(pdict['options'], 'orientation', defaultopt).lower()
     usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
     center  = getdictval(pdict['options'], 'center', defaultopt).lower()
+    outputto= getdictval(pdict['options'], 'outputto', defaultopt)
+    outputfreq= getdictval(pdict['options'], 'outputfreq', defaultopt)
 
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
@@ -1042,7 +1051,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
         centerz = float(getdictval(pdict['options'], 'centerz', defaultctr))
         probecenter = np.array([centerx, centery, centerz])
     else:
-        print('AvgCenter = '+repr(AvgCenter))
+        #print('AvgCenter = '+repr(AvgCenter))
         # Use the farm center
         if self.inputvars['turbines_autocalccenter'].getval() == True:
             usecenter = AvgCenter
@@ -1058,7 +1067,12 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     probetype = pdict['type'].lower().strip()
 
     sampledict = {}
-    sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
+    # Set the output postprocessing object
+    if outputto is None:
+        sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
+    else:
+        self.addPostProSamplingObject(outputto, output_freq=outputfreq)
+        sampledict['sampling_outputto'] = [outputto]
 
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
@@ -1210,7 +1224,9 @@ def sampling_createAllProbes(self, verbose=False):
                   'units':'diameter',        # diameter/meter
                   'center':'turbine',        # turbine/farm/specified
                   'usedx':None,              # use this mesh size
-                  'noffsets':0               # number of offsets
+                  'noffsets':0,              # number of offsets
+                  'outputto':None,           # Output to this sampler object
+                  'outputfreq':None,         # Output at this frequency
                  }
 
     reqheaders = ['name', 'type', 'upstream', 'downstream', 'lateral', 
