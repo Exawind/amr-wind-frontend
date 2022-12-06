@@ -453,6 +453,12 @@ class MyApp(tkyg.App, object):
 
         # Get all incflo.postprocessing options
         postprokey = 'incflo.post_processing'
+
+        # Check and make sure incflo.post_processing exists in the
+        # inputs, else skip
+        if postprokey not in inputdict:
+            return postprodict, extradict
+
         postpronames = inputdict[postprokey].strip().split()
         extradict.pop(postprokey)
 
