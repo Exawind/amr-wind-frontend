@@ -104,14 +104,19 @@ frames:
     tab:   IO
     row:   1
     title: Plot Outputs
-  - name:  frame_IOsampling
+  - name:  frame_IOpostprosetup
     tab:   IO
     row:   4
-    title: Sampling probes
-  - name:  frame_IOaveraging
+    title: Postprocessing setup
+  - name:  frame_IOsampling
     tab:   IO
     row:   5
-    title: Averaging options
+    title: Sampling probes
+# --- DEPRECATED REMOVE IN FUTURE ---
+#  - name:  frame_IOaveraging
+#    tab:   IO
+#    row:   6
+#    title: Averaging options
 
   # ==== Refinement frames ==== 
   - name:  frame_refinement
@@ -1582,91 +1587,107 @@ inputwidgets:
     outputdef:
       AMR-Wind: io.KE_int
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       post_processing
     label:      Post processing
     tab:        IO
     row:        3
     inputtype:  listbox
     optionlist: [sampling, averaging]
+    default:    sampling
+    visible:    False
     listboxopt:
       selectmode: multiple
-    outputdef:
-      AMR-Wind: incflo.post_processing
-    ctrlelem:
-      - frame:  frame_IOsampling
-        activewhen: ['sampling', 1]
-      - frame:  frame_IOaveraging
-        activewhen: ['averaging', 1]
+#    outputdef:
+#      AMR-Wind: incflo.post_processing
+#    ctrlelem:
+#      - frame:  frame_IOsampling
+#        activewhen: ['sampling', 1]
+#      - frame:  frame_IOaveraging
+#        activewhen: ['averaging', 1]
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       comment_sampling
     frame:      frame_IOsampling
     inputtype:  str
     defaultval: "\n# --- Sampling parameters ---"
     visible:    False
-    outputdef:
-      AMR-Wind: '#comment_sampling'
+#    outputdef:
+#      AMR-Wind: '#comment_sampling'
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       sampling_output_frequency
     label:      Output freq
     frame:      frame_IOsampling
     inputtype:  int
     defaultval: 100
-    outputdef:
-      AMR-Wind: sampling.output_frequency
+    visible:    False
+#    outputdef:
+#      AMR-Wind: sampling.output_frequency
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       sampling_fields
     label:      Variables
     frame:      frame_IOsampling
     inputtype:  listbox
     optionlist: [velocity, temperature, tke, actuator_src_term, velocity_mean, temperature_mean]
     defaultval: velocity
+    visible:    False
     listboxopt:
       selectmode: multiple
       height:   3
+#    outputdef:
+#      AMR-Wind: sampling.fields
 
-    outputdef:
-      AMR-Wind: sampling.fields
-
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       comment_averaging
-    frame:      frame_IOaveraging
+    frame:      frame_IOsampling
     inputtype:  str
     defaultval: "\n# --- Averaging parameters ---"
     visible:    False
-    outputdef:
-      AMR-Wind: '#comment_averaging'
+#    outputdef:
+#      AMR-Wind: '#comment_averaging'
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       averaging_type
     label:      Averaging type
-    frame:      frame_IOaveraging
+    frame:      frame_IOsampling
     inputtype:  str
     optionlist: [TimeAveraging]
     defaultval: TimeAveraging
-    outputdef:
-      AMR-Wind: averaging.type
+    visible:    False
+#    outputdef:
+#      AMR-Wind: averaging.type
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       averaging_window
     label:      Averaging window
-    frame:      frame_IOaveraging
+    frame:      frame_IOsampling
     inputtype:  float
     defaultval: 
-    outputdef:
-      AMR-Wind: averaging.averaging_window
+    visible:    False
+#    outputdef:
+#      AMR-Wind: averaging.averaging_window
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       averaging_start_time
     label:      Averaging start time
-    frame:      frame_IOaveraging
+    frame:      frame_IOsampling
     inputtype:  float
     defaultval: 
-    outputdef:
-      AMR-Wind: averaging.averaging_start_time
+    visible:    False
+#    outputdef:
+#      AMR-Wind: averaging.averaging_start_time
 
+  # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       averaging_stop_time
     label:      Averaging stop time
-    frame:      frame_IOaveraging
+    frame:      frame_IOsampling
     inputtype:  float
     defaultval: 
-    outputdef:
-      AMR-Wind: averaging.averaging_stop_time
+    visible:    False
+#    outputdef:
+#      AMR-Wind: averaging.averaging_stop_time
 
   # =========== Postprocessing stuff here ====================
   # ----------- ABL postprocessing -----------------
@@ -2376,7 +2397,7 @@ buttons:
 
     
 popupwindow:
-  # === Plot domain window ===
+  # === POPUPWINDOW: Plot domain window ===
   plotdomain:
     title:        Plot domain     # optional
     loadonstart:  True            # optional
@@ -2518,7 +2539,7 @@ popupwindow:
         command: partial(self.updatelistbox, 'plot_turbines', 'listboxactuator')
           
 
-  # === Plot FAST output ===
+  # === POPUPWINDOW: Plot FAST output ===
   plotfastout:
     title:        Plot FAST output # optional
     loadonstart:  True             # optional
@@ -2561,7 +2582,7 @@ popupwindow:
         command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs(window=self)')"
         row:  4
 
-  # === Sampling window ===
+  # === POPUPWINDOW: Sampling window ===
   sampling:
     title:        Sampling probe     # optional
     datakeyname:  sampling_name      # optional
@@ -2604,6 +2625,14 @@ popupwindow:
       inputtype:  str
       defaultval: newsample
       frame:      probetype_frame
+    - name:       sampling_outputto
+      label:      Output To
+      inputtype:  listbox
+      optionlist: "self.parent.getPostProSetupList()"
+      defaultval: "sampling"
+      frame:      probetype_frame
+      listboxopt:
+        width:    12
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
@@ -2731,7 +2760,7 @@ popupwindow:
       outputdef:
         AMR-Wind: offsets
         help:     List containing the distances along the plane normal to offset each plane
-  # === Tagging window ===
+  # === POPUPWINDOW: Tagging window ===
   tagging:
     title:        Refinement windows # optional
     datakeyname:  tagging_name       # optional
@@ -2957,7 +2986,7 @@ popupwindow:
         AMR-Wind: inner_radius
         help:     Inner radius of cylinder (optional)
 
-# === Turbine window ===
+  # === POPUPWINDOW: Turbine window ===
   turbine:
     title:        New Turbine        # optional
     datakeyname:  Actuator_name      # optional
@@ -3182,7 +3211,7 @@ popupwindow:
         row:  6
         col:  1
 
-# === Turbine type window ===
+  # === POPUPWINDOW: Turbine type window ===
   turbinetype:
     title:        New Turbine Type   # optional
     datakeyname:  turbinetype_name   
@@ -3320,7 +3349,7 @@ popupwindow:
         help:     Turn on root correction
 
 
-  # === Set up a local run ===
+  # === POPUPWINDOW: Set up a local run ===
   localrun:
     title:        Run locally     # optional
     loadonstart:  True            # optional
@@ -3363,7 +3392,7 @@ popupwindow:
         row:  6
         col:  1
 
-  # === Set up a submission script ===
+  # === POPUPWINDOW: Set up a submission script ===
   submitscript:
     title:        Submission script
     loadonstart:  True            
@@ -3434,6 +3463,91 @@ popupwindow:
         text: Submit job
         command: "partial(self.savethenexec, 'self.master.submitscript_savescript(window=self, guimesg=True, submit=True)')"
 
+  # === POPUPWINDOW: postprocessing setup popupwindow === 
+  postpro_setup:
+    title:        Postprocessing setup
+    datakeyname:  postprocessing_setup_name
+    loadonstart:  True
+    width:        475
+    frames:
+    - name:       postprosetup_samplingframe
+      title:      Sampling options
+      row:        3
+    - name:       postprosetup_averagingframe
+      title:      Averaging options
+      row:        4
+    inputwidgets:
+    - name:       postprocessing_setup_title
+      label:      Name
+      labelonly:  True
+      row:        0
+    - name:       postprocessing_setup_name
+      label:      Postpro name
+      inputtype:  str
+      defaultval: object
+      row:        1
+    - name:       postprocessing_setup_type
+      label:      Type
+      inputtype:  listbox
+      optionlist: [Sampling, TimeAveraging]
+      defaultval: Sampling
+      row:        2
+      outputdef:
+        outputprefix: None
+        AMR-Wind: type
+      ctrlelem:
+      - frame:  postprosetup_samplingframe
+        activewhen: ['Sampling', 1]
+      - frame:  postprosetup_averagingframe
+        activewhen: ['TimeAveraging', 1]
+    # --- Sampling options ---
+    - name:       postprocessing_setup_output_frequency
+      label:      Output freq
+      frame:      postprosetup_samplingframe
+      inputtype:  int
+      defaultval: 100
+      outputdef:
+        outputprefix: None
+        AMR-Wind: output_frequency
+
+    - name:       postprocessing_setup_fields
+      label:      Variables
+      frame:      postprosetup_samplingframe
+      inputtype:  listbox
+      optionlist: [velocity, temperature, tke, actuator_src_term, velocity_mean, temperature_mean]
+      defaultval: velocity
+      listboxopt:
+        selectmode: multiple
+        height:   3
+      outputdef:
+        outputprefix: None
+        AMR-Wind: fields
+    # --- Averaging options ---
+    - name:       postprocessing_setup_averaging_window
+      label:      Averaging window
+      frame:      postprosetup_averagingframe
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        outputprefix: None
+        AMR-Wind: averaging_window
+    - name:       postprocessing_setup_averaging_start_time
+      label:      Averaging start time
+      frame:      postprosetup_averagingframe
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        outputprefix: None
+        AMR-Wind: averaging_start_time
+    - name:       postprocessing_setup_averaging_stop_time
+      label:      Averaging stop time
+      frame:      postprosetup_averagingframe
+      inputtype:  float
+      defaultval: 
+      outputdef:
+        outputprefix: None
+        AMR-Wind: averaging_stop_time
+
 
 listboxpopupwindows:
   - name:       listboxsampling
@@ -3441,10 +3555,20 @@ listboxpopupwindows:
     frame:      frame_IOsampling  
     #row:        0                   # optional
     popupinput: sampling             # required
+    dynamicprefixkey: sampling_outputto
     outputprefix:                    # optional
       AMR-Wind: sampling       
     outputlist:                      # optional
       AMR-Wind: labels
+
+  - name:       listboxpostprosetup
+    label:      "Types:"
+    frame:      frame_IOpostprosetup
+    popupinput: postpro_setup        # required
+    outputprefix:                    # optional
+      AMR-Wind: incflo
+    outputlist:                      # optional
+      AMR-Wind: post_processing
 
   - name:       listboxtagging
     label:      "Refinement zones:"

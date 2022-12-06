@@ -272,19 +272,26 @@ class MyApp(tkyg.App, object):
         inputdict = self.getDictFromInputs('AMR-Wind')
 
         # Get the sampling outputs
+        def dynamickeyfunc(n, p, d2):
+            prefix = p['sampling_outputto'].getval()[0]
+            return prefix+'.'+n+'.'+d2.outputdef['AMR-Wind']
         samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
-        sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', keyfunc=samplingkey)
+
+        sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfunc) #keyfunc=samplingkey)
         
         taggingdict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', keyfunc=self.getTaggingKey)
 
         actuatordict= self.listboxpopupwindict['listboxactuator'].dumpdict('AMR-Wind', keyfunc=samplingkey)
 
+        def postprocessingkey(n, d1, d2):
+            if ('outputprefix' in d2.outputdef):
+                return n+'.'+d2.outputdef['AMR-Wind']
+            else:
+                return d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
+        postprocessingdict= self.listboxpopupwindict['listboxpostprosetup'].dumpdict('AMR-Wind', keyfunc=postprocessingkey)
+
         # Construct the output dict
         outputdict=inputdict.copy()
-        if len(sampledict)>0:
-            commentdict = {'#comment_sampledict':'\n#---- sample defs ----'}
-            if comments: outputdict.update(commentdict)
-            outputdict.update(sampledict)
         if len(taggingdict)>0:
             commentdict = {'#comment_taggingdict':'\n#---- tagging defs ----'}
             if comments:  outputdict.update(commentdict)
@@ -293,6 +300,14 @@ class MyApp(tkyg.App, object):
             commentdict = {'#comment_actuatordict':'\n#---- actuator defs ----'}
             if comments:  outputdict.update(commentdict)
             outputdict.update(actuatordict)
+        if len(postprocessingdict)>0:
+            commentdict = {'#comment_postprocessingdict':'\n#---- postprocessing defs ----'}
+            if comments:  outputdict.update(commentdict)
+            outputdict.update(postprocessingdict)
+        if len(sampledict)>0:
+            commentdict = {'#comment_sampledict':'\n#---- sample defs ----'}
+            if comments: outputdict.update(commentdict)
+            outputdict.update(sampledict)
 
         # Add any extra parameters
         if outputextraparams:
@@ -426,6 +441,102 @@ class MyApp(tkyg.App, object):
                 key, data = cls.processline(line)
                 if key is not None: returndict[key] = data
         return returndict
+
+    def AMRWindExtractPostproDict(self, inputdict, template, samplingtemplate,
+                                  sep="."):
+        """
+        From input dict, extract all of the sampling probe parameters
+        """
+        postprodict = OrderedDict()
+
+        extradict = inputdict.copy()
+
+        # Get all incflo.postprocessing options
+        postprokey = 'incflo.post_processing'
+        postpronames = inputdict[postprokey].strip().split()
+        extradict.pop(postprokey)
+
+        # Run through all of the postprocessing objects
+        internalprefix = 'postprocessing_setup_'
+        allkeys = [key for key, item in inputdict.items()]
+        getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
+        matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
+        for name in postpronames:
+            objectdict=OrderedDict()
+            objectdict[internalprefix+'name'] = name
+            # Process all keys for name
+            prefix    = name+sep
+            probekeys = [k for k in allkeys if k.startswith(prefix) ]
+            for inputkey in probekeys:
+                inputkeytokens = inputkey.split(sep)
+                # Only take input parameters like sampling.type right now
+                if len(inputkeytokens)==2:
+                    internalkey = internalprefix + inputkeytokens[-1]
+                    inputtype=getinputtype(template['inputwidgets'],
+                                           internalkey)
+                    if len(inputtype)>0:
+                        inputtype = inputtype[0]
+                        data = matchlisttype(inputdict[inputkey], inputtype)
+                        objectdict[internalkey] = data
+                        extradict.pop(inputkey)
+            postprodict[name] = objectdict.copy()
+
+        # load the postprodict if necessary
+        if len(postprodict)>0:
+            #print(postprodict)
+            self.listboxpopupwindict['listboxpostprosetup'].populatefromdict(postprodict, forcechange=True)
+
+        if len(postprodict)>0:
+            samplingdict = OrderedDict()
+            dictkeypre= 'sampling_'
+            # Create the markers for probe/plane/line sampler
+            lmap = {}
+            lmap['probesampler'] = 'pf_'
+            lmap['linesampler']  = 'l_'
+            lmap['planesampler'] = 'p_'
+            for pname in postpronames:
+                pre = pname
+                if pre+'.labels' not in inputdict:
+                    # TODO: print warning here
+                    continue
+                samplingnames = inputdict[pre+'.labels'].strip().split()
+                extradict.pop(pre+'.labels')
+
+                # Construct the sampling dict
+                for name in samplingnames:
+                    probedict= OrderedDict()
+                    # Process all keys for name
+                    prefix    = pre+sep+name+sep
+                    probekeys = [k for k in allkeys if k.startswith(prefix) ]
+                    # First process the type
+                    probetype = tkyg.getdictval(inputdict, prefix+'type', None)
+                    l = lmap[probetype.lower()]
+                    if probetype is None:
+                        print("ERROR: %s is not found!"%prefix+'type')
+                        continue
+                    probedict[dictkeypre+'name']  = name
+                    probedict[dictkeypre+'outputto']  = pname
+                    probedict[dictkeypre+'type']  = probetype
+                    # Remove them from the list & dict
+                    probekeys.remove(prefix+'type')
+                    extradict.pop(prefix+'type')
+                    # Go through the rest of the keys
+                    for key in probekeys:
+                        suffix = key[len(prefix):]
+                        probedictkey = dictkeypre+l+suffix
+                        # Check what kind of data it's supposed to provide
+                        inputtype=getinputtype(samplingtemplate['inputwidgets'],
+                                               probedictkey)[0]
+                        data = matchlisttype(inputdict[key], inputtype)
+                        probedict[probedictkey] = data
+                        extradict.pop(key)
+                    samplingdict[name] = probedict.copy()
+
+            if len(samplingdict)>0:
+                #print(samplingdict)
+                self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict, forcechange=True)
+
+        return postprodict, extradict
 
     @classmethod
     def AMRWindExtractSampleDict(cls, inputdict, template, sep=[".","."]):
@@ -649,12 +760,21 @@ class MyApp(tkyg.App, object):
             amrdict=self.AMRWindInputToDict(filename)
         extradict=self.setinputfromdict('AMR-Wind', amrdict)
 
-        # Input the sampling probes
-        samplingdict, extradict = \
-            self.AMRWindExtractSampleDict(extradict, 
-            self.yamldict['popupwindow']['sampling'])
-        if len(samplingdict)>0:
-            self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict, forcechange=True)
+        # Input the postpro objects
+        postprodict, extradict = \
+            self.AMRWindExtractPostproDict(extradict,
+              self.yamldict['popupwindow']['postpro_setup'],
+              self.yamldict['popupwindow']['sampling'],
+            )
+
+        # DEPRECATED
+        # # Input the sampling probes
+        # samplingdict, extradict = \
+        #     self.AMRWindExtractSampleDict(extradict, 
+        #     self.yamldict['popupwindow']['sampling'])
+        # if len(samplingdict)>0:
+        #     self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict, forcechange=True)
+
         # Input the tagging/refinement zones
         taggingdict, extradict = \
             self.AMRWindExtractTaggingDict(extradict, 
@@ -802,6 +922,68 @@ class MyApp(tkyg.App, object):
         ax=self.fig.add_subplot(subplot)
         if clear: ax.clear()
         return ax
+
+    def addPostProSamplingObject(self, name, output_freq=None, fields=None):
+        """
+        """
+        listbox_postprosetup = self.listboxpopupwindict['listboxpostprosetup']
+        # Check to make sure a sampling object with name doesn't already exist
+        if name in listbox_postprosetup.getitemlist():
+            return
+        # Create a new entry
+        defaultdict          = listbox_postprosetup.getdefaultdict()
+        defaultdict['postprocessing_setup_name'] = name
+        defaultdict['postprocessing_setup_type'] = ['Sampling']
+        if output_freq is not None:
+            defaultdict['postprocessing_setup_output_frequency'] = output_freq
+        if fields is not None:
+            defaultdict['postprocessing_setup_fields']           = fields
+        listbox_postprosetup.populatefromdict({'x':defaultdict},
+                                              deleteprevious=False)
+        return
+
+    def getListboxKeyList(self, listboxpopup, key, outputkey='AMR-Wind'):
+        keylist    = []
+        allentries = listboxpopup.getitemlist()
+        for entry in allentries:
+            pdict = listboxpopup.dumpdict(outputkey,
+                                          subset=[entry],
+                                          keyfunc=lambda n, d1, d2: d2.name)
+            data = pdict[key]
+            keylist.append(data)
+        return keylist
+
+    def getPostProSetupList(self, autoMakeFirstSampler=True,
+                            firstSamplerName='sampling'):
+        """Get the list of postprocessing output objects, and set up a default
+        sampler object if none already exists.
+        """
+        listbox_postprosetup = self.listboxpopupwindict['listboxpostprosetup']
+        allentries           = listbox_postprosetup.getitemlist()
+        makeFirstEntry = False
+        # Test to see if we need to make the first sampling entry
+        if len(allentries)==0 and autoMakeFirstSampler:
+            makeFirstEntry = True
+        elif len(allentries)>0:
+            allentrytypes = self.getListboxKeyList(listbox_postprosetup,
+                                                   'postprocessing_setup_type')
+            allentrytypes = [x[0] for x in allentrytypes]
+            #print('allentrytypes: '+repr(allentrytypes))
+            if ('Sampling' not in allentrytypes) and  autoMakeFirstEntry:
+                makeFirstEntry = True
+        # Create the first sampler entry if necessary
+        if makeFirstEntry:
+            self.addPostProSamplingObject(firstSamplerName)
+        return listbox_postprosetup.getitemlist()
+
+    def getPostProSamplingDefault(self, autoMakeFirstSampler=True):
+        postProSetupList  = self.getPostProSetupList(autoMakeFirstSampler=autoMakeFirstSampler)
+        postProSetupTypes = self.getListboxKeyList(self.listboxpopupwindict['listboxpostprosetup'],
+                                                   'postprocessing_setup_type')
+        postProSetupTypes = [x[0] for x in postProSetupTypes]
+        #print('postProSetupTypes = '+repr(postProSetupTypes))
+        index = postProSetupTypes.index('Sampling')
+        return [postProSetupList[index]]
 
     from plotfunctions import plotDomain, readCartBoxFile, plotGenericProfile
 

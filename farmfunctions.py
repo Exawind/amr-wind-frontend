@@ -871,6 +871,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     probetype = pdict['type'].lower().strip()
 
     sampledict = {}
+    sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
         # Calculate the start, end, and number of points
@@ -1057,6 +1058,8 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     probetype = pdict['type'].lower().strip()
 
     sampledict = {}
+    sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
+
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
         # Calculate the start, end, and number of points
@@ -1220,12 +1223,13 @@ def sampling_createAllProbes(self, verbose=False):
                          reqheaders=reqheaders, optheaders=optheaders)
     alldf = dataframe2dict(df, reqheaders, optheaders, dictkeys=optheaders)
 
-    # Make sure to add sampling to the outputs
-    ppro_items = self.inputvars['post_processing'].getval()
-    if 'sampling' not in ppro_items:
-        ppro_items.append('sampling')
-        self.inputvars['post_processing'].setval(ppro_items)
-        self.inputvars['post_processing'].onoffctrlelem(None)
+    # DEPRECATED, REMOVE IN FUTURE
+    # # Make sure to add sampling to the outputs
+    # ppro_items = self.inputvars['post_processing'].getval()
+    # if 'sampling' not in ppro_items:
+    #     ppro_items.append('sampling')
+    #     self.inputvars['post_processing'].setval(ppro_items)
+    #     self.inputvars['post_processing'].onoffctrlelem(None)
     
     # Get all turbine properties
     allturbines  = self.listboxpopupwindict['listboxactuator']
