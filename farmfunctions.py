@@ -842,7 +842,11 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     orient  = getdictval(pdict['options'], 'orientation', defaultopt).lower()
     usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
     outputto= getdictval(pdict['options'], 'outputto', defaultopt)
-    outputfreq= getdictval(pdict['options'], 'outputfreq', defaultopt)
+    outputfreq = getdictval(pdict['options'], 'outputfreq', defaultopt)
+    outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
+    if outputvars is not None:
+        outputvars = outputvars.split(',')
+        print('outputvars = '+repr(outputvars))
 
     # Set scale and orientation axes
     scale = turbD if units=='diameter' else 1.0
@@ -877,7 +881,9 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     if outputto is None:
         sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
     else:
-        self.addPostProSamplingObject(outputto, output_freq=outputfreq)
+        self.addPostProSamplingObject(outputto,
+                                      output_freq=outputfreq,
+                                      fields=outputvars)
         sampledict['sampling_outputto'] = [outputto]
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
@@ -1026,7 +1032,11 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     usedx   = getdictval(pdict['options'], 'usedx', defaultopt)
     center  = getdictval(pdict['options'], 'center', defaultopt).lower()
     outputto= getdictval(pdict['options'], 'outputto', defaultopt)
-    outputfreq= getdictval(pdict['options'], 'outputfreq', defaultopt)
+    outputfreq = getdictval(pdict['options'], 'outputfreq', defaultopt)
+    outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
+    if outputvars is not None:
+        outputvars = outputvars.split(',')
+        print('outputvars = '+repr(outputvars))
 
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
@@ -1071,7 +1081,9 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     if outputto is None:
         sampledict['sampling_outputto'] = self.getPostProSamplingDefault()
     else:
-        self.addPostProSamplingObject(outputto, output_freq=outputfreq)
+        self.addPostProSamplingObject(outputto,
+                                      output_freq=outputfreq,
+                                      fields=outputvars)
         sampledict['sampling_outputto'] = [outputto]
 
     # --- Create centerline sampling probes --- 
@@ -1227,6 +1239,7 @@ def sampling_createAllProbes(self, verbose=False):
                   'noffsets':0,              # number of offsets
                   'outputto':None,           # Output to this sampler object
                   'outputfreq':None,         # Output at this frequency
+                  'outputvars':None,         # Output these variables
                  }
 
     reqheaders = ['name', 'type', 'upstream', 'downstream', 'lateral', 

@@ -500,7 +500,7 @@ inputwidgets:
   - name:       diffusion_type
     label:      Diffusion scheme
     frame:      frame_godunov
-    inputtype:  str
+    inputtype:  int
     optionlist: [0, 1, 2]
     defaultval:
     outputdef:
@@ -2443,6 +2443,24 @@ popupwindow:
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
+      - name:       plot_sampleprobes_style
+        frame:      plot_frameoverall
+        label:      Sample probe styles
+        inputtype:  str
+        defaultval: "{'markersize':2, 'marker':'.', 'linestyle':'None'}"
+        visible:    False
+      - name:       plot_sampleprobes_legend
+        frame:      plot_frameoverall
+        label:      Sample probe legend
+        inputtype:  str
+        defaultval: "{'title':'Sampling probes', 'fontsize':10, 'loc':'upper right', 'markerscale':6}"
+        visible:    False
+      - name:       plot_refineboxes_legend
+        frame:      plot_frameoverall
+        label:      Refinement zones legend
+        inputtype:  str
+        defaultval: "{'frameon':True, 'numpoints':1, 'fontsize':10, 'loc':'lower right'}"
+        visible:    False
       - name:       plot_sampleprobes
         frame:      plot_framesampleprobes
         label:      #Plot sample probes

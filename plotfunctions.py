@@ -254,7 +254,9 @@ def plotDomain(self, ax=None):
         allsamplingdata = self.listboxpopupwindict['listboxsampling']
         allprobes=allsamplingdata.getitemlist()
         keystr = lambda n, d1, d2: d2.name
-        ms=2
+        # Plot formatting features
+        splotdict   = eval(plotparams['plot_sampleprobes_style'])
+        splotlegend = eval(plotparams['plot_sampleprobes_legend'])
         for p in plotparams['plot_sampleprobes']:
             pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
             if pdict['sampling_type'][0]=='LineSampler':
@@ -267,7 +269,7 @@ def plotDomain(self, ax=None):
                     pt = start + dx*i
                     pts.append(pt)
                 pts = np.array(pts)
-                ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
+                ax.plot(pts[:,ix], pts[:,iy], label=p, **splotdict)
             if pdict['sampling_type'][0]=='PlaneSampler':
                 Npts   = pdict['sampling_p_num_points']
                 origin = np.array(pdict['sampling_p_origin'])
@@ -299,9 +301,8 @@ def plotDomain(self, ax=None):
                             pt = origin + i*dx1 + j*dx2 + doffset
                             pts.append(pt)
                 pts = np.array(pts)
-                ax.plot(pts[:,ix], pts[:,iy], '.', markersize=ms, label=p)
-        legendprobes=ax.legend(title="Sampling probes", fontsize=10,
-                               loc='upper right', markerscale=6)
+                ax.plot(pts[:,ix], pts[:,iy], label=p, **splotdict)
+        legendprobes=ax.legend(**splotlegend)
         # This marker size thing is broken now:
         #for legend_handle in legendprobes.legendHandles:
         #    legend_handle._legmarker.set_markersize(9)
@@ -324,6 +325,8 @@ def plotDomain(self, ax=None):
             levelcolors=plt.rcParams['axes.color_cycle']
         except:
             levelcolors=plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+        tagginglegend = eval(plotparams['plot_refineboxes_legend'])
 
         for p in plotparams['plot_refineboxes']:
             pdict = allrefinements.dumpdict('AMR-Wind',
@@ -385,9 +388,7 @@ def plotDomain(self, ax=None):
                                     alpha=0.75, 
                                     label='Level %i'%(i+0)))
             legend_label.append('Level %i'%(i+1))
-        legendrefine = ax.legend(legend_el, legend_label, 
-                                 frameon=True, numpoints=1, 
-                                 fontsize=10, loc='lower right')
+        legendrefine = ax.legend(legend_el, legend_label, **tagginglegend)
         ax.add_artist(legendrefine)
 
     # Plot the turbines
