@@ -77,7 +77,7 @@ def loadnetcdffile(filename, usemmap=False):
         else:
             return Dataset(filename)
     else:
-        print("%s DOES NOT EXIST.")
+        print("%s DOES NOT EXIST."%filename)
         return None
 
 def loadProfileData(d, varslist=stdvars, group='mean_profiles', avgt=[], 
