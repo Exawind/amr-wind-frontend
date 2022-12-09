@@ -1645,8 +1645,11 @@ class MyApp(tkyg.App, object):
         for fname in os.listdir(loadpath):
             if not fname.startswith('.') and \
                (fname.endswith('.yaml') or fname.endswith('.YAML')):
-                self.turbinemodels_loadfromfile(os.path.join(loadpath, fname), \
-                                                deleteprevious=deleteprevious)
+                try:
+                    self.turbinemodels_loadfromfile(os.path.join(loadpath, fname), \
+                                                    deleteprevious=deleteprevious)
+                except:
+                    print('Cannot load '+os.path.join(loadpath, fname)) #ERROR
         return
 
     def turbinemodels_applyturbinemodel(self, inputdict, use_turbine_type, 
