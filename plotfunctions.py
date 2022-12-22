@@ -8,6 +8,7 @@
 """
 Plotting functions
 """
+import os
 import numpy as np
 from collections            import OrderedDict 
 from matplotlib.collections import PatchCollection
@@ -440,6 +441,72 @@ def plotDomain(self, ax=None):
 
             plotTurbine(ax, basepos, turbhh, turbD, yaw, ix, iy,
                         lw=1, color='k', alpha=0.75)
+
+    # Plot the FLORIS wake solution
+    # -----------------------------
+    if plotparams['plot_florissoln']:
+        try:
+            from floris.tools import FlorisInterface
+        except ImportError:
+            print('Need to install FLORIS')
+        else:
+            inpfile = self.inputvars['floris_inputfile'].getval()
+            if not os.path.isfile(inpfile):
+                print('Need to run Farm > Setup FLORIS > Generate')
+            else:
+                print('Running FLORIS')
+                fi = FlorisInterface(inpfile)
+
+                # can optionally override wind speed/dir here
+                self.ABL_calculateWDirWS()
+                wspd = self.inputvars['ABL_windspeed'].getval()
+                wdir = self.inputvars['ABL_winddir'].getval()
+                #fi.reinitialize(wind_directions=[wdir], wind_speeds=[wspd])
+
+                # setup yaw (offset) angles, relative to wind direction
+                yaw_angles = []
+                allturbines  = self.listboxpopupwindict['listboxactuator']
+                alltags      = allturbines.getitemlist()
+                keystr       = lambda n, d1, d2: d2.name
+                for turb in alltags:
+                    tdict = allturbines.dumpdict('AMR-Wind', subset=[turb], keyfunc=keystr)
+                    yaw_angles.append(wdir - tdict['Actuator_yaw'])
+                yaw_angles = np.array([[yaw_angles]])
+
+                # finally, run FLORIS
+                fi.calculate_wake(yaw_angles=yaw_angles)
+                nx = self.inputvars['n_cell'].getval()[0]
+                ny = self.inputvars['n_cell'].getval()[1]
+                zhub = 90.0 # TODO update this
+                horizontal_plane = fi.calculate_horizontal_plane(
+                    x_resolution=nx,
+                    y_resolution=ny,
+                    height=zhub,
+                    yaw_angles=yaw_angles)
+
+                # calculate normalized wind speed
+                print('Postprocessing FLORIS')
+                df = horizontal_plane.df.set_index(['x1','x2'])
+                floris_vel = np.sqrt(df['u']**2 + df['v']**2) / wspd
+                floris_vel = floris_vel.sort_index().unstack()
+
+                # rotate grid from wind frame back to inertial frame
+                # note: currently FLORIS v3.2 does not provide this function
+                xx,yy = np.meshgrid(floris_vel.index, floris_vel.columns, indexing='ij')
+                coordinates = fi.floris.grid.turbine_coordinates_array  # shape==(Nturb,3)
+                x_center_of_rotation = (np.min(coordinates[:,0]) + np.max(coordinates[:,0])) / 2
+                y_center_of_rotation = (np.min(coordinates[:,1]) + np.max(coordinates[:,1])) / 2
+                x_delta = xx - x_center_of_rotation
+                y_delta = yy - y_center_of_rotation
+                wind_delta = np.radians(wdir - 270)
+                xx0 =  x_delta * np.cos(wind_delta) + y_delta * np.sin(wind_delta) + x_center_of_rotation
+                yy0 = -x_delta * np.sin(wind_delta) + y_delta * np.cos(wind_delta) + y_center_of_rotation
+
+                print('Plotting wakes')
+                cm = ax.contour(xx0, yy0, floris_vel,
+                                levels=[0.5, 0.75, 0.9, 0.95, 0.99, 0.995],
+                                linewidths=0.5)
+                #cb = ax.colorbar(cm)
 
     # --------------------------------
     # Set some plot formatting parameters

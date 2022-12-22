@@ -1003,6 +1003,7 @@ class MyApp(tkyg.App, object):
     from farmfunctions import turbines_createAllTurbines, turbines_previewAllTurbines
     from farmfunctions import sampling_createAllProbes
     from farmfunctions import sweep_SetupRunParamSweep
+    from farmfunctions import floris_setup
 
     def getMaxLevel(self):
         max_level = 0
@@ -1281,6 +1282,9 @@ class MyApp(tkyg.App, object):
 
     def ABL_calculateWDirWS(self):
         Wvec   = self.inputvars['ABL_velocity'].getval()
+        if Wvec is None:
+            print('ABL_calculateWDirWS() called',
+                  'but ABL_velocity vector not specified')
         Uhoriz = np.sqrt(Wvec[0]**2 + Wvec[1]**2)
         # Check for North/East vector
         thetaoffset = self.get_N_angle_to_Y()

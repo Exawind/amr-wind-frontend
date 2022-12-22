@@ -120,6 +120,11 @@ frames:
     row:   2
     kwargs:
       borderwidth: 0
+
+  - name:  frame_floris
+    tab:   Farm
+    title: Setup FLORIS
+    toggled: True
       
 inputwidgets:
   - name:       farm_setupfile
@@ -473,6 +478,23 @@ inputwidgets:
       help:      Log file to record each run
       farmsetup: sweep_logfile
 
+  # -------- FLORIS inputs ---------------------------------
+  - name:       floris_inputfile
+    frame:      frame_floris
+    label:      YAML file
+    inputtype:  str #filename
+    row:        1
+    defaultval: 'floris.yaml'
+    entryopt:
+      width:    25
+    fileopenopt:
+      selecttype: saveas
+      kwargs:
+        filetypes:
+          - ["YAML files", "*.yaml"]
+          - ["all files", "*.*"]
+    outputdef:
+      help:     YAML file with FLORIS settings
 
   # -------- Hidden/extra inputs ---------------------------
   - name:       wfarm_embedamrwindinput
@@ -574,6 +596,11 @@ buttons:
     command: self.sweep_SetupRunParamSweep
     #command: self.donothing_button
 
+  - name:    farmbutton_generatefloris
+    text:    Generate
+    frame:   frame_floris
+    command: "self.floris_setup"
+
   # --- Help buttons ---
   - name:     helpbutton_farmturbinecsv
     text:     "[?]"
@@ -626,7 +653,6 @@ buttons:
       padx:   1
     gridoptions:
       sticky: 'NE'
-
 
 # Add all help messages and buttons in here
 helpwindows:
