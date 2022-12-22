@@ -1403,6 +1403,15 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABL.random_gauss_var      
 
+  - name:       wall_shear_stress_type
+    label:      Shear stress type
+    frame:      frame_ABLprop
+    inputtype:  str
+    optionlist: [Moeng, constant, local, Schumann]
+    defaultval:
+    outputdef:
+      AMR-Wind: ABL.wall_shear_stress_type
+
   - name:       latitude
     label:      Latitude
     frame:      frame_Coriolis
