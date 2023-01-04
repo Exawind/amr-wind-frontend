@@ -2006,6 +2006,7 @@ class MyApp(tkyg.App, object):
                               forcingdict={},
                               autoset_ABLForcing=True,
                               autoset_ABLMeanBoussinesq=True,
+                              autoset_ABLwallshearstresstype=True,
                               verbose=False):
         """Automatically sets the boundary conditions and parameters required
         to restart using boundary planes.
@@ -2094,7 +2095,10 @@ class MyApp(tkyg.App, object):
             if verbose: printverbose('SET','ABLMeanBoussinesq')
 
         # Set the ABL mode to local
-        
+        if autoset_ABLwallshearstresstype:
+            self.inputvars['wall_shear_stress_type'].setval('local')
+            if verbose: printverbose('SET','wall_shear_stress_type')
+
         return
 
 if __name__ == "__main__":
