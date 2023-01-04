@@ -2096,7 +2096,7 @@ class MyApp(tkyg.App, object):
 
         # Set the ABL mode to local
         if autoset_ABLwallshearstresstype:
-            self.inputvars['wall_shear_stress_type'].setval('local')
+            self.inputvars['wall_shear_stress_type'].setval('local', forcechange=True)
             if verbose: printverbose('SET','wall_shear_stress_type')
 
         return
