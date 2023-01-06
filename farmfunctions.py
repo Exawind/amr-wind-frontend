@@ -635,7 +635,7 @@ def turbines_createAllTurbines(self):
         self.inputvars['physics'].setval(physicsterms)
 
     # Delete all old turbines (if necessary)
-    if self.inputvars['refine_deleteprev'].getval():
+    if self.inputvars['turbines_deleteprev'].getval():
         allturbines.deleteall()
 
     # Add all turbines
