@@ -188,7 +188,7 @@ def plotTurbine(figax, basexyz, hubheight, turbD, nacelledir, ix, iy,
     return
 
 # -------------------------------------------------------------
-def plotDomain(self, ax=None):
+def plotDomain(self, ax=None, verbose=False, plotskip=1):
     # Clear and resize figure
     if ax is None: ax=self.setupfigax()
 
@@ -257,34 +257,52 @@ def plotDomain(self, ax=None):
         # Plot formatting features
         splotdict   = eval(plotparams['plot_sampleprobes_style'])
         splotlegend = eval(plotparams['plot_sampleprobes_legend'])
+        allpdict = allsamplingdata.dumpdict('AMR-Wind', subset=[])
+        #print(allpdict)
         for p in plotparams['plot_sampleprobes']:
-            pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
-            if pdict['sampling_type'][0]=='LineSampler':
-                Npts  = pdict['sampling_l_num_points']
-                start = np.array(pdict['sampling_l_start'])
-                end   = np.array(pdict['sampling_l_end'])
+            #pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
+            if verbose: print("Plotting "+p)
+            # if pdict['sampling_type'][0]=='LineSampler':
+            #     Npts  = pdict['sampling_l_num_points']
+            #     start = np.array(pdict['sampling_l_start'])
+            #     end   = np.array(pdict['sampling_l_end'])
+            if allpdict[p+'.type'][0]=='LineSampler':
+                Npts  = allpdict[p+'num_points']
+                start = np.array(allpdict[p+'.start'])
+                end   = np.array(allpdict[p+'.end'])
+
                 dx    = (end-start)/(Npts-1.0)
                 pts   = []
                 for i in range(Npts):
                     pt = start + dx*i
                     pts.append(pt)
                 pts = np.array(pts)
-                ax.plot(pts[:,ix], pts[:,iy], label=p, **splotdict)
-            if pdict['sampling_type'][0]=='PlaneSampler':
-                Npts   = pdict['sampling_p_num_points']
-                origin = np.array(pdict['sampling_p_origin'])
-                axis1  = np.array(pdict['sampling_p_axis1'])
-                axis2  = np.array(pdict['sampling_p_axis2'])
+                ax.plot(pts[::plotskip,ix], pts[::plotskip,iy], label=p, **splotdict)
+            # if pdict['sampling_type'][0]=='PlaneSampler':
+            #     Npts   = pdict['sampling_p_num_points']
+            #     origin = np.array(pdict['sampling_p_origin'])
+            #     axis1  = np.array(pdict['sampling_p_axis1'])
+            #     axis2  = np.array(pdict['sampling_p_axis2'])
+            if allpdict[p+'.type'][0]=='PlaneSampler':
+                Npts   = allpdict[p+'.num_points']
+                origin = np.array(allpdict[p+'.origin'])
+                axis1  = np.array(allpdict[p+'.axis1'])
+                axis2  = np.array(allpdict[p+'.axis2'])
+
                 dx1    = axis1/(Npts[0]-1.0)
                 dx2    = axis2/(Npts[1]-1.0)
 
                 # Construct the list of offsets
-                if (pdict['sampling_p_offsets'] is not None) and \
-                   (pdict['sampling_p_offsets'] != 'None'):
-                    offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
+                # if (pdict['sampling_p_offsets'] is not None) and \
+                #    (pdict['sampling_p_offsets'] != 'None'):
+                #     offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
+                if (allpdict[p+'.offsets'] is not None) and \
+                   (allpdict[p+'.offsets'] != 'None'):
+                    offsets =[float(x) for x in allpdict[p+'.offsets'].split()]
                 else:
                     offsets = [0.0]
-                offsetnormal = np.array(pdict['sampling_p_normal'])
+                #offsetnormal = np.array(pdict['sampling_p_normal'])
+                offsetnormal = np.array(allpdict[p+'.normal'])
                 offsetvec = []
                 if len(offsets)==0:
                     offsetvec.append(np.zeros(3))
@@ -301,13 +319,12 @@ def plotDomain(self, ax=None):
                             pt = origin + i*dx1 + j*dx2 + doffset
                             pts.append(pt)
                 pts = np.array(pts)
-                ax.plot(pts[:,ix], pts[:,iy], label=p, **splotdict)
-        legendprobes=ax.legend(**splotlegend)
-        # This marker size thing is broken now:
-        #for legend_handle in legendprobes.legendHandles:
-        #    legend_handle._legmarker.set_markersize(9)
-        plt.setp(legendprobes.get_title(),fontsize=10)
-        ax.add_artist(legendprobes)
+                ax.plot(pts[::plotskip,ix], pts[::plotskip,iy], label=p, **splotdict)
+        if splotlegend:
+            legendprobes=ax.legend(**splotlegend)
+            legendfontsize = 10 if 'fontsize' not in splotlegend else splotlegend['fontsize']
+            plt.setp(legendprobes.get_title(),fontsize=legendfontsize)
+            ax.add_artist(legendprobes)
 
     # Plot the refinement boxes
     # ---------------------------
@@ -395,7 +412,7 @@ def plotDomain(self, ax=None):
     # ---------------------------
     if ((plotparams['plot_turbines'] is not None) and 
         (len(plotparams['plot_turbines'])>0)):
-        print("Plotting turbines")
+        if verbose: print("Plotting turbines")
         allturbines  = self.listboxpopupwindict['listboxactuator']
         alltags      = allturbines.getitemlist()
         keystr       = lambda n, d1, d2: d2.name
