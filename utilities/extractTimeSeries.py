@@ -14,6 +14,51 @@ import os.path
 import argparse
 import mmap
 
+def findClosestPt(ptlist, p):
+    mindist = 1.0E100
+    minind  = -1
+    for ipt, xpt in enumerate(ptlist):
+        dist = np.linalg.norm(np.array(xpt)-np.array(p))
+        if dist < mindist:
+            mindist = dist
+            minind = ipt
+    return minind
+
+# See https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+def progress(count, total, suffix=''):
+    """
+    print out a progressbar
+    """
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+    sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', suffix))
+    sys.stdout.flush()
+
+def getClosestPt(ncdat, xyzptvec, group, verbose=False):
+    """
+    """
+    Npts   = ncdat[group].dimensions['num_points'].size
+    allpts = ncdat[group].variables['coordinates']
+    Nijk   = ncdat[group].ijk_dims
+    Ni     = Nijk[0]
+    Nj     = Nijk[1]
+    iptlist = []
+    xptlist = []
+    ixyzlist = []
+    for xyzpt in xyzptvec:
+        if verbose: print(xyzpt)
+        ipt   = findClosestPt(allpts, xyzpt)
+        iz    = ipt//(Ni*Nj)
+        remainder = ipt%(Ni*Nj)
+        iy    = remainder//Ni
+        ix    = remainder%Ni
+        iptlist.append(ipt)
+        ixyzlist.append([ix, iy, iz])
+        xptlist.append(np.array(allpts[ipt]))
+    return ixyzlist, xptlist
+
 def findMatchingPt(ptlist, p, eps):
     for ipt, xpt in enumerate(ptlist):
         if (np.linalg.norm(np.array(xpt)-np.array(p)))<eps: return ipt
