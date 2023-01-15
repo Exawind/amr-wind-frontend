@@ -267,7 +267,7 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
             #     start = np.array(pdict['sampling_l_start'])
             #     end   = np.array(pdict['sampling_l_end'])
             if allpdict[p+'.type'][0]=='LineSampler':
-                Npts  = allpdict[p+'num_points']
+                Npts  = allpdict[p+'.num_points']
                 start = np.array(allpdict[p+'.start'])
                 end   = np.array(allpdict[p+'.end'])
 
