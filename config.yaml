@@ -112,11 +112,10 @@ frames:
     tab:   IO
     row:   5
     title: Sampling probes
-# --- DEPRECATED REMOVE IN FUTURE ---
-#  - name:  frame_IOaveraging
-#    tab:   IO
-#    row:   6
-#    title: Averaging options
+  - name:  frame_IOaveraging
+    tab:   IO
+    row:   6
+    title: Averaging options
 
   # ==== Refinement frames ==== 
   - name:  frame_refinement
@@ -1657,46 +1656,46 @@ inputwidgets:
 #    outputdef:
 #      AMR-Wind: '#comment_averaging'
 
-  # --- DEPRECATED REMOVE IN FUTURE ---
-  - name:       averaging_type
-    label:      Averaging type
-    frame:      frame_IOsampling
-    inputtype:  str
-    optionlist: [TimeAveraging]
-    defaultval: TimeAveraging
-    visible:    False
-#    outputdef:
-#      AMR-Wind: averaging.type
+#   # --- DEPRECATED REMOVE IN FUTURE ---
+#   - name:       averaging_type
+#     label:      Averaging type
+#     frame:      frame_IOsampling
+#     inputtype:  str
+#     optionlist: [TimeAveraging]
+#     defaultval: TimeAveraging
+#     visible:    False
+# #    outputdef:
+# #      AMR-Wind: averaging.type
 
-  # --- DEPRECATED REMOVE IN FUTURE ---
-  - name:       averaging_window
-    label:      Averaging window
-    frame:      frame_IOsampling
-    inputtype:  float
-    defaultval: 
-    visible:    False
-#    outputdef:
-#      AMR-Wind: averaging.averaging_window
+#   # --- DEPRECATED REMOVE IN FUTURE ---
+#   - name:       averaging_window
+#     label:      Averaging window
+#     frame:      frame_IOsampling
+#     inputtype:  float
+#     defaultval: 
+#     visible:    False
+# #    outputdef:
+# #      AMR-Wind: averaging.averaging_window
 
-  # --- DEPRECATED REMOVE IN FUTURE ---
-  - name:       averaging_start_time
-    label:      Averaging start time
-    frame:      frame_IOsampling
-    inputtype:  float
-    defaultval: 
-    visible:    False
-#    outputdef:
-#      AMR-Wind: averaging.averaging_start_time
+#   # --- DEPRECATED REMOVE IN FUTURE ---
+#   - name:       averaging_start_time
+#     label:      Averaging start time
+#     frame:      frame_IOsampling
+#     inputtype:  float
+#     defaultval: 
+#     visible:    False
+# #    outputdef:
+# #      AMR-Wind: averaging.averaging_start_time
 
-  # --- DEPRECATED REMOVE IN FUTURE ---
-  - name:       averaging_stop_time
-    label:      Averaging stop time
-    frame:      frame_IOsampling
-    inputtype:  float
-    defaultval: 
-    visible:    False
-#    outputdef:
-#      AMR-Wind: averaging.averaging_stop_time
+#   # --- DEPRECATED REMOVE IN FUTURE ---
+#   - name:       averaging_stop_time
+#     label:      Averaging stop time
+#     frame:      frame_IOsampling
+#     inputtype:  float
+#     defaultval: 
+#     visible:    False
+# #    outputdef:
+# #      AMR-Wind: averaging.averaging_stop_time
 
   # =========== Postprocessing stuff here ====================
   # ----------- ABL postprocessing -----------------
@@ -2608,7 +2607,59 @@ popupwindow:
         text: Plot 
         command: "partial(self.savethenexec, 'self.master.FAST_plotoutputs(window=self)')"
         row:  4
+  # === POPUPWINDOW: Averaging window ===
+  averaging:
+    title:        Averaging type     # optional
+    datakeyname:  averaging_name      # optional
+    loadonstart:  False              # optional
+    width:        450
+    height:       450
+    frames:
+    - name:       averagingtype_frame
+      row:        1
+    - name:       averagingoptions_frame
+      title:      Averaging options
+      row:        2
+    inputwidgets:
+    - name:       averaging_label
+      label:      Averaging output setup
+      labelonly:  True
+      row:        0
+    - name:       averaging_name
+      label:      Name
+      inputtype:  str
+      defaultval: newaverage
+      frame:      averagingtype_frame
+    - name:       averaging_outputto
+      label:      Average To
+      inputtype:  listbox
+      optionlist: "self.parent.getPostProSetupListAvg()"
+      defaultval: "averaging"
+      frame:      averagingtype_frame
+      listboxopt:
+        width:    12
+    - name:       averaging_averaging_type
+      label:      Averaging type
+      frame:      averagingoptions_frame
+      inputtype:  str
+      optionlist: [ReAveraging, ReynoldsStress]
+      defaultval: ReAveraging
+      outputdef:  
+        AMR-Wind: averaging_type
+    - name:       averaging_fields
+      label:      Fields
+      frame:      averagingoptions_frame
+      inputtype:  listbox
+      optionlist: [velocity, temperature, tke, actuator_src_term]
+      defaultval: velocity
+      listboxopt:
+        selectmode: multiple
+        height:   3
+      outputdef:
+        outputprefix: None
+        AMR-Wind: fields
 
+ 
   # === POPUPWINDOW: Sampling window ===
   sampling:
     title:        Sampling probe     # optional
@@ -3585,6 +3636,17 @@ listboxpopupwindows:
     dynamicprefixkey: sampling_outputto
     outputprefix:                    # optional
       AMR-Wind: sampling       
+    outputlist:                      # optional
+      AMR-Wind: labels
+
+  - name:       listboxaveraging
+    label:      "Avg:"
+    frame:      frame_IOaveraging
+    #row:        0                   # optional
+    popupinput: averaging             # required
+    dynamicprefixkey: averaging_outputto
+    outputprefix:                    # optional
+      AMR-Wind: averaging
     outputlist:                      # optional
       AMR-Wind: labels
 

@@ -96,11 +96,15 @@ class MyApp(tkyg.App, object):
             self.listboxpopupwindict['listboxturbinetype'].getdefaultdict
         self.get_default_actuatordict = \
             self.listboxpopupwindict['listboxactuator'].getdefaultdict
+        self.get_default_postprosetupdict = \
+            self.listboxpopupwindict['listboxpostprosetup'].getdefaultdict
 
         # Shorthand aliases to add things
         self.add_turbine  = partial(self.add_populatefromdict,'listboxactuator')
         self.add_sampling = partial(self.add_populatefromdict,'listboxsampling')
         self.add_tagging  = partial(self.add_populatefromdict,'listboxtagging')
+        self.add_postprosetup  = partial(self.add_populatefromdict,
+                                         'listboxpostprosetup')
 
         # Shorthand aliases to edit things
         self.edit_turbine  = partial(self.edit_entryval, 'listboxactuator')
@@ -275,9 +279,14 @@ class MyApp(tkyg.App, object):
         def dynamickeyfunc(n, p, d2):
             prefix = p['sampling_outputto'].getval()[0]
             return prefix+'.'+n+'.'+d2.outputdef['AMR-Wind']
+        def dynamickeyfuncavg(n, p, d2):
+            prefix = p['averaging_outputto'].getval()[0]
+            return prefix+'.'+n+'.'+d2.outputdef['AMR-Wind']
         samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
 
-        sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfunc) #keyfunc=samplingkey)
+        sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfunc)
+
+        averagingict  = self.listboxpopupwindict['listboxaveraging'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfuncavg)
         
         taggingdict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', keyfunc=self.getTaggingKey)
 
@@ -304,6 +313,10 @@ class MyApp(tkyg.App, object):
             commentdict = {'#comment_postprocessingdict':'\n#---- postprocessing defs ----'}
             if comments:  outputdict.update(commentdict)
             outputdict.update(postprocessingdict)
+        if len(averagingict)>0:
+            commentdict = {'#comment_averagingdict':'\n#---- averaging defs ----'}
+            if comments: outputdict.update(commentdict)
+            outputdict.update(averagingict)
         if len(sampledict)>0:
             commentdict = {'#comment_sampledict':'\n#---- sample defs ----'}
             if comments: outputdict.update(commentdict)
@@ -443,7 +456,7 @@ class MyApp(tkyg.App, object):
         return returndict
 
     def AMRWindExtractPostproDict(self, inputdict, template, samplingtemplate,
-                                  sep="."):
+                                  averagingtemplate, sep="."):
         """
         From input dict, extract all of the sampling probe parameters
         """
@@ -492,6 +505,9 @@ class MyApp(tkyg.App, object):
             #print(postprodict)
             self.listboxpopupwindict['listboxpostprosetup'].populatefromdict(postprodict, forcechange=True)
 
+        averagingobjects = []
+
+        # load all of the sampling inputs
         if len(postprodict)>0:
             samplingdict = OrderedDict()
             dictkeypre= 'sampling_'
@@ -501,6 +517,17 @@ class MyApp(tkyg.App, object):
             lmap['linesampler']  = 'l_'
             lmap['planesampler'] = 'p_'
             for pname in postpronames:
+                # Double check and make sure it's a sampler input
+                listboxpopup = self.listboxpopupwindict['listboxpostprosetup']
+                pdict = listboxpopup.dumpdict('AMR-Wind',
+                                              subset=[pname],
+                                              keyfunc=lambda n, d1, d2: d2.name)
+                if pdict['postprocessing_setup_type'] != ['Sampling']:
+                    averagingobjects.append(pname)
+                    # Quit if it's not a Sampling type
+                    continue
+
+                # Process the sampling
                 pre = pname
                 if pre+'.labels' not in inputdict:
                     # TODO: print warning here
@@ -538,12 +565,69 @@ class MyApp(tkyg.App, object):
                         extradict.pop(key)
                     samplingdict[name] = probedict.copy()
 
+            # Now populate it with the samplingdict
             if len(samplingdict)>0:
                 #print(samplingdict)
                 self.listboxpopupwindict['listboxsampling'].populatefromdict(samplingdict, forcechange=True)
 
+        # load all of the averaging inputs
+        if len(averagingobjects)>0:
+            averagingdict = OrderedDict()
+            dictkeypre= 'averaging_'
+            for pname in averagingobjects:
+                # Double check and make sure it's an averaging input
+                listboxpopup = self.listboxpopupwindict['listboxpostprosetup']
+                pdict = listboxpopup.dumpdict('AMR-Wind',
+                                              subset=[pname],
+                                              keyfunc=lambda n, d1, d2: d2.name)
+                if pdict['postprocessing_setup_type'] != ['TimeAveraging']:
+                    # Quit if it's not TimeAveraging type
+                    continue
+                # Process the sampling
+                pre = pname
+                if pre+'.labels' not in inputdict:
+                    # TODO: print warning here
+                    continue
+                averagingnames = inputdict[pre+'.labels'].strip().split()
+                extradict.pop(pre+'.labels')
+
+                # Construct the averaging dict
+                for name in averagingnames:
+                    objectdict= OrderedDict()
+                    # Process all keys for name
+                    prefix    = pre+sep+name+sep
+                    probekeys = [k for k in allkeys if k.startswith(prefix) ]
+                    # First process the type
+                    probetype = tkyg.getdictval(inputdict,
+                                                prefix+'averaging_type', None)
+                    if probetype is None:
+                        print("ERROR: %s is not found!"%prefix+'averaging_type')
+                        continue
+                    objectdict[dictkeypre+'name']  = name
+                    objectdict[dictkeypre+'outputto']  = pname
+                    objectdict[dictkeypre+'averaging_type']  = probetype
+                    # Remove them from the list & dict
+                    probekeys.remove(prefix+'averaging_type')
+                    extradict.pop(prefix+'averaging_type')
+                    # Go through the rest of the keys
+                    for key in probekeys:
+                        suffix = key[len(prefix):]
+                        probedictkey = dictkeypre+suffix
+                        # Check what kind of data it's supposed to provide
+                        inputtype=getinputtype(averagingtemplate['inputwidgets'],
+                                               probedictkey)[0]
+                        data = matchlisttype(inputdict[key], inputtype)
+                        objectdict[probedictkey] = data
+                        extradict.pop(key)
+                    averagingdict[name] = objectdict.copy()
+
+            # Now populate it with the averagingdict
+            if len(averagingdict)>0:
+                self.listboxpopupwindict['listboxaveraging'].populatefromdict(averagingdict, forcechange=True)
+
         return postprodict, extradict
 
+    # **** THIS IS DEPRECATED, REMOVE LATER *****
     @classmethod
     def AMRWindExtractSampleDict(cls, inputdict, template, sep=[".","."]):
         """
@@ -771,6 +855,7 @@ class MyApp(tkyg.App, object):
             self.AMRWindExtractPostproDict(extradict,
               self.yamldict['popupwindow']['postpro_setup'],
               self.yamldict['popupwindow']['sampling'],
+              self.yamldict['popupwindow']['averaging'],
             )
 
         # DEPRECATED
@@ -929,6 +1014,21 @@ class MyApp(tkyg.App, object):
         if clear: ax.clear()
         return ax
 
+    def addPostProAveragingObject(self, name, fields=None):
+        """
+        """
+        listbox_postprosetup = self.listboxpopupwindict['listboxpostprosetup']
+        # Check to make sure a sampling object with name doesn't already exist
+        if name in listbox_postprosetup.getitemlist():
+            return
+        # Create a new entry
+        defaultdict          = listbox_postprosetup.getdefaultdict()
+        defaultdict['postprocessing_setup_name'] = name
+        defaultdict['postprocessing_setup_type'] = ['TimeAveraging']
+        listbox_postprosetup.populatefromdict({'x':defaultdict},
+                                              deleteprevious=False)
+        return
+
     def addPostProSamplingObject(self, name, output_freq=None, fields=None):
         """
         """
@@ -975,11 +1075,34 @@ class MyApp(tkyg.App, object):
                                                    'postprocessing_setup_type')
             allentrytypes = [x[0] for x in allentrytypes]
             #print('allentrytypes: '+repr(allentrytypes))
-            if ('Sampling' not in allentrytypes) and  autoMakeFirstEntry:
+            if ('Sampling' not in allentrytypes) and  autoMakeFirstSampler:
                 makeFirstEntry = True
         # Create the first sampler entry if necessary
         if makeFirstEntry:
             self.addPostProSamplingObject(firstSamplerName)
+        return listbox_postprosetup.getitemlist()
+
+    def getPostProSetupListAvg(self, autoMakeFirstSampler=True,
+                               firstSamplerName='averaging'):
+        """Get the list of postprocessing output objects for averaging, and
+        set up a default averaging object if none already exists.
+        """
+        listbox_postprosetup = self.listboxpopupwindict['listboxpostprosetup']
+        allentries           = listbox_postprosetup.getitemlist()
+        makeFirstEntry = False
+        # Test to see if we need to make the first sampling entry
+        if len(allentries)==0 and autoMakeFirstSampler:
+            makeFirstEntry = True
+        elif len(allentries)>0:
+            allentrytypes = self.getListboxKeyList(listbox_postprosetup,
+                                                   'postprocessing_setup_type')
+            allentrytypes = [x[0] for x in allentrytypes]
+            #print('allentrytypes: '+repr(allentrytypes))
+            if ('TimeAveraging' not in allentrytypes) and  autoMakeFirstEntry:
+                makeFirstEntry = True
+        # Create the first sampler entry if necessary
+        if makeFirstEntry:
+            self.addPostProAveragingObject(firstSamplerName)
         return listbox_postprosetup.getitemlist()
 
     def getPostProSamplingDefault(self, autoMakeFirstSampler=True):
