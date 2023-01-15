@@ -635,7 +635,7 @@ def turbines_createAllTurbines(self):
         self.inputvars['physics'].setval(physicsterms)
 
     # Delete all old turbines (if necessary)
-    if self.inputvars['refine_deleteprev'].getval():
+    if self.inputvars['turbines_deleteprev'].getval():
         allturbines.deleteall()
 
     # Add all turbines
@@ -846,7 +846,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
     if outputvars is not None:
         outputvars = outputvars.split(',')
-        print('outputvars = '+repr(outputvars))
+        #print('outputvars = '+repr(outputvars))
 
     # Set scale and orientation axes
     scale = turbD if units=='diameter' else 1.0
@@ -909,24 +909,35 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     elif probetype == 'rotorplane':
         # Calculate the geometry
         upstream   = scale*float(pdict['upstream'])
+        #print('below = ['+repr(pdict['below'].strip())+']')
+        pdictbelow = repr(pdict['below']).replace("'",'').strip()
+        pdictabove = repr(pdict['above']).replace("'",'').strip()
+        pdictlateral = repr(pdict['lateral']).replace("'",'').strip()
+        below      = 0.5*turbD if len(pdictbelow)<1 else scale*float(pdictbelow)
+        above      = 0.5*turbD if len(pdictabove)<1 else scale*float(pdictabove)
+        lateral    = 0.5*turbD if len(pdictlateral)<1 else scale*float(pdictlateral)
         origin     = hubcenter - upstream*streamwise
-        origin     = origin - 0.5*turbD*crossstream - 0.5*turbD*vert
+        origin     = origin - lateral*crossstream - below*vert
+
+        # Calculate dimensions
+        L1         = 2.0*lateral
+        L2         = above + below
 
         # Calculate the grid points
         if usedx is None:
             N1 = int(pdict['n1'])
             N2 = int(pdict['n2'])
         else:
-            N1 = int(round((turbD)/(scale*float(usedx))))+1
-            N2 = int(round((turbD)/(scale*float(usedx))))+1
+            N1 = int(round((L1)/(scale*float(usedx))))+1
+            N2 = int(round((L2)/(scale*float(usedx))))+1
 
         # Set up the sampling dict
         sampledict['sampling_name']         = probename
         sampledict['sampling_type']         = 'PlaneSampler'
         sampledict['sampling_p_num_points'] = [N1, N2]
         sampledict['sampling_p_origin']     = origin
-        sampledict['sampling_p_axis1']      = crossstream*turbD
-        sampledict['sampling_p_axis2']      = vert*turbD
+        sampledict['sampling_p_axis1']      = crossstream*L1
+        sampledict['sampling_p_axis2']      = vert*L2
 
         # Calculate offsets
         noffsets   = int(getdictval(pdict['options'], 'noffsets', defaultopt))
@@ -1036,7 +1047,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
     if outputvars is not None:
         outputvars = outputvars.split(',')
-        print('outputvars = '+repr(outputvars))
+        #print('outputvars = '+repr(outputvars))
 
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
