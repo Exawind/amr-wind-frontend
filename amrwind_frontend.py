@@ -90,6 +90,8 @@ class MyApp(tkyg.App, object):
         # Define alias functions for get_default_* dicts
         self.get_default_samplingdict = \
             self.listboxpopupwindict['listboxsampling'].getdefaultdict
+        self.get_default_averagingdict = \
+            self.listboxpopupwindict['listboxaveraging'].getdefaultdict
         self.get_default_taggingdict = \
             self.listboxpopupwindict['listboxtagging'].getdefaultdict
         self.get_default_turbinetypedict = \
@@ -102,6 +104,8 @@ class MyApp(tkyg.App, object):
         # Shorthand aliases to add things
         self.add_turbine  = partial(self.add_populatefromdict,'listboxactuator')
         self.add_sampling = partial(self.add_populatefromdict,'listboxsampling')
+        self.add_averaging = partial(self.add_populatefromdict,
+                                     'listboxaveraging')
         self.add_tagging  = partial(self.add_populatefromdict,'listboxtagging')
         self.add_postprosetup  = partial(self.add_populatefromdict,
                                          'listboxpostprosetup')
