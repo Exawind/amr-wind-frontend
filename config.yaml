@@ -1251,6 +1251,15 @@ inputwidgets:
     outputdef:
      AMR-Wind:  ABL.bndry_var_names
 
+  - name:       ABL_bndry_output_format
+    label:      Output file format
+    frame:      frame_ABLboundaryplane
+    inputtype:  str
+    optionlist: [native, netcdf]
+    defaultval: native
+    outputdef:
+      AMR-Wind: ABL.bndry_output_format
+
   - name:       ABLMeanBoussinesq
     label:      ABLMeanBoussinesq forcing
     frame:      frame_ABLboundaryplane

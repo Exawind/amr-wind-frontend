@@ -2160,6 +2160,9 @@ class MyApp(tkyg.App, object):
             if verbose: printverbose('SET','ABL_bndry_file')
         
         # Set the boundary conditions
+        self.inputvars['ABL_bndry_planes'].setval(inflowplanes)
+        if verbose: printverbose('SET', 'ABL_bndry_planes')
+
         ## First set the correct periodicity arguments
         if ('xlo' in inflowplanes) or ('xhi' in inflowplanes):
             self.inputvars['is_periodicx'].setval(False)
