@@ -43,7 +43,7 @@ def parsevarstring(varstring):
     return vardict
 
 def convertplane2vtk(ncdat, timevec, savefile, group, kplanes=[], 
-                     verbose=True, extractvars=defaultvars):
+                     verbose=True, extractvars=defaultvars, eps=1.0E-4, jfirst=False):
     """
     Convert sample plane to vtk output
     """
@@ -67,12 +67,12 @@ def convertplane2vtk(ncdat, timevec, savefile, group, kplanes=[],
     # Get the list of time indexes
     tindexvec = []
     for time in timevec:
-        idx = np.where(t==time)
-        if len(idx[0])>0:
-            tindexvec.append(idx[0][0])
+        idx = (np.abs(t - time)).argmin()
+        if np.abs(t[idx]-time)<eps:
+            tindexvec.append(idx)
         else:
             print(t)
-            print("Time %f not found"%time)
+            print("Time %f not found within eps=%f"%(time,eps))
             return
     if verbose:
         print("tindexvec: "+repr(tindexvec))
@@ -86,7 +86,10 @@ def convertplane2vtk(ncdat, timevec, savefile, group, kplanes=[],
         allidx = []
         for i in range(Ni):
             for j in range(Nj):
-                ipt = i + j*Ni + k*Ni*Nj
+                if jfirst:
+                    ipt = j + i*Nj + k*Ni*Nj
+                else:
+                    ipt = i + j*Ni + k*Ni*Nj                    
                 allidx.append(ipt)
                 xyz.append([allpts[ipt,0], allpts[ipt,1], allpts[ipt,2]])
         if verbose: print("Extracted xyz")
@@ -187,6 +190,15 @@ if __name__ == "__main__":
         dest='varstrings',
         default='velocity:velocityx,velocityy,velocityz',
     )
+    
+    parser.add_argument(
+        "--jordering",
+        dest='jordering',
+        help="Use j ordering (j varies first)",
+        default=False,
+        action='store_true',
+    )
+
 
     parser.add_argument(
         "-v",
@@ -202,6 +214,7 @@ if __name__ == "__main__":
     filename  = args.ncfile
     savefile  = args.outfile
     group     = args.group
+    jordering = args.jordering
     kplanes   = [int(k) for k in args.kplanes]
     times     = [float(t) for t in args.time]
     #tindex    = args.time
@@ -215,9 +228,11 @@ if __name__ == "__main__":
     print("output vtk     = "+savefile)
     print("kplanes        = "+repr(kplanes))
     print("tindex         = "+repr(times))
+    print("jordering      = "+repr(jordering))
     print("verbose        = "+repr(verbose))
     print(vardict)
 
     ncdat   = Dataset(filename, 'r')
     convertplane2vtk(ncdat, times, savefile, group, 
-                     kplanes=kplanes, extractvars=vardict, verbose=verbose) 
+                     kplanes=kplanes, extractvars=vardict, verbose=verbose,
+                     jfirst=jordering) 
