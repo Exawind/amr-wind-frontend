@@ -483,7 +483,7 @@ class MyApp(tkyg.App, object):
         internalprefix = 'postprocessing_setup_'
         allkeys = [key for key, item in inputdict.items()]
         getinputtype = lambda l,n: [x['inputtype'] for x in l if x['name']==n]
-        matchlisttype = lambda x, l: x.split() if isinstance(l, list) else x
+        matchlisttype = lambda x, l: x.split() if (isinstance(l, list) or l=='listbox') else x
         for name in postpronames:
             objectdict=OrderedDict()
             objectdict[internalprefix+'name'] = name
