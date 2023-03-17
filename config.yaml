@@ -2696,6 +2696,15 @@ popupwindow:
       row:        8
       kwargs:
         borderwidth: 0
+    - name:       sample_lidar_frame
+      title:      Scanning lidar specifications
+      row:        6
+      toggled:    True
+    - name:       sample_lidar_frame1
+      frame:      sample_lidar_frame
+      row:        5
+      kwargs:
+        borderwidth: 0
     inputwidgets:
     - <<: *PREDEFINED_ALWAYSFALSE
       ctrlelem:   
@@ -2723,7 +2732,7 @@ popupwindow:
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
-      optionlist: [ProbeSampler, LineSampler, PlaneSampler]
+      optionlist: [ProbeSampler, LineSampler, PlaneSampler, LidarSampler]
       defaultval: LineSampler
       frame:      probetype_frame
       listboxopt:
@@ -2751,6 +2760,21 @@ popupwindow:
           activewhen: ['PlaneSampler', 1]
         - input:  sampling_p_offsets
           activewhen: ['PlaneSampler', 1]
+        - input:  sampling_lidar_num_points
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_length
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_origin
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_periodic
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_time_table
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_azimuth_table
+          activewhen: ['LidarSampler', 1]
+        - input:  sampling_lidar_elevation_table
+          activewhen: ['LidarSampler', 1]
+
     # -- sample file ---
     - name:       sampling_pf_label
       label:      Choose text file with (x,y,z) probe points
@@ -2847,6 +2871,68 @@ popupwindow:
       outputdef:
         AMR-Wind: offsets
         help:     List containing the distances along the plane normal to offset each plane
+    # -- scanning lidar ---
+    - name:       sampling_lidar_num_points
+      label:      Lidar num points
+      inputtype:  int
+      defaultval: 2
+      frame:      sample_lidar_frame
+      row:        1
+      outputdef:
+        AMR-Wind: num_points
+    - name:       sampling_lidar_length
+      label:      Lidar length [m]
+      inputtype:  float
+      defaultval: 100.0
+      frame:      sample_lidar_frame
+      row:        2
+      outputdef:
+        AMR-Wind: length
+    - name:       sampling_lidar_origin
+      label:      Lidar origin
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+      frame:      sample_lidar_frame
+      row:        3
+      outputdef:
+        AMR-Wind: origin
+    - name:       sampling_lidar_periodic
+      label:      Periodic
+      inputtype:  bool
+      defaultval: True
+      frame:      sample_lidar_frame
+      row:        4
+      outputdef:
+        AMR-Wind: periodic
+    - name:       sampling_lidar_time_table
+      label:      Time table
+      inputtype:  str
+      defaultval:
+      frame:      sample_lidar_frame1
+      outputdef:
+        AMR-Wind: time_table
+      entryopt:
+        width:    35
+    - name:       sampling_lidar_azimuth_table
+      label:      Azimuth table
+      inputtype:  str
+      defaultval:
+      frame:      sample_lidar_frame1
+      outputdef:
+        AMR-Wind: azimuth_table
+      entryopt:
+        width:    35
+    - name:       sampling_lidar_elevation_table
+      label:      Elevation table
+      inputtype:  str
+      defaultval:
+      frame:      sample_lidar_frame1
+      outputdef:
+        AMR-Wind: elevation_table
+      entryopt:
+        width:    35
+
+
   # === POPUPWINDOW: Tagging window ===
   tagging:
     title:        Refinement windows # optional

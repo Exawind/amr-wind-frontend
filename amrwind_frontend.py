@@ -520,6 +520,7 @@ class MyApp(tkyg.App, object):
             lmap['probesampler'] = 'pf_'
             lmap['linesampler']  = 'l_'
             lmap['planesampler'] = 'p_'
+            lmap['lidarsampler'] = 'lidar_'
             for pname in postpronames:
                 # Double check and make sure it's a sampler input
                 listboxpopup = self.listboxpopupwindict['listboxpostprosetup']
