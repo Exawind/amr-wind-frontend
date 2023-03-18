@@ -262,10 +262,6 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
         for p in plotparams['plot_sampleprobes']:
             #pdict = allsamplingdata.dumpdict('AMR-Wind', subset=[p], keyfunc=keystr)
             if verbose: print("Plotting "+p)
-            # if pdict['sampling_type'][0]=='LineSampler':
-            #     Npts  = pdict['sampling_l_num_points']
-            #     start = np.array(pdict['sampling_l_start'])
-            #     end   = np.array(pdict['sampling_l_end'])
             if allpdict[p+'.type'][0]=='LineSampler':
                 Npts  = allpdict[p+'.num_points']
                 start = np.array(allpdict[p+'.start'])
@@ -278,11 +274,6 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
                     pts.append(pt)
                 pts = np.array(pts)
                 ax.plot(pts[::plotskip,ix], pts[::plotskip,iy], label=p, **splotdict)
-            # if pdict['sampling_type'][0]=='PlaneSampler':
-            #     Npts   = pdict['sampling_p_num_points']
-            #     origin = np.array(pdict['sampling_p_origin'])
-            #     axis1  = np.array(pdict['sampling_p_axis1'])
-            #     axis2  = np.array(pdict['sampling_p_axis2'])
             if allpdict[p+'.type'][0]=='PlaneSampler':
                 Npts   = allpdict[p+'.num_points']
                 origin = np.array(allpdict[p+'.origin'])
@@ -292,16 +283,11 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
                 dx1    = axis1/(Npts[0]-1.0)
                 dx2    = axis2/(Npts[1]-1.0)
 
-                # Construct the list of offsets
-                # if (pdict['sampling_p_offsets'] is not None) and \
-                #    (pdict['sampling_p_offsets'] != 'None'):
-                #     offsets =[float(x) for x in pdict['sampling_p_offsets'].split()]
                 if (allpdict[p+'.offsets'] is not None) and \
                    (allpdict[p+'.offsets'] != 'None'):
                     offsets =[float(x) for x in allpdict[p+'.offsets'].split()]
                 else:
                     offsets = [0.0]
-                #offsetnormal = np.array(pdict['sampling_p_normal'])
                 offsetnormal = np.array(allpdict[p+'.normal'])
                 offsetvec = []
                 if len(offsets)==0:
@@ -320,6 +306,48 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
                             pts.append(pt)
                 pts = np.array(pts)
                 ax.plot(pts[::plotskip,ix], pts[::plotskip,iy], label=p, **splotdict)
+            if allpdict[p+'.type'][0]=='LidarSampler':
+                # Get the inputs
+                Npts   = allpdict[p+'.num_points']
+                length = allpdict[p+'.length']
+                origin = np.array(allpdict[p+'.origin'])
+                time_table_str = allpdict[p+'.time_table']
+                azi_table_str  = allpdict[p+'.azimuth_table']
+                ele_table_str  = allpdict[p+'.elevation_table']
+                # Convert strings to arrays
+                str2array = lambda s: np.array([float(x) for x in s.split()])
+                deg2rad   = lambda d: d/180.0*np.pi
+                time_table     = str2array(time_table_str)
+                azi_table      = str2array(azi_table_str)
+                ele_table      = str2array(ele_table_str)
+                # Get the time discretization
+                t1 = time_table[0]
+                t2 = time_table[-1]
+                Ntime = plotparams['plot_lidar_Ntime']
+                timevec = np.linspace(t1, t2, Ntime)
+
+                dx = length/float(Npts-1)
+
+                pts    = []
+                # Construct a list of all lidar points
+                for t in timevec:
+                    current_azi = deg2rad(np.interp(t, time_table, azi_table))
+                    current_ele = deg2rad(90.0 - np.interp(t, time_table, ele_table))
+                    for i in range(Npts):
+                        lidar_pt_0 = (origin[0] + i*dx*
+                                      np.cos(current_azi)*np.sin(current_ele))
+                        lidar_pt_1 = (origin[1] + i*dx*
+                                      np.sin(current_azi)*np.sin(current_ele))
+                        lidar_pt_2 = (origin[2] + i*dx*np.cos(current_ele))
+                        lidar_pt = np.array([lidar_pt_0,
+                                             lidar_pt_1,
+                                             lidar_pt_2])
+                        pts.append(lidar_pt)
+
+                pts = np.array(pts)
+                ax.plot(pts[::plotskip,ix], pts[::plotskip,iy], label=p, **splotdict)
+
+
         if splotlegend:
             legendprobes=ax.legend(**splotlegend)
             legendfontsize = 10 if 'fontsize' not in splotlegend else splotlegend['fontsize']
