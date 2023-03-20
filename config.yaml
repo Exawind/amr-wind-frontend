@@ -2424,6 +2424,13 @@ popupwindow:
       - name:       plot_frameoverall
         title:      Plot settings
         row:        0
+      - name:       plot_frameoverall1
+        frame:      plot_frameoverall
+        title:      Extra plot parameters
+        row:        3
+        toggled:    True
+        kwargs:
+          borderwidth: 0
       - name:       plot_framesampleprobes
         title:      Select sample probes
         row:        1
@@ -2453,6 +2460,7 @@ popupwindow:
         frame:      plot_frameoverall
         label:      "Choose plot view"
         inputtype:  str
+        row:        1
         optionlist: ['XY', 'XZ', 'YZ']
         defaultval: 'XY'
       - name:       plot_windnortharrows
@@ -2460,24 +2468,27 @@ popupwindow:
         label:      Plot wind & N arrows
         inputtype:  bool
         defaultval: True
+        row:        2
+      - name:       plot_lidar_Ntime
+        frame:      plot_frameoverall1
+        label:      Num of time samples (lidar)
+        inputtype:  int
+        defaultval: 101
       - name:       plot_sampleprobes_style
-        frame:      plot_frameoverall
+        frame:      plot_frameoverall1
         label:      Sample probe styles
         inputtype:  str
         defaultval: "{'markersize':2, 'marker':'.', 'linestyle':'None'}"
-        visible:    False
       - name:       plot_sampleprobes_legend
-        frame:      plot_frameoverall
+        frame:      plot_frameoverall1
         label:      Sample probe legend
         inputtype:  str
         defaultval: "{'title':'Sampling probes', 'fontsize':10, 'loc':'upper right', 'markerscale':6}"
-        visible:    False
       - name:       plot_refineboxes_legend
-        frame:      plot_frameoverall
+        frame:      plot_frameoverall1
         label:      Refinement zones legend
         inputtype:  str
         defaultval: "{'frameon':True, 'numpoints':1, 'fontsize':10, 'loc':'lower right'}"
-        visible:    False
       - name:       plot_sampleprobes
         frame:      plot_framesampleprobes
         label:      #Plot sample probes
