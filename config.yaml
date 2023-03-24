@@ -3266,6 +3266,33 @@ popupwindow:
     - <<: *PREDEFINED_OPENFAST_STOP_TIME
       name:       Actuator_openfast_stop_time
       frame:      turbine_frame
+    - name:       Actuator_openfast_restart_file
+      label:      OF Restart file
+      frame:      turbine_frame
+      inputtype:  filename
+      defaultval: 
+      outputdef:
+        AMR-Wind: openfast_restart_file
+        help:     OpenFAST restart checkpoint file
+    # Note: this should made consistent with what's below!
+    - name:       Actuator_openfast_sim_mode
+      label:      OF Restart mode
+      frame:      turbine_frame
+      inputtype:  str
+      optionlist: [init, replay, restart]
+      defaultval: 
+      outputdef:
+        AMR-Wind: openfast_sim_mode
+        help:     OpenFAST restart mode
+    - name:       Actuator_sim_mode
+      label:      Restart mode
+      frame:      turbine_frame
+      inputtype:  str
+      optionlist: [init, replay, restart]
+      defaultval: 
+      outputdef:
+        AMR-Wind: sim_mode
+        help:     Restart mode (same as OF restart mode)
     - <<: *PREDEFINED_FLLC
       name:       Actuator_fllc
       frame:      turbine_frame
