@@ -288,14 +288,19 @@ class MyApp(tkyg.App, object):
             return prefix+'.'+n+'.'+d2.outputdef['AMR-Wind']
         samplingkey = lambda n, d1, d2: d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
 
+        if verbose: print('dumping listboxsampling')
         sampledict  = self.listboxpopupwindict['listboxsampling'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfunc)
 
+        if verbose: print('dumping listboxaveraging')
         averagingict  = self.listboxpopupwindict['listboxaveraging'].dumpdict('AMR-Wind', dynamicprefix_keyfunc=dynamickeyfuncavg)
-        
+
+        if verbose: print('dumping listboxtagging')
         taggingdict = self.listboxpopupwindict['listboxtagging'].dumpdict('AMR-Wind', keyfunc=self.getTaggingKey)
 
+        if verbose: print('dumping listboxactuator')
         actuatordict= self.listboxpopupwindict['listboxactuator'].dumpdict('AMR-Wind', keyfunc=samplingkey)
 
+        if verbose: print('dumping listboxpostprosetup')
         def postprocessingkey(n, d1, d2):
             if ('outputprefix' in d2.outputdef):
                 return n+'.'+d2.outputdef['AMR-Wind']
@@ -821,6 +826,7 @@ class MyApp(tkyg.App, object):
                 # Check what kind of data it's supposed to provide
                 inputtype=getinputtype(template['inputwidgets'], probedictkey)[0]
                 data = matchlisttype(inputdict[key], inputtype)
+                if inputtype=='bool': data = tkyg.to_bool(data)
                 probedict[probedictkey] = data
                 extradict.pop(key)
             #print(probedict)
