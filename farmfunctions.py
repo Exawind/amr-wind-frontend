@@ -623,6 +623,7 @@ def turbines_createAllTurbines(self):
 
     # Make sure to add turbines to simulation
     source_terms = self.inputvars['ICNS_source_terms'].getval()
+    if source_terms is None: source_terms = []
     if 'ActuatorForcing' not in source_terms:
         source_terms.append('ActuatorForcing')
         self.inputvars['ICNS_source_terms'].setval(source_terms)
@@ -630,6 +631,7 @@ def turbines_createAllTurbines(self):
 
     # Make sure to add Actuator to icns.physics
     physicsterms = self.inputvars['physics'].getval()
+    if physicsterms is None: physicsterms = []
     if 'Actuator' not in physicsterms:
         physicsterms.append('Actuator')
         self.inputvars['physics'].setval(physicsterms)
