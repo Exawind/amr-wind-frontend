@@ -18,7 +18,7 @@ from matplotlib.lines       import Line2D
 import OpenFASTutil as OpenFAST
 
 # -------------------------------------------------------------
-def readCartBoxFile(filename):
+def readCartBoxFile(self, filename):
     """
     Read the Cartesian box file
     """
@@ -380,7 +380,7 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
             if pdict['tagging_type'][0]=='CartBoxRefinement':
                 filename = pdict['tagging_static_refinement_def']
                 # Load the boxes
-                allboxes = readCartBoxFile(filename)
+                allboxes = self.readCartBoxFile(filename)
                 if len(allboxes)>maxlevel: maxlevel = len(allboxes)
                 for ilevel, boxlevel in enumerate(allboxes):
                     for box in boxlevel:
