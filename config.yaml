@@ -2271,6 +2271,27 @@ inputwidgets:
     defaultval: 
     outputdef:
       AMR-Wind: Actuator.JoukowskyDisk.vortex_core_size
+  - name:       Actuator_JoukowskyDisk_ct_region2
+    label:      Region 2 Ct
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.ct_region2
+  - name:       Actuator_JoukowskyDisk_S0_alpha1
+    label:      S0 Alpha 1
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.S0_alpha1
+  - name:       Actuator_JoukowskyDisk_S0_alpha2
+    label:      S0 Alpha 2
+    frame:      frame_joukowskyglobals
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: Actuator.JoukowskyDisk.S0_alpha2
   - name:       Actuator_JoukowskyDisk_use_tip_correction
     label:      Use tip correction
     frame:      frame_joukowskyglobals
@@ -3383,6 +3404,27 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: vortex_core_size
+    - name:       Actuator_ct_region2
+      label:      Region 2 Ct
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: ct_region2
+    - name:       Actuator_S0_alpha1
+      label:      S0 Alpha 1
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: S0_alpha1
+    - name:       Actuator_S0_alpha2
+      label:      S0 Alpha 2
+      frame:      uniformCt_frame
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: S0_alpha2
     - name:       Actuator_use_tip_correction
       label:      Use tip correction
       frame:      uniformCt_frame
@@ -3544,6 +3586,24 @@ popupwindow:
       defaultval: 
       outputdef:
         AMR-Wind: vortex_core_size
+    - name:       Actuator_ct_region2
+      label:      Region 2 Ct
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: ct_region2
+    - name:       Actuator_S0_alpha1
+      label:      S0 Alpha 1
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: S0_alpha1
+    - name:       Actuator_S0_alpha2
+      label:      S0 Alpha 2
+      inputtype:  float
+      defaultval:
+      outputdef:
+        AMR-Wind: S0_alpha2
     - name:       Actuator_use_tip_correction
       label:      Use tip correction
       inputtype:  bool
