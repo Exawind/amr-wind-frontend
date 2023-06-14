@@ -703,6 +703,7 @@ def turbines_createAllTurbines(self):
 
         if bool(AMRoptions):
             for key, val in AMRoptions.items():
+                if isinstance(val, str): val = val.replace(';',',')
                 turbdict[key] =  tryeval(val)
                 print("Setting "+key+" to "+repr(turbdict[key]))
 
