@@ -2737,6 +2737,10 @@ popupwindow:
       row:        5
       kwargs:
         borderwidth: 0
+    - name:       sample_radar_frame
+      title:      Radar specifications
+      row:        7
+      toggled:    True
     inputwidgets:
     - <<: *PREDEFINED_ALWAYSFALSE
       ctrlelem:   
@@ -2764,7 +2768,7 @@ popupwindow:
     - name:       sampling_type
       label:      Type 
       inputtype:  listbox
-      optionlist: [ProbeSampler, LineSampler, PlaneSampler, LidarSampler]
+      optionlist: [ProbeSampler, LineSampler, PlaneSampler, LidarSampler, RadarSampler]
       defaultval: LineSampler
       frame:      probetype_frame
       listboxopt:
@@ -2806,6 +2810,34 @@ popupwindow:
           activewhen: ['LidarSampler', 1]
         - input:  sampling_lidar_elevation_table
           activewhen: ['LidarSampler', 1]
+        - input:       sampling_radar_num_points
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_origin
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_sampling_frequency
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_device_sampling_frequency
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_radar_cone_angle
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_radar_quadrature_type
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_radar_npts_azimuth
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_radar_beam_length
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_angular_speed
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_sweep_angle
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_reset_time
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_axis
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_vertical_unit_dir
+          activewhen: ['RadarSampler', 1]
+        - input:       sampling_radar_elevation_angles
+          activewhen: ['RadarSampler', 1]
 
     # -- sample file ---
     - name:       sampling_pf_label
@@ -2963,6 +2995,106 @@ popupwindow:
         AMR-Wind: elevation_table
       entryopt:
         width:    35
+    # -- radar ---
+    - name:       sampling_radar_num_points
+      label:      Radar num points
+      inputtype:  int
+      defaultval: 2
+      frame:      sample_radar_frame
+      row:        1
+      outputdef:
+        AMR-Wind: num_points
+    - name:       sampling_radar_origin
+      label:      Radar origin
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: origin
+    - name:       sampling_radar_sampling_frequency
+      label:      Sampling frequency
+      inputtype:  float
+      defaultval: 
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: sampling_frequency
+    - name:       sampling_radar_device_sampling_frequency
+      label:      Device sampling frequency
+      inputtype:  float
+      defaultval: 
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: device_sampling_frequency
+    - name:       sampling_radar_radar_cone_angle
+      label:      Cone angle
+      inputtype:  float
+      defaultval: 
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: radar_cone_angle
+    - name:       sampling_radar_radar_quadrature_type
+      label:      Quadrature type
+      inputtype:  str
+      defaultval: truncated_normal_halfpower
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: radar_quadrature_type
+    - name:       sampling_radar_radar_npts_azimuth
+      label:      Npts azimuth
+      inputtype:  int
+      defaultval: 5
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: radar_npts_azimuth
+    - name:       sampling_radar_radar_beam_length
+      label:      Beam length
+      inputtype:  float
+      defaultval: 100.0
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: radar_beam_length
+    - name:       sampling_radar_angular_speed
+      label:      Angular speed
+      inputtype:  float
+      defaultval: 120.0
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: angular_speed
+    - name:       sampling_radar_sweep_angle
+      label:      Sweep angle
+      inputtype:  float
+      defaultval: 145.0
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: sweep_angle
+    - name:       sampling_radar_reset_time
+      label:      Reset time
+      inputtype:  float
+      defaultval: 10.0
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: reset_time
+    - name:       sampling_radar_axis
+      label:      Radar axis
+      inputtype:  [float, float, float]
+      defaultval: [1, 0, 0]
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: axis
+    - name:       sampling_radar_vertical_unit_dir
+      label:      Vertical direction
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 1]
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: vertical_unit_dir
+    - name:       sampling_radar_elevation_angles
+      label:      Elevation angles
+      inputtype:  str
+      defaultval: 
+      frame:      sample_radar_frame
+      outputdef:
+        AMR-Wind: elevation_angles
 
 
   # === POPUPWINDOW: Tagging window ===
