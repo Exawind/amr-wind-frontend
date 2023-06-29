@@ -708,7 +708,7 @@ def turbines_createAllTurbines(self):
                 print("Setting "+key+" to "+repr(turbdict[key]))
 
         # Process options if using OpenFAST model
-        if turbdict['Actuator_type'] in ['TurbineFastDisk', 'TurbineFastDisk']:
+        if turbdict['Actuator_type'] in ['TurbineFastLine', 'TurbineFastDisk']:
             fstfile = turbdict['Actuator_openfast_input_file']
             options = turb['options']
             #print("turbine fst file: "+fstfile)

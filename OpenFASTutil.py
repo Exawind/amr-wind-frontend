@@ -53,7 +53,8 @@ def editFASTfile(FASTfile, replacedict):
             keyword = linesplit[idx]
         
             if keyword in replacedict.keys():
-                outline  = '%10s '%repr(replacedict[keyword])
+                replacestring = repr(replacedict[keyword]).replace("'",'')
+                outline  = '%10s '%replacestring 
                 outline += ' '.join(linesplit[idx:])
                 outline += ' [EDITED]\n'
                 sys.stderr.write(outline)
