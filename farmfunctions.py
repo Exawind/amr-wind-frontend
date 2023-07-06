@@ -616,9 +616,9 @@ def turbines_createAllTurbines(self):
         # Set the mesh size (if necessary)
         backgrounddx = self.inputvars['turbines_backgroundmeshsize'].getval()
         if backgrounddx is not None:
-            Nx = int(domainsize[0]/backgrounddx)
-            Ny = int(domainsize[1]/backgrounddx)
-            Nz = int(domainsize[2]/backgrounddx)
+            Nx = int(round(domainsize[0]/backgrounddx))
+            Ny = int(round(domainsize[1]/backgrounddx))
+            Nz = int(round(domainsize[2]/backgrounddx))
             self.inputvars['n_cell'].setval([Nx, Ny, Nz])
 
     # Make sure to add turbines to simulation
