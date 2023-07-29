@@ -473,6 +473,8 @@ inputwidgets:
     defaultval: 
     outputdef:
       AMR-Wind: io.restart_file
+    fileopenopt:
+      selecttype: directory       # open/saveas/directory [optional]
     entryopt:
       width:    20
 
