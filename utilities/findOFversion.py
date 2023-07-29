@@ -24,6 +24,8 @@ allowedversions = [(2, 5),
                    (3, 0),
                    (3, 1),
                    (3, 2),
+                   (3, 3),
+                   (3, 4),
                ]
 
 def convertversiontoindex(vertuple):
@@ -53,7 +55,8 @@ class versionmatch(Enum):
     NOMATCH = 2
     UNKNOWN = 3
 
-def checkIfVarsInFile(fstfile, subfile, varlist, flipbool=False, verbose=False):
+def checkIfVarsInFile(fstfile, subfile, varlistorig, 
+                      flipbool=False, verbose=False, ignorecase=True):
     """
     Check to see if varlist is in subfile.  
     If subfile is empty string, check to see if varlist is in fstfile.
@@ -62,7 +65,13 @@ def checkIfVarsInFile(fstfile, subfile, varlist, flipbool=False, verbose=False):
         probefile = fstfile
     else:
         probefile = OpenFAST.getFileFromFST(fstfile, subfile)
-    filedict   = OpenFAST.FASTfile2dict(probefile)
+    filedictorig= OpenFAST.FASTfile2dict(probefile)
+    if ignorecase:
+        varlist = [x.lower() for x in varlistorig]
+        filedict = {k.lower():v for k,v in filedictorig.items()}
+    else:
+        varlist = varlistorig
+        filedict = filedictorig
     hasvar     = []
     for var in varlist:
         doesexist = True if var in filedict else False
@@ -193,6 +202,41 @@ class Check_3_1_0():
         l         = l1 + l2 + l3 + l4
         result    = mergeMatchList([match1, match2, match3, match4])
         return result, l
+
+@register_versioncheck
+class Check_3_2_0(): 
+    name = "v3.2.0"
+    version = { 'major':3, 'minor':2, 'patch':0 }
+
+    def check(self, fstfile, verbose=False):
+        l = []
+        return versionmatch.UNKNOWN, l
+
+
+@register_versioncheck
+class Check_3_3_0(): 
+    name = "v3.3.0"
+    version = { 'major':3, 'minor':3, 'patch':0 }
+
+    def check(self, fstfile, verbose=False):
+        l = []
+        return versionmatch.UNKNOWN, l
+
+@register_versioncheck
+class Check_3_4_0(): 
+    name = "v3.4.0"
+    version = { 'major':3, 'minor':4, 'patch':0 }
+
+    def check(self, fstfile, verbose=False):
+        checkADvars = ['Buoyancy', 'VolHub', 'HubCenBx', 'VolNac', 'NacCenB', 
+                       'TFinAero', 'TFinFile']
+        match1, l1 = checkIfVarsInFile(fstfile, 'AeroFile', checkADvars, 
+                                       verbose=verbose)
+
+        l         = l1
+        result    = mergeMatchList([match1])
+        return result, l
+
 
 # ========================================================================
 def findversion(filename, verbosity=0):

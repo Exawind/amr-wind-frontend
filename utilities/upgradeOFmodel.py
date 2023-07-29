@@ -135,6 +135,9 @@ def register_upgradefunction(f, curver, targetver):
     upgradefunctionlist[curver] = {'func':f, 'newver':targetver}
     return f
 
+# See this document for all changes between versions
+# https://openfast.readthedocs.io/en/main/source/user/api_change.html
+
 @register_upgradefunction((2,5), (2,6))
 def upgrade_2_5(fstfile, verbosity, **kwargs):
     """
@@ -273,7 +276,101 @@ def upgrade_3_1(fstfile, verbosity, **kwargs):
     Upgrade OpenFAST model from 3.1 to 3.2
     """
     # Nothing needed here
+    # Note that there are TurbSim changes in 
+    # https://openfast.readthedocs.io/en/main/source/user/api_change.html#openfast-v3-1-0-to-openfast-v3-2-0
     return
+
+@register_upgradefunction((3,2), (3,3))
+def upgrade_3_2(fstfile, verbosity, **kwargs):
+    """
+    Upgrade OpenFAST model from 3.2 to 3.3
+    """
+    # Nothing needed here
+    # Note that there are FAST.Farm and AeroDyn Driver changes
+    # https://openfast.readthedocs.io/en/main/source/user/api_change.html#openfast-v3-1-0-to-openfast-v3-2-0
+    return
+
+@register_upgradefunction((3,3), (3,4))
+def upgrade_3_3(fstfile, verbosity, **kwargs):
+    """
+    Upgrade OpenFAST model from 3.3 to 3.4
+    """
+    # See https://openfast.readthedocs.io/en/main/source/user/api_change.html#openfast-v3-3-0-to-openfast-v3-4-0
+    # Get the input files
+    AeroDynFile   = OpenFAST.getFileFromFST(fstfile, 'AeroFile')
+
+    BouyancyAD="""\
+False         Buoyancy           - True Buoyancy - Include buoyancy effects? (flag)
+"""
+
+    ExtraAD="""\
+====== Hub Properties ============================================================================== [used only when Buoyancy=True]
+        1.0   VolHub - Hub volume (m^3)
+        0.0   HubCenBx - Hub center of buoyancy x direction offset (m)
+====== Nacelle Properties ========================================================================== [used only when Buoyancy=True]
+        1.0   VolNac - Nacelle volume (m^3)
+0.0 0.0 0.0   NacCenB - Position of nacelle center of buoyancy from yaw bearing in nacelle coordinates (m)
+====== Tail fin Aerodynamics ========================================================================
+False         TFinAero - Calculate tail fin aerodynamics model (flag)
+"None"        TFinFile - Input file for tail fin aerodynamics [used only when TFinAero=True]
+"""
+    TwrCb = " 0.0E+00"
+
+    # Get NumTwrNds
+    NumTwrNds = int(OpenFAST.getVarFromFST(AeroDynFile, 'NumTwrNds'))
+
+    with open(AeroDynFile) as file:
+        ADlines = [line.rstrip() for line in file]
+    ADfirstword = [x.strip().split()[0].lower() for x in ADlines if len(x.strip().split())>0]
+
+    # --- Remove RtAeroCp and RtAeroCt from OutList ---
+    OutList = OpenFAST.getVarFromFST(AeroDynFile, 'OutList')
+    # Make new OutList
+    newoutlist = ' '.join(OutList)
+    newoutlist = newoutlist.replace('"','').replace(',','\n')
+    newoutlist = newoutlist.replace('RtAeroCp','')
+    newoutlist = newoutlist.replace('RtAeroCt','')
+    newoutlist = newoutlist.replace('RtAeroFyh','')
+    newoutlist = newoutlist.replace('RtAeroFzh','')
+    newoutlist = newoutlist.replace('RtAeroPwr','')
+    newoutlist = '\n'.join(newoutlist.split())
+    newoutlist += '\n'
+
+    l1 = ADfirstword.index('outlist')+2
+    l2 = ADfirstword.index('end')
+    replacelines(AeroDynFile, [l1, l2], newoutlist)
+    if verbosity>0: 
+        print("Changing AeroDyn OutList to")
+        print(newoutlist)
+
+    # --- Add TwrCb to Tower nodes ---
+    #print("NumTwrNds = "+repr(NumTwrNds))
+    linestart = ADfirstword.index('twrelev')+3
+    linenums = [linestart, linestart+NumTwrNds-1]
+    nodelines= extractlines(AeroDynFile, linenums)
+    newnodelines = ''
+    for x in nodelines: 
+        newnodelines += x+TwrCb+'\n'
+    replacelines(AeroDynFile, linenums, newnodelines)
+    if verbosity>0: 
+        print("Changing tower nodes to")
+        print(newnodelines)
+
+    # --- Add ExtraAD ---
+    line_insert = findlinewith(AeroDynFile, 'ADBlFile(3)')
+    insertlines(AeroDynFile, line_insert, ExtraAD)
+    if verbosity>0:
+        print("ADDED")
+        print(ExtraAD)
+
+    # --- Add Bouyancy ---
+    insertlines(AeroDynFile, 12, BouyancyAD)
+    if verbosity>0:
+        print("ADDED")
+        print(BouyancyAD)
+
+    return
+
 
 def upgrade_AD_to_dev(fstfile, verbosity, **kwargs):
     """
