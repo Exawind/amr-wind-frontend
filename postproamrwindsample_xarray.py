@@ -8,7 +8,7 @@ extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs[
 
 def getPlaneXR(ncfile, itimevec, varnames, vxvar='velocityx',
                vyvar='velocityy', vzvar='velocityz', groupname=None,
-               verbose=0):
+               verbose=0, includeattr=False):
     # Create a fresh db dictionary
     db = {}
     for v in varnames: db[v] = {}
@@ -20,9 +20,10 @@ def getPlaneXR(ncfile, itimevec, varnames, vxvar='velocityx',
     else:
         group = groupname
     with xr.open_dataset(ncfile, group=group) as ds:
-        xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
-        ym = ds['coordinates'].data[:,1].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
-        zm = ds['coordinates'].data[:,2].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        reshapeijk = ds.attrs['ijk_dims'][::-1]
+        xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
+        ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
+        zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
         dtime=xr.open_dataset(ncfile)
         dtime.close()
         db['x'] = xm
@@ -38,4 +39,7 @@ def getPlaneXR(ncfile, itimevec, varnames, vxvar='velocityx',
             vx = extractvar(ds, vxvar, itime)
             vy = extractvar(ds, vyvar, itime)
             vz = extractvar(ds, vzvar, itime)
+        if includeattr:
+            for k, g in ds.attrs.items():
+                db[k] = g
     return db
