@@ -191,7 +191,7 @@ if __name__ == "__main__":
     ncfiles   = args.ncfile
     verbose   = args.verbose
     varlist   = args.varlist
-    tlims     = args.tlims
+    tlims     = [] if args.tlims is None else args.tlims
     #print(ncfiles)
     #print(tlims)
 
