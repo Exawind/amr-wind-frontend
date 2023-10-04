@@ -1359,7 +1359,7 @@ def setBC(self, bcsurf, bctype, velocity, density):
         self.setAMRWindInput(bcsurf+'.density',  density)
         self.setAMRWindInput(bcsurf+'.velocity', velocity)
 
-def sweep_SetupRunParamSweep(self, verbose=False):
+def sweep_SetupRunParamSweep(self, preSetupFunc=None, postSetupFunc=None, verbose=False):
     """
     Set up and run a parameter sweep 
     """
@@ -1390,7 +1390,8 @@ def sweep_SetupRunParamSweep(self, verbose=False):
         dirname_template += '_{CASENUM}'
 
     # Add any formatting necessary to string
-    fmtstr = lambda x: x.format(WS=WS, WDIR=WDir, CASENUM=icase)
+    #fmtstr = lambda x: x.format(WS=WS, WDIR=WDir, CASENUM=icase)
+    fmtstr = lambda x, y: x.format(**y)
 
     # Construct the list of runs
     runlist = []
@@ -1412,13 +1413,21 @@ def sweep_SetupRunParamSweep(self, verbose=False):
     for icase, case in enumerate(runlist):
         WS   = case['WS']
         WDir = case['WDir']
-        casename = fmtstr(casename_template)
+
+        # Run the user-defined pre setup function
+        namevars={'WS':WS, 'WDIR':WDir, 'CASENUM':icase}
+        casevars={}
+        if preSetupFunc is not None:
+            casevars=preSetupFunc(self, icase)
+        namevars.update(casevars)
+
+        casename = fmtstr(casename_template, namevars)
         if verbose:
             print("%10i %12.5f %12.5f %20s"%(icase, WS, WDir, casename))
         
         # Create the directories if necessary
         if self.inputvars['sweep_usenewdirs'].getval():
-            dirname = fmtstr(dirname_template)
+            dirname = fmtstr(dirname_template, namevars)
             if not os.path.exists(dirname): os.makedirs(dirname)
             os.chdir(dirname)
             case['dir'] = dirname
@@ -1457,6 +1466,10 @@ def sweep_SetupRunParamSweep(self, verbose=False):
 
         # Set up the sampling probes
         sampling_createAllProbes(self)
+
+        # Run the user-defined post setup function
+        if postSetupFunc is not None:
+            postSetupFunc(self, icase)
 
         # Write the AMR-Wind input file
         AMRinputfile = casename+".inp"
