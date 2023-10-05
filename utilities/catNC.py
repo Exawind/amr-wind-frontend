@@ -66,7 +66,7 @@ def getGroups(f):
     return groups
 
 def addGroup(rootgrp, group, filelist, timeindexlist, 
-             includevars=[], verbose=False):
+             includevars=[], verbose=False, spinner=False):
     # Get the basic dimensions
     num_time_steps  = rootgrp.dimensions["num_time_steps"].size
     ndim  = rootgrp.dimensions["ndim"].size
@@ -114,6 +114,29 @@ def addGroup(rootgrp, group, filelist, timeindexlist,
     # Check to see if a variable should be included
     usevar = lambda v, vlist: True if (vlist is None) else (v in vlist)
 
+    # ------ Spinner stuff ------- 
+    if spinner:
+        # Copy over the points vector
+        if verbose: print("Adding points")
+        addVar_to_group('points', group, dest_subgroup, 
+                        ("num_time_steps", "num_points","ndim",),
+                        filelist, filetimeindex, arraysize=3)
+        varlist.remove('points')
+        # Copy over the rotor_angles_rad vector
+        if usevar('rotor_angles_rad', includevars):
+            if verbose: print("Adding rotor_angles_rad")
+            addVar_to_group('rotor_angles_rad', group, dest_subgroup, 
+                            ("num_time_steps", "nang",), 
+                            filelist, filetimeindex)
+            varlist.remove('rotor_angles_rad')        
+        if usevar('rotor_hub_pos', includevars):
+            if verbose: print("Adding rotor_hub_pos")
+            addVar_to_group('rotor_hub_pos', group, dest_subgroup, 
+                            ("num_time_steps", "ndim",), 
+                            filelist, filetimeindex)
+            varlist.remove('rotor_hub_pos')        
+    # ----------------------------
+
     # Add the variables
     for v in varlist:
         if (not usevar(v, includevars)):
@@ -132,6 +155,121 @@ def addGroup(rootgrp, group, filelist, timeindexlist,
                 iglobal = entry[2]
                 vdat[iglobal,:] = srcvar[ilocal,:]
             src_ncdat.close()
+    return
+
+def addVar_to_group(varname, groupname, dest_subgroup, dimlist, 
+                    filelist, filetimeindex, arraysize=2):
+    vdat = dest_subgroup.createVariable(varname, "f8", dimlist)
+    for ifile, fname in enumerate(filelist):
+        if len(filetimeindex[ifile]) == 0: 
+            continue
+        # Loop through all times in filetimeindex
+        src_ncdat = Dataset(fname, 'r')
+        srcvar = src_ncdat[groupname].variables[varname]
+        for entry in filetimeindex[ifile]:
+            ilocal  = entry[1]
+            iglobal = entry[2]
+            if arraysize==2:
+                vdat[iglobal,:] = srcvar[ilocal,:]
+            elif arraysize==3:
+                vdat[iglobal,:,:] = srcvar[ilocal,:,:]
+        src_ncdat.close()
+    return
+
+def addGroup_spinner(rootgrp, group, filelist, timeindexlist, 
+                     includevars=[], verbose=False):
+    # Get the basic dimensions
+    num_time_steps  = rootgrp.dimensions["num_time_steps"].size
+    ndim  = rootgrp.dimensions["ndim"].size
+
+    # create a group in rootgrp
+    dest_subgroup = rootgrp.createGroup(group)
+
+    # Add the attributes
+    firstfile = filelist[0]
+    src_ncdat = Dataset(firstfile, 'r')
+    for key, val in src_ncdat[group].__dict__.items():
+        dest_subgroup.setncattr(key, val)
+
+    # Add the dimensions
+    src_dims = src_ncdat[group].dimensions
+    #nang = src_dims['nang'].size
+    nang = src_ncdat[group].dimensions['nang'].size
+    for key, val in src_dims.items():
+        dest_subgroup.createDimension(key, val.size)
+    # Get the num_points
+    num_points = None
+    if 'num_points' in src_ncdat[group].dimensions:
+        num_points = src_ncdat[group].dimensions['num_points'].size
+    #print('num_points = '+repr(num_points))
+
+    # Get the list of variables
+    varlist = [k for k, g in src_ncdat[group].variables.items()]
+    print(varlist)
+
+    # Copy over coordinates
+    if 'coordinates' in varlist:
+        coords = dest_subgroup.createVariable("coordinates", "f8", 
+                                              ("num_points","ndim",))
+        coords[:,:] = src_ncdat[group].variables['coordinates'][:,:]
+        varlist.remove('coordinates')
+
+    # Close the data file (for the first file)
+    src_ncdat.close()
+
+    # Split the timeindexlist
+    filetimeindex = {}
+    for i in range(len(filelist)):
+        filetimeindex[i] = list()
+    for entry in timeindexlist:
+        ifile = entry[0]
+        filetimeindex[entry[0]] += [entry]
+
+    # Check to see if a variable should be included
+    usevar = lambda v, vlist: True if (vlist is None) else (v in vlist)
+
+    # ------ Spinner stuff ------- 
+    # Copy over the points vector
+    if verbose: print("Adding points")
+    addVar_to_group('points', group, dest_subgroup, 
+                    ("num_time_steps", "num_points","ndim",),
+                    filelist, filetimeindex, arraysize=3)
+    varlist.remove('points')
+    # Copy over the rotor_angles_rad vector
+    if usevar('rotor_angles_rad', includevars):
+        if verbose: print("Adding rotor_angles_rad")
+        addVar_to_group('rotor_angles_rad', group, dest_subgroup, 
+                        ("num_time_steps", "nang",), 
+                        filelist, filetimeindex)
+        varlist.remove('rotor_angles_rad')        
+    if usevar('rotor_hub_pos', includevars):
+        if verbose: print("Adding rotor_hub_pos")
+        addVar_to_group('rotor_hub_pos', group, dest_subgroup, 
+                        ("num_time_steps", "ndim",), 
+                        filelist, filetimeindex)
+        varlist.remove('rotor_hub_pos')        
+    # ----------------------------
+
+    # Add the variables
+    for v in varlist:
+        if (not usevar(v, includevars)):
+            continue
+        if verbose: print("Adding "+v)
+        vdat = dest_subgroup.createVariable(v, "f8", 
+                                            ("num_time_steps","num_points",))
+        for ifile, fname in enumerate(filelist):
+            if len(filetimeindex[ifile]) == 0: 
+                continue
+            # Loop through all times in filetimeindex
+            src_ncdat = Dataset(fname, 'r')
+            srcvar = src_ncdat[group].variables[v]
+            for entry in filetimeindex[ifile]:
+                ilocal  = entry[1]
+                iglobal = entry[2]
+                vdat[iglobal,:] = srcvar[ilocal,:]
+            src_ncdat.close()
+
+    print(varlist)
     return
 
 # ========================================================================
@@ -179,6 +317,11 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        '--spinner', 
+        help="NetCDF is a spinner lidar file",
+        default=False,
+        action='store_true')
+    parser.add_argument(
         '-v',
         '--verbose', 
         help="Turn on verbose",
@@ -190,6 +333,7 @@ if __name__ == "__main__":
     outfile   = args.outfile
     ncfiles   = args.ncfile
     verbose   = args.verbose
+    spinner   = args.spinner
     varlist   = args.varlist
     tlims     = [] if args.tlims is None else args.tlims
     #print(ncfiles)
@@ -213,7 +357,7 @@ if __name__ == "__main__":
     for g in includegroups:
         if verbose: print("Adding group "+g)
         addGroup(rootgrp, g, ncfiles, timeindex, 
-                 includevars=varlist, verbose=verbose)
+                 includevars=varlist, verbose=verbose, spinner=spinner)
 
     # Close the file
     rootgrp.close()
