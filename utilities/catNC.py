@@ -137,7 +137,7 @@ def addGroup(rootgrp, group, filelist, timeindexlist,
             varlist.remove('rotor_hub_pos')        
     # ----------------------------
 
-    # Add the variables
+    # Add the other variables
     for v in varlist:
         if (not usevar(v, includevars)):
             continue
@@ -176,101 +176,6 @@ def addVar_to_group(varname, groupname, dest_subgroup, dimlist,
         src_ncdat.close()
     return
 
-def addGroup_spinner(rootgrp, group, filelist, timeindexlist, 
-                     includevars=[], verbose=False):
-    # Get the basic dimensions
-    num_time_steps  = rootgrp.dimensions["num_time_steps"].size
-    ndim  = rootgrp.dimensions["ndim"].size
-
-    # create a group in rootgrp
-    dest_subgroup = rootgrp.createGroup(group)
-
-    # Add the attributes
-    firstfile = filelist[0]
-    src_ncdat = Dataset(firstfile, 'r')
-    for key, val in src_ncdat[group].__dict__.items():
-        dest_subgroup.setncattr(key, val)
-
-    # Add the dimensions
-    src_dims = src_ncdat[group].dimensions
-    #nang = src_dims['nang'].size
-    nang = src_ncdat[group].dimensions['nang'].size
-    for key, val in src_dims.items():
-        dest_subgroup.createDimension(key, val.size)
-    # Get the num_points
-    num_points = None
-    if 'num_points' in src_ncdat[group].dimensions:
-        num_points = src_ncdat[group].dimensions['num_points'].size
-    #print('num_points = '+repr(num_points))
-
-    # Get the list of variables
-    varlist = [k for k, g in src_ncdat[group].variables.items()]
-    print(varlist)
-
-    # Copy over coordinates
-    if 'coordinates' in varlist:
-        coords = dest_subgroup.createVariable("coordinates", "f8", 
-                                              ("num_points","ndim",))
-        coords[:,:] = src_ncdat[group].variables['coordinates'][:,:]
-        varlist.remove('coordinates')
-
-    # Close the data file (for the first file)
-    src_ncdat.close()
-
-    # Split the timeindexlist
-    filetimeindex = {}
-    for i in range(len(filelist)):
-        filetimeindex[i] = list()
-    for entry in timeindexlist:
-        ifile = entry[0]
-        filetimeindex[entry[0]] += [entry]
-
-    # Check to see if a variable should be included
-    usevar = lambda v, vlist: True if (vlist is None) else (v in vlist)
-
-    # ------ Spinner stuff ------- 
-    # Copy over the points vector
-    if verbose: print("Adding points")
-    addVar_to_group('points', group, dest_subgroup, 
-                    ("num_time_steps", "num_points","ndim",),
-                    filelist, filetimeindex, arraysize=3)
-    varlist.remove('points')
-    # Copy over the rotor_angles_rad vector
-    if usevar('rotor_angles_rad', includevars):
-        if verbose: print("Adding rotor_angles_rad")
-        addVar_to_group('rotor_angles_rad', group, dest_subgroup, 
-                        ("num_time_steps", "nang",), 
-                        filelist, filetimeindex)
-        varlist.remove('rotor_angles_rad')        
-    if usevar('rotor_hub_pos', includevars):
-        if verbose: print("Adding rotor_hub_pos")
-        addVar_to_group('rotor_hub_pos', group, dest_subgroup, 
-                        ("num_time_steps", "ndim",), 
-                        filelist, filetimeindex)
-        varlist.remove('rotor_hub_pos')        
-    # ----------------------------
-
-    # Add the variables
-    for v in varlist:
-        if (not usevar(v, includevars)):
-            continue
-        if verbose: print("Adding "+v)
-        vdat = dest_subgroup.createVariable(v, "f8", 
-                                            ("num_time_steps","num_points",))
-        for ifile, fname in enumerate(filelist):
-            if len(filetimeindex[ifile]) == 0: 
-                continue
-            # Loop through all times in filetimeindex
-            src_ncdat = Dataset(fname, 'r')
-            srcvar = src_ncdat[group].variables[v]
-            for entry in filetimeindex[ifile]:
-                ilocal  = entry[1]
-                iglobal = entry[2]
-                vdat[iglobal,:] = srcvar[ilocal,:]
-            src_ncdat.close()
-
-    print(varlist)
-    return
 
 # ========================================================================
 # Main
