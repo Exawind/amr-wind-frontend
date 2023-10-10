@@ -151,10 +151,11 @@ class MyApp(tkyg.App, object):
         if 'localconfigdir' in kwargs:
             localconfigdir=kwargs['localconfigdir']
             del kwargs['localconfigdir']
+        cls.vdisplay = None
         if hasxvfb:
             try:
-                vdisplay = Xvfb()
-                vdisplay.start()
+                cls.vdisplay = Xvfb()
+                cls.vdisplay.start()
             except:
                 pass
         return cls(configyaml=os.path.join(scriptpath,'config.yaml'), 
@@ -1990,7 +1991,7 @@ class MyApp(tkyg.App, object):
         mpistring = "%s -np %i %s %s "%(mpicmd,nproc,amrwindexe,self.savefile)
         exestring += mpistring
         # Pipe to logfile
-        if len(logfile)>0:
+        if (logfile != None) and (len(logfile)>0):
             exestring += "|tee %s"%logfile
         #print(localrunparams)
         return exestring
