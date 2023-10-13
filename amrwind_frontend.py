@@ -271,12 +271,13 @@ class MyApp(tkyg.App, object):
         return keyheader+keyname+"."+intername+datadict.outputdef['AMR-Wind']
 
     def writeAMRWindInput(self, filename, verbose=False, 
+                          postloadctrlelem=True,
                           outputextraparams=True, comments=True):
         """
         Write out the input file for AMR-Wind
         TODO: Do more sophisticated output control later
         """
-        self.postLoad_SetOnOffCtrlElem()
+        if postloadctrlelem: self.postLoad_SetOnOffCtrlElem()
 
         inputdict = self.getDictFromInputs('AMR-Wind')
 
