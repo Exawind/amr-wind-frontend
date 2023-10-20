@@ -1390,7 +1390,6 @@ def sweep_SetupRunParamSweep(self, preSetupFunc=None, postSetupFunc=None, verbos
         dirname_template += '_{CASENUM}'
 
     # Add any formatting necessary to string
-    #fmtstr = lambda x: x.format(WS=WS, WDIR=WDir, CASENUM=icase)
     fmtstr = lambda x, y: x.format(**y)
 
     # Construct the list of runs
@@ -1415,11 +1414,13 @@ def sweep_SetupRunParamSweep(self, preSetupFunc=None, postSetupFunc=None, verbos
         WDir = case['WDir']
 
         # Run the user-defined pre setup function
-        namevars={'WS':WS, 'WDIR':WDir, 'CASENUM':icase}
+        namevars={'WS':WS, 'WDir':WDir, 'CASENUM':icase}
         casevars={}
         if preSetupFunc is not None:
             casevars=preSetupFunc(self, icase)
         namevars.update(casevars)
+        if 'WDir' in casevars: WDir = casevars['WDir']
+        if 'WS'   in casevars: WS   = casevars['WS']
 
         casename = fmtstr(casename_template, namevars)
         if verbose:
