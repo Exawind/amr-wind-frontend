@@ -6,13 +6,16 @@ import xarray as xr
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 
-def getPlaneXR(ncfile, itimevec, varnames, vxvar='velocityx',
-               vyvar='velocityy', vzvar='velocityz', groupname=None,
-               verbose=0, includeattr=False):
+def getPlaneXR(ncfile, itimevec, varnames, groupname=None,
+               verbose=0, includeattr=False, gettimes=False):
     # Create a fresh db dictionary
     db = {}
     for v in varnames: db[v] = {}
     db['timesteps'] = []
+    timevec = None
+    if gettimes:
+        timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        db['times'] = []
     # Now load the ncfile data
     if groupname is None:
         groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
@@ -33,19 +36,20 @@ def getPlaneXR(ncfile, itimevec, varnames, vxvar='velocityx',
             if verbose>0:
                 print("extracting iter "+repr(itime))
             db['timesteps'].append(itime)
+            if gettimes:
+                db['times'].append(float(timevec[itime]))
             for v in varnames:
                 vvar = extractvar(ds, v, itime)
                 db[v][itime] = vvar
-            vx = extractvar(ds, vxvar, itime)
-            vy = extractvar(ds, vyvar, itime)
-            vz = extractvar(ds, vzvar, itime)
+            #vx = extractvar(ds, vxvar, itime)
+            #vy = extractvar(ds, vyvar, itime)
+            #vz = extractvar(ds, vzvar, itime)
         if includeattr:
             for k, g in ds.attrs.items():
                 db[k] = g
     return db
 
-def getLineXR(ncfile, itimevec, varnames, vxvar='velocityx',
-              vyvar='velocityy', vzvar='velocityz', groupname=None,
+def getLineXR(ncfile, itimevec, varnames, groupname=None,
               verbose=0, includeattr=False, gettimes=False):
     # Create a fresh db dictionary
     db = {}
