@@ -118,6 +118,17 @@ def calculateShearAlpha(allvars, ncdat=None, avgt=None):
     alpha=z/u_mag*dudz
     return z, alpha
 
+def calculateVeer(allvars, ncdat=None, avgt=None):
+    #approximate the veer as d\Theta/dz with centered difference
+    wind_dir = 270-np.arctan2(allvars['v'], allvars['u'])*180.0/math.pi
+    z     = allvars['z']
+    dwindDirdz = (wind_dir[1:]-wind_dir[0:-1])/(z[1:]-z[0:-1])
+    dwindDirdz=np.append(dwindDirdz, dwindDirdz[-1])
+    return z, dwindDirdz
+    ##alternative approximation of veer using a linear fit of the wind_dir profile
+    #m,b = np.polyfit(z,wind_dir,deg=1)
+    #return z, np.full_like(z,m)
+
 def calculateObukhovL(allvars, ncdat=None, avgt=None):
     k = 0.40
     g = 9.81
@@ -223,6 +234,10 @@ statsprofiles=OrderedDict([
                   'header':'alpha',
                   'expr':'calculateShearAlpha', 
                   'funcstring':True}),
+    ('Veer',  {'requiredvars':['u', 'v'], 
+                  'header':'veer',
+                  'expr':'calculateVeer',
+                  'funcstring':True}),
     ('ObukhovL', {'requiredvars':['theta', u"w'theta'_r"],
                   'header':'ObukhovL',
                   'expr':'calculateObukhovL', 
@@ -316,7 +331,7 @@ def printReport(ncdat, heights, avgt, verbose=True):
     reportvars['ustar'] = avgustar
 
     # Get the profile quantities
-    profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha', 'ObukhovL']
+    profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha', 'ObukhovL','Veer']
     # Build the list of all required variables
     requiredvars = []
     for var in profvars:
