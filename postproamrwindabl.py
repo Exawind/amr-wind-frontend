@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright (c) 2022, Alliance for Sustainable Energy
-#
+#/
 # This software is released under the BSD 3-clause license. See LICENSE file
 # for more details.
 #
@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import os.path as path
 from collections            import OrderedDict 
 from scipy import interpolate
+from scipy.optimize import curve_fit
 import mmap
 
 scalarvars=[u'time', u'Q', u'Tsurf', u'ustar', u'wstar', u'L', u'zi', u'abl_forcing_x', u'abl_forcing_y']
@@ -109,27 +110,73 @@ def matchvarstimes(dic, varnames, avgt):
     if dic['avgt'] != avgt:    return False
     return True
 
-def calculateShearAlpha(allvars, ncdat=None, avgt=None):
+def calculateShearAlpha(allvars, ncdat=None, avgt=None,span=None):
+
     # compute Umag
     u_mag = np.sqrt(allvars['u']**2 + allvars['v']**2)
     z     = allvars['z']
     dudz = (u_mag[1:]-u_mag[0:-1])/(z[1:]-z[0:-1])
     dudz=np.append(dudz, dudz[-1])
     alpha=z/u_mag*dudz
+
     return z, alpha
 
-def calculateVeer(allvars, ncdat=None, avgt=None):
+def calculateShearAlpha_Fit(allvars, ncdat=None, avgt=None,span=None):
+
+    #define functional form for wind speed profile
+    def func(x,a,b):
+        return b*x**a
+
+    u_mag = np.sqrt(allvars['u']**2 + allvars['v']**2)
+    z     = allvars['z']
+    if span == None:
+        print("Rotor span not specified. Fitting alpha over entire vertical domain")
+        popt, pcov = curve_fit(func,z,u_mag)
+    else:
+        #only perform fit over rotor span
+        z_span = (z >= span[0]) & (z <= span[1])
+        popt, pcov = curve_fit(func,z[z_span],u_mag[z_span])
+    return z, np.full_like(z,popt[0])
+
+def calculateVeer(allvars, ncdat=None, avgt=None,span=None):
     #approximate the veer as d\Theta/dz with centered difference
     wind_dir = 270-np.arctan2(allvars['v'], allvars['u'])*180.0/math.pi
     z     = allvars['z']
     dwindDirdz = (wind_dir[1:]-wind_dir[0:-1])/(z[1:]-z[0:-1])
     dwindDirdz=np.append(dwindDirdz, dwindDirdz[-1])
     return z, dwindDirdz
-    ##alternative approximation of veer using a linear fit of the wind_dir profile
-    #m,b = np.polyfit(z,wind_dir,deg=1)
-    #return z, np.full_like(z,m)
 
-def calculateObukhovL(allvars, ncdat=None, avgt=None):
+def calculateVeer_Fit(allvars, ncdat=None, avgt=None,span=None):
+    wind_dir = 270-np.arctan2(allvars['v'], allvars['u'])*180.0/math.pi
+    z     = allvars['z']
+
+    #calculate hub-height wind direction accounting for the discontinuity from 0/360 deg 
+    ydata = wind_dir - wind_dir[0]
+    for j in range(len(ydata))[1:]:
+        temp1 = ydata[j]
+        temp2 = ydata[j] + 360
+        temp3 = ydata[j] - 360
+        tempvector = [temp1,temp2,temp3]
+        tempvector_absolute = np.absolute(tempvector)
+        min_value = min(tempvector_absolute)
+        min_index = np.nonzero(tempvector_absolute == min_value)
+        temp = np.asarray(min_index[0])
+        ydata[j] = tempvector[temp[0]]
+
+    def func(x, a, b):
+        return a*x+b
+
+    if span == None:
+        print("Rotor span not specified. Fitting veer over entire vertical domain")
+        popt, pcov = curve_fit(func,z,ydata)
+    else:
+        #only perform fit over rotor span
+        z_span = (z >= span[0]) & (z <= span[1])
+        popt, pcov = curve_fit(func,z[z_span],ydata[z_span])
+
+    return z, np.full_like(z,popt[0])
+
+def calculateObukhovL(allvars, ncdat=None, avgt=None,span=None):
     k = 0.40
     g = 9.81
     z     = allvars['z']
@@ -234,9 +281,17 @@ statsprofiles=OrderedDict([
                   'header':'alpha',
                   'expr':'calculateShearAlpha', 
                   'funcstring':True}),
+    ('Alpha-Fit', {'requiredvars':['u', 'v'],
+                  'header':'alpha',
+                  'expr':'calculateShearAlpha_Fit', 
+                  'funcstring':True}),
     ('Veer',  {'requiredvars':['u', 'v'], 
                   'header':'veer',
                   'expr':'calculateVeer',
+                  'funcstring':True}),
+    ('Veer-Fit',  {'requiredvars':['u', 'v'],
+                  'header':'veer',
+                  'expr':'calculateVeer_Fit',
                   'funcstring':True}),
     ('ObukhovL', {'requiredvars':['theta', u"w'theta'_r"],
                   'header':'ObukhovL',
@@ -245,7 +300,7 @@ statsprofiles=OrderedDict([
 ])
     
 class CalculatedProfile:
-    def __init__(self, requiredvars, expr, ncdat, allvardata, avgt, header='',
+    def __init__(self, requiredvars, expr, ncdat, allvardata, avgt, span=None,header='',
                  funcstring=False, usemapped=True):
         self.requiredvars = requiredvars
         self.expr         = expr
@@ -256,16 +311,18 @@ class CalculatedProfile:
         self.funcstring   = funcstring
         self.header       = header
         self.usemapped    = usemapped
+        self.span         = span
 
     @classmethod
-    def fromdict(cls, d, ncdat, allvardata, avgt, usemapped=True):
-        return cls(d['requiredvars'], d['expr'], ncdat, allvardata, avgt, 
+    def fromdict(cls, d, ncdat, allvardata, avgt, span=None,usemapped=True):
+        return cls(d['requiredvars'], d['expr'], ncdat, allvardata, avgt,span,
                    header=d['header'], funcstring=d['funcstring'],
                    usemapped=usemapped)
 
-    def calculate(self, allvars=None, avgt=None):
+    def calculate(self, allvars=None, avgt=None,span=None):
         if allvars is None: allvars = self.allvardata
         if avgt    is None: avgt    = self.avgt
+        if span    is None: span    = self.span
         if not matchvarstimes(allvars, self.requiredvars, avgt):
             # Load the data from the ncdat file
             var = loadProfileData(self.ncdat, 
@@ -276,7 +333,7 @@ class CalculatedProfile:
             var = allvars        
         # Now evalulate the function
         if self.funcstring:
-            z, vec = eval(self.expr+"(var, ncdat=self.ncdat, avgt=avgt)")
+            z, vec = eval(self.expr+"(var, ncdat=self.ncdat, avgt=avgt,span=span)")
         else:
             # Calculate the expression
             Nz  = len(var['z'])
@@ -319,7 +376,7 @@ def timeAvgScalar(ncdat, var, avgt):
     avgv = timeaverage(t, v, avgt[0], avgt[1])
     return avgv
         
-def printReport(ncdat, heights, avgt, verbose=True):
+def printReport(ncdat, heights, avgt, span,verbose=True):
     """
     Print out a report of the ABL statistics at given heights
     """
@@ -331,7 +388,7 @@ def printReport(ncdat, heights, avgt, verbose=True):
     reportvars['ustar'] = avgustar
 
     # Get the profile quantities
-    profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha', 'ObukhovL','Veer']
+    profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha', 'Alpha-Fit','ObukhovL','Veer','Veer-Fit']
     # Build the list of all required variables
     requiredvars = []
     for var in profvars:
@@ -343,8 +400,7 @@ def printReport(ncdat, heights, avgt, verbose=True):
     # Get the profile quantities
     for var in profvars:
         # Get the quantity at every height
-        prof=CalculatedProfile.fromdict(statsprofiles[var],
-                                        ncdat, alldata, avgt)
+        prof=CalculatedProfile.fromdict(statsprofiles[var],ncdat, alldata, avgt,span)
         z, qdat = prof.calculate()
         interpf = interpolate.interp1d(z, qdat)
         reportvars[var]=[interpf(z) for z in heights]
