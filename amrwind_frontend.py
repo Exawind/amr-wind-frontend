@@ -1541,7 +1541,7 @@ class MyApp(tkyg.App, object):
             self.abl_profiledata = prof.allvardata.copy()
         return
 
-    def ABLpostpro_printreport(self, avgt=None, avgz=None):
+    def ABLpostpro_printreport(self, avgt=None, avgz=None,span=None):
         if avgt is None:
             avgt         = self.inputvars['ablstats_avgt'].getval()
         if avgz is None:
@@ -1553,7 +1553,7 @@ class MyApp(tkyg.App, object):
             return
         if isinstance(ablstats_avgz, str):
             avgz  = [float(z) for z in re.split(r'[,; ]+', ablstats_avgz)]
-        report = postpro.printReport(self.abl_stats, avgz, avgt, verbose=True)
+        report = postpro.printReport(self.abl_stats, avgz, avgt, span, verbose=True)
         return report
 
     # ---- Sample probe postprocessing options ----
