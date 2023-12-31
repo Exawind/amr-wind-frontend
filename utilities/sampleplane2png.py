@@ -26,7 +26,7 @@ def setfigtextsize(ax, fsize):
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label, ax.yaxis.get_offset_text()] + ax.get_xticklabels() + ax.get_yticklabels() ):
         item.set_fontsize(fsize)
         
-def makeHHpng(ncfile, itimevec, savefile, paramdict, verbose=0):
+def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
     groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
     with xr.open_dataset(ncfile, group=groups[0]) as ds:
         xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][1::-1]))
@@ -38,6 +38,7 @@ def makeHHpng(ncfile, itimevec, savefile, paramdict, verbose=0):
                                      })
         dtime.close()
 
+        levels = eval(paramdict['levels']) # np.linspace(6,12,101)
         for itime in itimevec:
             # Create a figure
             fig, ax = plt.subplots(1,1,figsize=paramdict['figsize'], dpi=paramdict['dpi'])
@@ -46,7 +47,7 @@ def makeHHpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             vh = np.sqrt(vx**2 + vy**2)
 
             # TODO: Edit levels
-            c=ax.contourf(ds['xm'], ds['ym'], vh[0,:,:], levels=np.linspace(6,12,101), cmap='coolwarm')
+            c=ax.contourf(ds['xm'], ds['ym'], vh[0,:,:], levels=levels, cmap='coolwarm')
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)
@@ -54,7 +55,7 @@ def makeHHpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             ax.set_aspect('equal')
             setfigtextsize(ax, paramdict['fontsize'])        
             ax.get_ylim()
-            ax.set_title(paramdict['title']+' Time: %0.1f'%ds['time'][itime], fontsize =8)
+            ax.set_title(paramdict['title']+' Time: %0.1f'%ds['time'][itime], fontsize=paramdict['fontsize'])
             ax.set_xlabel(paramdict['xlabel'])
             ax.set_ylabel(paramdict['ylabel'])
             savefilename=savefile.format(itime=itime, time=ds['time'][itime])
@@ -70,7 +71,9 @@ def makeHHpng(ncfile, itimevec, savefile, paramdict, verbose=0):
 # ========================================================================
 if __name__ == "__main__":
 
-    defaultdict = {'figsize':(8,6), 'title':'', 'xlabel':'x [m]', 'ylabel':'y [m]', 'dpi':125, 'fontsize':8}
+    defaultdict = {'figsize':(8,6), 'title':'', 'xlabel':'x [m]', 'ylabel':'y [m]',
+                   'dpi':125, 'fontsize':8, 'levels':'41'}
+
     helpstring = """Create a png from a sample plane
     """
 
@@ -118,4 +121,4 @@ if __name__ == "__main__":
         print('outfile   = '+outfile)        
         print('paramdict = '+repr(defaultdict))
 
-    makeHHpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
+    makeXYpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
