@@ -39,6 +39,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
         dtime.close()
 
         levels = eval(paramdict['levels']) # np.linspace(6,12,101)
+        iplane = paramdict['iplane']
         for itime in itimevec:
             # Create a figure
             fig, ax = plt.subplots(1,1,figsize=paramdict['figsize'], dpi=paramdict['dpi'])
@@ -47,7 +48,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             vh = np.sqrt(vx**2 + vy**2)
 
             # TODO: Edit levels
-            c=ax.contourf(ds['xm'], ds['ym'], vh[0,:,:], levels=levels, cmap='coolwarm')
+            c=ax.contourf(ds['xm'], ds['ym'], vh[iplane,:,:], levels=levels, cmap='coolwarm')
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)
@@ -58,7 +59,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             ax.set_title(paramdict['title']+' Time: %0.1f'%ds['time'][itime], fontsize=paramdict['fontsize'])
             ax.set_xlabel(paramdict['xlabel'])
             ax.set_ylabel(paramdict['ylabel'])
-            savefilename=savefile.format(itime=itime, time=ds['time'][itime])
+            savefilename=savefile.format(itime=itime, time=ds['time'][itime], iplane=iplane)
             if verbose>0:
                 print(savefilename)
             plt.savefig(savefilename)
@@ -72,7 +73,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
 if __name__ == "__main__":
 
     defaultdict = {'figsize':(8,6), 'title':'', 'xlabel':'x [m]', 'ylabel':'y [m]',
-                   'dpi':125, 'fontsize':8, 'levels':'41'}
+                   'dpi':125, 'fontsize':8, 'levels':'41','iplane':0}
 
     helpstring = """Create a png from a sample plane
     """
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--paramdict',
-        help="Parameter dict (defaults: %s)"%repr(defaultdict),
+        help="Parameter dict as a string (defaults: %s)"%repr(defaultdict),
         type=str,
         required=False,
         default="{}",
