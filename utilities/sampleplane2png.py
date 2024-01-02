@@ -28,12 +28,13 @@ def setfigtextsize(ax, fsize):
         
 def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
     groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
+    g = groups[0] if paramdict['group'] is None else paramdict['group']
     with xr.open_dataset(ncfile, group=groups[0]) as ds:
-        xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][1::-1]))
-        ym = ds['coordinates'].data[:,1].reshape(tuple(ds.attrs['ijk_dims'][1::-1]))
+        xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        ym = ds['coordinates'].data[:,1].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
         dtime=xr.open_dataset(ncfile)
-        ds = ds.assign_coords(coords={'xm':(['x','y'], xm),
-                                      'ym':(['x','y'], ym),
+        ds = ds.assign_coords(coords={'xm':(['x','y','z'], xm),
+                                      'ym':(['x','y','z'], ym),
                                       'time':dtime['time'],
                                      })
         dtime.close()
@@ -48,7 +49,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             vh = np.sqrt(vx**2 + vy**2)
 
             # TODO: Edit levels
-            c=ax.contourf(ds['xm'], ds['ym'], vh[iplane,:,:], levels=levels, cmap='coolwarm')
+            c=ax.contourf(ds['xm'][iplane,:,:], ds['ym'][iplane,:,:], vh[iplane,:,:], levels=levels, cmap='coolwarm')
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)
@@ -73,7 +74,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
 if __name__ == "__main__":
 
     defaultdict = {'figsize':(8,6), 'title':'', 'xlabel':'x [m]', 'ylabel':'y [m]',
-                   'dpi':125, 'fontsize':8, 'levels':'41','iplane':0}
+                   'dpi':125, 'fontsize':8, 'levels':'41','iplane':0, 'group':None}
 
     helpstring = """Create a png from a sample plane
     """
