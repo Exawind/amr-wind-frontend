@@ -32,7 +32,7 @@ def progress(count, total, suffix=''):
     sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', suffix))
     sys.stdout.flush()
 
-def extractpt(ncfile, ptlist, varlist=['velocityx','velocityy','velocityz'], group=None, verbose=0):
+def extractpt(ncfile, ptlist, varlist=['velocityx','velocityy','velocityz'], timesubset=None, group=None, verbose=0):
     groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
     g=groups[0] if group is None else group
     datadict=OrderedDict()
@@ -49,11 +49,6 @@ def extractpt(ncfile, ptlist, varlist=['velocityx','velocityy','velocityz'], gro
         dtime.close()
         iplane = 0
         N=len(ds['time'])
-        #print(N)
-        #print(ds.attrs['ijk_dims'])
-        #ijk=(-1,0,0)
-        #ijkrev = ijk[::-1]
-        #print(xm[ijkrev], ym[ijkrev], zm[ijkrev])
         for pt in ptlist:
             ijkrev = pt[::-1]
             ptdict=OrderedDict()
@@ -64,8 +59,9 @@ def extractpt(ncfile, ptlist, varlist=['velocityx','velocityy','velocityz'], gro
             for v in varlist:
                 ptdict[v]  = []
             datadict[pt] = ptdict
-        Nloop = 100
-        for itime in np.arange(Nloop): #np.arange(N):
+        tloop = np.arange(N) if timesubset is None else timesubset
+        Nloop = len(tloop)   # Edit this to choose a subset
+        for itime in tloop: 
             progress(itime, Nloop)
             for pt in ptlist:
                 datadict[pt]['time'].append(float(ds['time'][itime]))
