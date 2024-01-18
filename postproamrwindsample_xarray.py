@@ -94,13 +94,12 @@ def avgPlaneXR(ncfile, timerange,
         db['y'] = ym
         db['z'] = zm
         # Set up the initial mean fields
+        zeroarray = extractvar(ds, varnames[0], 0)
         for v in varnames:
-            vvar = extractvar(ds, v, 0)
-            db[v+suf] = vvar*0.0
+            db[v+suf] = np.full_like(zeroarray, 0.0)
         if len(extrafuncs)>0:
-            zeroarray = extractvar(ds, varnames[0], 0)*0.0
             for f in extrafuncs:
-                db[f['name']+suf] = zeroarray
+                db[f['name']+suf] = np.full_like(zeroarray, 0.0)
         Ncount = 0
         # Loop through and accumulate
         for itime, t in enumerate(timevec):

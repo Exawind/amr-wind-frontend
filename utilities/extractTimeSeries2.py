@@ -62,7 +62,7 @@ def extractpt(ncfile, ptlist, varlist=['velocityx','velocityy','velocityz'], tim
         tloop = np.arange(N) if timesubset is None else timesubset
         Nloop = len(tloop)   # Edit this to choose a subset
         for itime in tloop: 
-            progress(itime, Nloop)
+            progress(itime+1, Nloop)
             for pt in ptlist:
                 datadict[pt]['time'].append(float(ds['time'][itime]))
             for v in varlist:
