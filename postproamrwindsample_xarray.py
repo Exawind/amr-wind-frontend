@@ -145,6 +145,7 @@ def MinMaxStd_PlaneXR(ncfile, timerange,
     savg = '_avg'
     db = {}
     if avgdb is None:
+        if verbose: print("Calculating averages")
         db = avgPlaneXR(ncfile, timerange,
                         extrafuncs=extrafuncs,
                         varnames=varnames,
@@ -172,6 +173,7 @@ def MinMaxStd_PlaneXR(ncfile, timerange,
                 db[name+smin] = np.full_like(zeroarray, bigval)
         Ncount = 0
         # Loop through and accumulate
+        if verbose: print("Calculating min/max/std")
         for itime, t in enumerate(timevec):
             if (t1 <= t) and (t <= t2):
                 if verbose: progress(Ncount+1, Ntotal)
