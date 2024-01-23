@@ -50,13 +50,13 @@ def getPlaneXR(ncfile, itimevec, varnames, groupname=None,
     return db
 
 # See https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-def progress(count, total, suffix=''):
+def progress(count, total, suffix='', digits=1):
     """
     print out a progressbar
     """
     bar_len = 60
     filled_len = int(round(bar_len * count / float(total)))
-    percents = round(100.0 * count / float(total), 1)
+    percents = round(100.0 * count / float(total), digits)
     bar = '=' * filled_len + '-' * (bar_len - filled_len)
     sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', suffix))
     sys.stdout.flush()

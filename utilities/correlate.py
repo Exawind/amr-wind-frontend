@@ -319,7 +319,7 @@ def makeRij(ij, allplist, filelist, loadfromplanes, avgsavefile, iplane, group,
         if (verbose): 
             if len(ncfilename)>0:
                 #statusstring='Computing [%i/%i]'%(ifile+1, len(filelist))
-                ppsamplexr.progress(ifile+1, len(filelist))
+                ppsamplexr.progress(ifile+1, len(filelist), digits=2)
             else:
                 shortfname=os.path.basename(filename)            
                 statusstring='Computing [%i/%i]: %s'%(ifile+1, len(filelist), shortfname)
