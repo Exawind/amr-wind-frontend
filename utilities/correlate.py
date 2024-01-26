@@ -41,13 +41,13 @@ def reshapedict(ds, iplane, vvars):
         outdat = np.hstack((outdat, vdat))
     return outdat
 
-def avgNCplaneXR(ncfilename, tavg, group, iplane, verbose=False):
+def avgNCplaneXR(ncfilename, tavg, group, iplane, verbose=False, replacenan=False):
     vvars = ['velocityx','velocityy','velocityz']
     vavg  = ['velocityx_avg','velocityy_avg','velocityz_avg']
     ds = ppsamplexr.avgPlaneXR(ncfilename, tavg,
                                extrafuncs=[],
                                varnames=vvars,
-                               groupname=group, verbose=verbose, includeattr=False)
+                               groupname=group, verbose=verbose, includeattr=False, replacenan=replacenan)
     avgdat = reshapedict(ds, iplane, vavg)
     headers="Plane_Number Index_j Index_i coordinates[0] coordinates[1] coordinates[2] velocity_probe[0] velocity_probe[1] velocity_probe[2]"
     return avgdat, headers.split()
@@ -250,7 +250,8 @@ def convertUVWtoLongLat(uvw, avguvw):
 
 def makeRij(ij, allplist, filelist, loadfromplanes, avgsavefile, iplane, group,
             avgdat = None, headers=None, timerange=None,
-            ncfilename='', verbose=False, norm=1):
+            ncfilename='', verbose=False, norm=1, skip=1,
+            replacenan=False):
     # Get the average data
     if (avgdat is None) and (headers is None): 
         avgdat, headers       = loadavg(filelist, loadfromplanes, avgsavefile, 
@@ -315,21 +316,21 @@ def makeRij(ij, allplist, filelist, loadfromplanes, avgsavefile, iplane, group,
         
     # -- Construct the Rij --
     # Loop through all files
-    for ifile, filename in enumerate(filelist):
+    for ifile, filename in enumerate(filelist[::skip]):
         if (verbose): 
             if len(ncfilename)>0:
                 #statusstring='Computing [%i/%i]'%(ifile+1, len(filelist))
-                ppsamplexr.progress(ifile+1, len(filelist), digits=2)
+                ppsamplexr.progress(ifile+1, len(filelist[::skip]), digits=2)
             else:
                 shortfname=os.path.basename(filename)            
-                statusstring='Computing [%i/%i]: %s'%(ifile+1, len(filelist), shortfname)
+                statusstring='Computing [%i/%i]: %s'%(ifile+1, len(filelist[::skip]), shortfname)
                 print(statusstring)
         if len(ncfilename)>0:
             tindex = filename
             #dat = extractNCplane(ncdata, tindex)  # Old way of extracting data
             vvars = ['velocityx', 'velocityy', 'velocityz']
             for v in vvars:
-                db[v] = ppsamplexr.extractvar(ds, v, tindex)
+                db[v] = ppsamplexr.nonan(ppsamplexr.extractvar(ds, v, tindex), replacenan)
             dat = reshapedict(db, iplane, vvars)
         else:
             dat, time, headers=loadplanefile(filename)

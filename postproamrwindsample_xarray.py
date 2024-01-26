@@ -5,6 +5,7 @@ import sys
 import xarray as xr
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
+nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
 def getPlaneXR(ncfile, itimevec, varnames, groupname=None,
                verbose=0, includeattr=False, gettimes=False):
@@ -64,14 +65,15 @@ def progress(count, total, suffix='', digits=1):
 def avgPlaneXR(ncfile, timerange,
                extrafuncs=[],
                varnames=['velocityx','velocityy','velocityz'],
-               groupname=None, verbose=False, includeattr=False):
+               groupname=None, verbose=False, includeattr=False, 
+               replacenan=False):
     """
     Compute the average of ncfile variables
     """
     suf='_avg'
     # Create a fresh db dictionary
     db = {}
-    for v in varnames: db[v] = {}
+    #for v in varnames: db[v] = {}
     t1 = timerange[0]
     t2 = timerange[1]
     timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
@@ -108,7 +110,7 @@ def avgPlaneXR(ncfile, timerange,
                 db['times'].append(float(t))
                 vdat = {}
                 for v in varnames:
-                    vdat[v] = extractvar(ds, v, itime)
+                    vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
                     db[v+suf] += vdat[v]
                 if len(extrafuncs)>0:
                     for f in extrafuncs:
