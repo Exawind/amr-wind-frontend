@@ -42,7 +42,8 @@ except:
 
 # Load ruamel or pyyaml as needed
 try:
-    import ruamel.yaml as yaml
+    import ruamel.yaml as YAML
+    yaml = YAML(typ='unsafe', pure=True)
     #print("# Loaded ruamel.yaml")
     useruamel=True
     loaderkwargs = {'Loader':yaml.RoundTripLoader}
