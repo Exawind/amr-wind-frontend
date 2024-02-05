@@ -1112,7 +1112,7 @@ class MyApp(tkyg.App, object):
                                                    'postprocessing_setup_type')
             allentrytypes = [x[0] for x in allentrytypes]
             #print('allentrytypes: '+repr(allentrytypes))
-            if ('TimeAveraging' not in allentrytypes) and  autoMakeFirstEntry:
+            if ('TimeAveraging' not in allentrytypes) and  autoMakeFirstSampler:
                 makeFirstEntry = True
         # Create the first sampler entry if necessary
         if makeFirstEntry:
