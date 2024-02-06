@@ -313,6 +313,8 @@ def refine_createZoneForTurbine(self, turbname, turbinedict, zonedict,
         vert        = np.array([0.0, 0.0, 1.0])        
     elif orient == 'nacdir':
         streamwise, crossstream, vert = self.convert_winddir_to_xy(turbyaw)
+    elif isFloat(orient):
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(float(orient))
     else:  # Use the wind direction
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
         
@@ -347,6 +349,8 @@ def refine_createZoneForFarm(self, zonedict, autofarmcenter, AvgTurbD, AvgHH,
         print("Zone orientation nacdir not possible for farm zone.")
         print("Using wind direction instead")
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
+    elif isFloat(orient):
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(float(orient))
     else:  # Use the wind direction
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 
@@ -864,6 +868,8 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
         vert        = np.array([0.0, 0.0, 1.0])        
     elif orient == 'nacdir':
         streamwise, crossstream, vert = self.convert_winddir_to_xy(turbyaw)
+    elif isFloat(orient):
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(float(orient))
     else:  # Use the wind direction
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 

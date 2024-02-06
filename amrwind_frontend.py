@@ -2212,11 +2212,15 @@ class MyApp(tkyg.App, object):
             # Calculate the body force
             ncfile = forcingdict['ablstatfile']
             tavg   = forcingdict['tavg']
-            abl_ncdat = postpro.loadnetcdffile(ncfile)
-            ABL_X_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_x',tavg)
-            ABL_Y_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_y',tavg)
-            ABL_Z_FORCE = 0.0
-            ABL_F_VEC   = [ABL_X_FORCE, ABL_Y_FORCE, ABL_Z_FORCE]
+            if os.path.exists(ncfile):
+                abl_ncdat = postpro.loadnetcdffile(ncfile)
+                ABL_X_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_x',tavg)
+                ABL_Y_FORCE = postpro.timeAvgScalar(abl_ncdat,'abl_forcing_y',tavg)
+                ABL_Z_FORCE = 0.0
+                ABL_F_VEC   = [ABL_X_FORCE, ABL_Y_FORCE, ABL_Z_FORCE]
+            else:
+                if verbose: print('FILE %s does not exist -- setting body force to zero'%ncfile)
+                ABL_F_VEC   = [0.0, 0.0, 0.0]
             # Set the body force
             self.inputvars['BodyForce'].setval(True)
             self.inputvars['BodyForce_magnitude'].setval(ABL_F_VEC)
