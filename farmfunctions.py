@@ -389,9 +389,10 @@ def refine_createAllZones(self):
     Create all of the refinement zones
     """
     # Default dictionary for optional inputs
-    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y
+    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y/float
                   'units':'diameter',        # diameter/meter
                   'center':'turbine',        # turbine/farm
+                  'applyto':'',              # Act only on specific turbs
               }
 
     # Get the csv input
@@ -435,9 +436,14 @@ def refine_createAllZones(self):
     # Go through all rows and create zones
     for zone in alldf:
         center=getdictval(zone['options'], 'center', defaultopt).lower()
+        filterstr=getdictval(zone['options'], 'applyto', defaultopt)
         if center=='turbine':
-            # Apply to every turbine
-            for turb in alltags:
+            # Apply to specific turbines
+            if len(filterstr)>0:
+                applyturbs = [x for x in alltags if bool(re.search(filterstr, x))]
+            else:
+                applyturbs = alltags
+            for turb in applyturbs:
                 tdict = allturbines.dumpdict('AMR-Wind', 
                                              subset=[turb], keyfunc=keystr)
                 refinedict = refine_createZoneForTurbine(self, turb, tdict, 
@@ -1253,7 +1259,7 @@ def sampling_createAllProbes(self, verbose=False):
     Create all of the sample probes from csv input
     """
     # Default dictionary for optional inputs
-    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y
+    defaultopt = {'orientation':'winddir',   # winddir/nacdir/x/y/float
                   'units':'diameter',        # diameter/meter
                   'center':'turbine',        # turbine/farm/specified
                   'usedx':None,              # use this mesh size
@@ -1261,6 +1267,7 @@ def sampling_createAllProbes(self, verbose=False):
                   'outputto':None,           # Output to this sampler object
                   'outputfreq':None,         # Output at this frequency
                   'outputvars':None,         # Output these variables
+                  'applyto':'',              # Act only on specific turbs
                  }
 
     reqheaders = ['name', 'type', 'upstream', 'downstream', 'lateral', 
@@ -1306,10 +1313,15 @@ def sampling_createAllProbes(self, verbose=False):
 
     # Go through all rows and create sampling probes
     for probe in alldf:
-        center=getdictval(probe['options'], 'center', defaultopt).lower()
+        center = getdictval(probe['options'], 'center', defaultopt).lower()
+        filterstr = getdictval(probe['options'], 'applyto', defaultopt)
         if center=='turbine':
-            # Apply to every turbine
-            for turb in alltags:
+            # Apply to specific turbines
+            if len(filterstr)>0:
+                applyturbs = [x for x in alltags if bool(re.search(filterstr, x))]
+            else:
+                applyturbs = alltags
+            for turb in applyturbs:
                 tdict = allturbines.dumpdict('AMR-Wind', 
                                              subset=[turb], keyfunc=keystr)
                 sampledict = sampling_createDictForTurbine(self, turb, tdict,
