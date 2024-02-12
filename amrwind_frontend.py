@@ -2298,7 +2298,10 @@ class MyApp(tkyg.App, object):
             ## Get the openfast dt
             of_dt    = float(OpenFAST.getVarFromFST(openfast_input_file, 'DT'))
             dtratio  = int(amr_dt/of_dt)
+            # NOTE: This assumes that the AMR-Wind restarts were reset
+            # to 0 (i.e., checkpoint_start is set correctly)!
             restartextension = str(restartiter*dtratio)
+            restarttime      = restartiter*dtratio*of_dt
             
             restartext = '.T%i.%s'%(iturb,restartextension) if iturb > 0 else '.'+restartextension
             restartfile = openfast_prefix+restartext
@@ -2306,6 +2309,7 @@ class MyApp(tkyg.App, object):
                 print(openfast_prefix)
                 print(restartfile)
             # Set the properties
+            self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_start_time',   restarttime,)
             self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_restart_file', restartfile,)
             self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_sim_mode', 'restart',)
             self.edit_entryval('listboxactuator', turbname, 'Actuator_sim_mode', 'restart',) 
