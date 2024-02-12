@@ -435,6 +435,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: time.checkpoint_interval
 
+  - name:       checkpoint_start
+    label:      Checkpoint offset
+    frame:      frame_restart
+    inputtype:  int
+    defaultval:
+    outputdef:
+      AMR-Wind: time.checkpoint_start
+
   - name:       physics
     #label:      Simulation type
     #tab:        Simulation

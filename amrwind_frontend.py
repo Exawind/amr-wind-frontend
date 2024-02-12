@@ -48,6 +48,7 @@ import argparse
 import subprocess
 import signal
 import copy
+import linecache
 
 # amrwind-frontend libraries
 import validateinputs
@@ -2144,6 +2145,7 @@ class MyApp(tkyg.App, object):
                               autoset_ABLForcing=True,
                               autoset_ABLMeanBoussinesq=True,
                               autoset_ABLwallshearstresstype=True,
+                              checkpointdir=None,
                               verbose=False):
         """Automatically sets the boundary conditions and parameters required
         to restart using boundary planes.
@@ -2243,8 +2245,72 @@ class MyApp(tkyg.App, object):
             self.inputvars['wall_shear_stress_type'].setval('local', forcechange=True)
             if verbose: printverbose('SET','wall_shear_stress_type')
 
+        # Set checkpoint_start if necessary
+        if checkpointdir is not None:
+            # Get the iteration number to offset
+            if isinstance(checkpointdir, int):
+                checkpoint_offset = checkpointdir
+            else:
+                checkpoint_offset = int(self.readCheckpointHeader(checkpointdir))
+            self.inputvars['checkpoint_start'].setval(checkpoint_offset)
+            if verbose: printverbose('SET','checkpoint_start')
+            
         return
 
+    # ---- restart turbine stuff ----
+    def readCheckpointHeader(self, checkpointdir, linenum=3, headername='Header'):
+        """
+        Reads a line off of the header from a check point directory
+        """
+        headerfile = os.path.join(checkpointdir,headername)
+        
+        # Check to make sure that headerfile exists
+        if not os.path.exists(headerfile):
+            return None
+        
+        # Get the line from headerfile
+        line = linecache.getline(headerfile, linenum)
+        return line
+
+    def restartOpenFASTinput(self, chkdir, rundir='./', turblist=None, verbose=True):
+        """
+        Sets all of the openFAST inputs required to restart a run
+        """
+        # Get the checkpoint iteration
+        restartiter = int(self.readCheckpointHeader(os.path.join(rundir, chkdir)))
+        # Get the amr-wind dt
+        amr_dt = self.inputvars['fixed_dt'].getval()
+
+        allturbines  = self.listboxpopupwindict['listboxactuator']
+        # Use all turbines if no turblist is provided
+        if turblist is None:
+            turblist  = allturbines.getitemlist()
+        for iturb, turbname in enumerate(turblist):
+            #print('**** %s ****'%turbname)
+            tdict = allturbines.dumpdict('AMR-Wind', subset=[turbname], keyfunc=lambda n, d1, d2: d2.name)
+            # Check to make sure that it's an openfast based turbine
+            if tdict['Actuator_type'] not in ['TurbineFastLine', 'TurbineFastDisk']:
+                continue
+            # Find the openfast directory
+            openfast_input_file = tdict['Actuator_openfast_input_file']
+            openfast_prefix = os.path.splitext(os.path.join(rundir, openfast_input_file))[0]
+            # Get the right checkpoint extension
+            ## Get the openfast dt
+            of_dt    = float(OpenFAST.getVarFromFST(openfast_input_file, 'DT'))
+            dtratio  = int(amr_dt/of_dt)
+            restartextension = str(restartiter*dtratio)
+            
+            restartext = '.T%i.%s'%(iturb,restartextension) if iturb > 0 else '.'+restartextension
+            restartfile = openfast_prefix+restartext
+            if verbose:
+                print(openfast_prefix)
+                print(restartfile)
+            # Set the properties
+            self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_restart_file', restartfile,)
+            self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_sim_mode', 'restart',)
+            self.edit_entryval('listboxactuator', turbname, 'Actuator_sim_mode', 'restart',) 
+        return
+        
 if __name__ == "__main__":
     title='AMR-Wind'
     localconfigdir=os.path.join(scriptpath,'local')

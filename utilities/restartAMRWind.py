@@ -39,16 +39,27 @@ def getRestartInput(inputfile, outputfile='', verbose=False):
         print(newinput)
     return
 
+def getLatestCHKDir(dirlist, criteria='lastmodified'):
+    if criteria == 'lastmodified':
+        latestdir = max(dirlist, key=os.path.getctime)
+    return latestdir
+        
 # ========================================================================
 #
 # Main
 #
 # ========================================================================
 if __name__ == "__main__":
-    helpstring = """Restart an AMR-Wind simulation
+    helpstring = """
+Restart an AMR-Wind simulation
+
+Example usage:
+    ./restartAMRWind.py INPUT.inp -o OUTPUT.inp
     """
+
     # Handle arguments
-    parser     = argparse.ArgumentParser(description=helpstring)
+    parser     = argparse.ArgumentParser(description=helpstring,
+                                         formatter_class=argparse.RawDescriptionHelpFormatter,)
     parser.add_argument(
         "inputfile",
         help="AMR-Wind input file",
@@ -61,10 +72,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "-o",
         "--outfile",
-        help="new input file",
+        help="new input file (default: dump to screen if verbose)",
         default='',
         type=str,
-        required=True,
+        #required=True,
+    )
+    parser.add_argument(
+        "-c",
+        "--checkpoint",
+        nargs='+',
+        default='',
+        help="Choose the latest directories from these checkpoints",
+        dest='checkpoint',
+    )
+    parser.add_argument(
+        "--noturbines",
+        dest='noturbines',
+        help="Don't restart any openfast turbines (Default: False)",
+        default=False,
+        action='store_true'
     )
 
     # Load the options
@@ -72,6 +98,33 @@ if __name__ == "__main__":
     inputfile = args.inputfile
     outfile   = args.outfile
     verbose   = args.verbose
+    chkdirs   = args.checkpoint
+    noturbs   = args.noturbines
 
-    # Get the new restart input file
-    getRestartInput(inputfile, outputfile=outfile, verbose=verbose)
+    # Load the input file
+    case = amrwind.MyApp.init_nogui()
+    case.loadAMRWindInput(inputfile, printunused=False)
+
+    # Get the latest checkpoint
+    if len(chkdirs)==0:
+        chkprefix  = case.getAMRWindInput('check_file')
+        chkdirlist = glob.glob(chkprefix+"*/")        
+    else:
+        chkdirlist = chkdirs
+        
+    #latestdir = max(chkdirlist, key=os.path.getctime)
+    #print(latestdir)
+    latestdir = getLatestCHKDir(chkdirlist)
+
+    # Set the latest check point for restart
+    case.setAMRWindInput('restart_file', latestdir)    
+
+    # Set the restarts for openfast turbine
+    physics  = case.getAMRWindInput('physics')
+    actuator = case.getAMRWindInput('ActuatorForcing')
+    if (not noturbs) and actuator and ('Actuator' in physics):
+        case.restartOpenFASTinput(latestdir)
+        
+    newinput=case.writeAMRWindInput(outfile)
+    if verbose:
+        print(newinput)
