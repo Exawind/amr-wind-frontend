@@ -854,8 +854,8 @@ class MyApp(tkyg.App, object):
         return
 
     def postLoad_SetOnOffCtrlElem(self):
-        self.inputvars['zlo_type'].onoffctrlelem(None)
         self.inputvars['zlo_temperature_type'].onoffctrlelem(None)
+        self.inputvars['zlo_type'].onoffctrlelem(None)
         return
 
     def loadAMRWindInput(self, filename, string=False, printunused=False):
