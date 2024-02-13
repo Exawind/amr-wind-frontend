@@ -2278,6 +2278,11 @@ class MyApp(tkyg.App, object):
         """
         # Get the checkpoint iteration
         restartiter = int(self.readCheckpointHeader(os.path.join(rundir, chkdir)))
+        # Offset the restartiter if necessary
+        offset = self.inputvars['checkpoint_start'].getval()
+        if offset is not None:
+            restartiter = restartiter - offset
+
         # Get the amr-wind dt
         amr_dt = self.inputvars['fixed_dt'].getval()
 
@@ -2308,6 +2313,13 @@ class MyApp(tkyg.App, object):
             if verbose:
                 print(openfast_prefix)
                 print(restartfile)
+            # Check to make sure that the file exists
+            restartfile_chkp = restartfile+'.chkp'
+            if not os.path.exists(restartfile_chkp):
+                print("WARNING: %s does not exist"%restartfile_chkp)
+            else:
+                if verbose: print("%s exists: GOOD"%restartfile_chkp)
+
             # Set the properties
             self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_start_time',   restarttime,)
             self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_restart_file', restartfile,)
