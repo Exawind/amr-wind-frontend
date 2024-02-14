@@ -2326,7 +2326,21 @@ class MyApp(tkyg.App, object):
             self.edit_entryval('listboxactuator', turbname, 'Actuator_openfast_sim_mode', 'restart',)
             self.edit_entryval('listboxactuator', turbname, 'Actuator_sim_mode', 'restart',) 
         return
-        
+
+    def removeturbines(self, verbose=False):
+        """
+        Remove all turbines from the case, also remove physics and actuator forcing
+        """
+        physics = self.getAMRWindInput('incflo.physics')
+        if 'Actuator' in physics:
+            physics.remove('Actuator')
+            self.setAMRWindInput('physics', physics)
+            if verbose:
+                print('SET incflo.physics: '+repr(self.getAMRWindInput('incflo.physics')))
+        self.setAMRWindInput('ActuatorForcing', False)
+        self.listboxpopupwindict['listboxactuator'].deleteall()
+        return
+
 if __name__ == "__main__":
     title='AMR-Wind'
     localconfigdir=os.path.join(scriptpath,'local')
