@@ -92,6 +92,18 @@ Example usage:
         default=False,
         action='store_true'
     )
+    parser.add_argument(
+        "--stop-time",
+        dest='stoptime',
+        help="Set the new stop time (Default: None)",
+        default=None,
+    )
+    parser.add_argument(
+        "--max-step",
+        dest='maxstep',
+        help="Set the new max step (Default: None)",
+        default=None,
+    )
 
     # Load the options
     args      = parser.parse_args()
@@ -100,6 +112,8 @@ Example usage:
     verbose   = args.verbose
     chkdirs   = args.checkpoint
     noturbs   = args.noturbines
+    stoptime  = args.stoptime
+    maxstep   = args.maxstep
 
     # Load the input file
     case = amrwind.MyApp.init_nogui()
@@ -118,6 +132,14 @@ Example usage:
 
     # Set the latest check point for restart
     case.setAMRWindInput('restart_file', latestdir)    
+
+    # Set the new stop time
+    if (stoptime is not None):
+        case.setAMRWindInput('stop_time', float(stoptime))
+
+    # Set the new stop time
+    if (maxstep is not None):
+        case.setAMRWindInput('max_step', int(maxstep))
 
     # Set the restarts for openfast turbine
     physics  = case.getAMRWindInput('physics')
