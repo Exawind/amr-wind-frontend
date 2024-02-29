@@ -2164,15 +2164,18 @@ class MyApp(tkyg.App, object):
 
         # Set the boundary plane IO mode and files
         if setIOmode:
-            self.inputvars['ABL_bndry_io_mode'].setval(str(setIOmode))
+            self.inputvars['ABL_useboundaryplane'].setval(True)
+            self.inputvars['ABL_bndry_io_mode'].setval(str(setIOmode), forcechange=True)
             if verbose: printverbose('SET','ABL_bndry_io_mode')
 
         if len(bndryfiles)>0:
-            self.inputvars['ABL_bndry_file'].setval(bndryfiles)
+            self.inputvars['ABL_useboundaryplane'].setval(True)
+            self.inputvars['ABL_bndry_file'].setval(bndryfiles, forcechange=True)
             if verbose: printverbose('SET','ABL_bndry_file')
         
         # Set the boundary conditions
-        self.inputvars['ABL_bndry_planes'].setval(inflowplanes)
+        self.inputvars['ABL_useboundaryplane'].setval(True)
+        self.inputvars['ABL_bndry_planes'].setval(inflowplanes, forcechange=True)
         if verbose: printverbose('SET', 'ABL_bndry_planes')
 
         ## First set the correct periodicity arguments

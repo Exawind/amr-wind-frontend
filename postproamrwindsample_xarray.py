@@ -62,6 +62,56 @@ def progress(count, total, suffix='', digits=1):
     sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', suffix))
     sys.stdout.flush()
 
+def getPlanePtsXR(ncfile, itimevec, ptlist,
+                  varnames=['velocityx', 'velocityy', 'velocityz'], 
+                  groupname=None,
+                  verbose=0, includeattr=False, gettimes=False):
+    """
+    Extract specific points from a plane given in the netcdf file
+    """
+    # Create a fresh db dictionary
+    db = {}
+    for pt in ptlist: 
+        db[pt] = {}
+        for v in varnames:
+            db[pt][v] = []
+    db['timesteps'] = []
+    timevec = None
+    if gettimes:
+        timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        db['times'] = []
+    if len(itimevec)==0:
+        itimevec = list(range(len(ppsample.getVar(ppsample.loadDataset(ncfile), 'time'))))
+    # Now load the ncfile data
+    if groupname is None:
+        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
+        group = groups[0]
+    else:
+        group = groupname
+    with xr.open_dataset(ncfile, group=group) as ds:
+        reshapeijk = ds.attrs['ijk_dims'][::-1]
+        xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
+        ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
+        zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
+        dtime=xr.open_dataset(ncfile)
+        dtime.close()
+        db['x'] = xm
+        db['y'] = ym
+        db['z'] = zm
+        for ind, itime in enumerate(itimevec):
+            if verbose: progress(ind+1, len(itimevec))
+            db['timesteps'].append(itime)
+            if gettimes:
+                db['times'].append(float(timevec[itime]))
+            for v in varnames:
+                vvar = extractvar(ds, v, itime)
+                for pt in ptlist:
+                    db[pt][v].append(vvar[pt])
+        if includeattr:
+            for k, g in ds.attrs.items():
+                db[k] = g
+    return db
+
 def avgPlaneXR(ncfile, timerange,
                extrafuncs=[],
                varnames=['velocityx','velocityy','velocityz'],
