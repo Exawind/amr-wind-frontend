@@ -25,7 +25,24 @@ extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs[
 def setfigtextsize(ax, fsize):
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label, ax.yaxis.get_offset_text()] + ax.get_xticklabels() + ax.get_yticklabels() ):
         item.set_fontsize(fsize)
-        
+
+def listtimes(ncfile, paramdict, verbose=0):
+    groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
+    g = groups[0] if paramdict['group'] is None else paramdict['group']
+    with xr.open_dataset(ncfile, group=groups[0]) as ds:
+        xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        ym = ds['coordinates'].data[:,1].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        dtime=xr.open_dataset(ncfile)
+        ds = ds.assign_coords(coords={'xm':(['x','y','z'], xm),
+                                      'ym':(['x','y','z'], ym),
+                                      'time':dtime['time'],
+                                     })
+        dtime.close()
+        # Print the times and iterations
+        for it, t in enumerate(ds['time']):
+            print("%i %f"%(it, t))
+    return
+
 def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
     groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
     g = groups[0] if paramdict['group'] is None else paramdict['group']
@@ -98,6 +115,11 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
+        '--printtimes',
+        help="print times in netcdf file",
+        action='store_true',
+    )    
+    parser.add_argument(
         '--paramdict',
         help="Parameter dict as a string (defaults: %s)"%repr(defaultdict),
         type=str,
@@ -115,12 +137,17 @@ if __name__ == "__main__":
     itime     = args.itime
     outfile   = args.outfile
     verbose   = args.verbose
+    printtimes= args.printtimes
     indict    = eval(args.paramdict)
     defaultdict.update(indict)
+
     if verbose>0:
         print('ncfile    = '+ncfile)
         print('itime     = '+repr(itime))
         print('outfile   = '+outfile)        
         print('paramdict = '+repr(defaultdict))
 
-    makeXYpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
+    if printtimes:
+        listtimes(ncfile, defaultdict, verbose=verbose)
+    else:
+        makeXYpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
