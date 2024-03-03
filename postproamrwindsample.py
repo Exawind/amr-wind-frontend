@@ -27,6 +27,13 @@ def loadDataset(filename, usemmap=False):
 def getGroups(ncdat):
     return [k for k, g in ncdat.groups.items()]
 
+def getGroupInfo(ncdat, group):
+    Nijk    = ncdat[group].ijk_dims
+    varnames= ncdat[group].variables
+    axis1   = ncdat[group].axis1
+    axis2   = ncdat[group].axis2
+    return Nijk, varnames, axis1, axis2
+
 def getGroupSampleType(ncdat, group):
     return ncdat[group].sampling_type
 
