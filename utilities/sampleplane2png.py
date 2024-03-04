@@ -138,10 +138,53 @@ def makeYZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             savefilename=savefile.format(itime=itime, time=ds['time'][itime], iplane=iplane)
             if verbose>0:
                 print("Writing "+savefilename)
-            plt.savefig(savefilename)
-        
+            plt.savefig(savefilename)        
     return
 
+def makeXZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
+    """
+    Create an XZ plane image 
+    """
+    groups=ppsample.getGroups(ppsample.loadDataset(ncfile))
+    g = groups[0] if paramdict['group'] is None else paramdict['group']
+    with xr.open_dataset(ncfile, group=groups[0]) as ds:
+        xm = ds['coordinates'].data[:,0].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        ym = ds['coordinates'].data[:,1].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        zm = ds['coordinates'].data[:,2].reshape(tuple(ds.attrs['ijk_dims'][::-1]))
+        dtime=xr.open_dataset(ncfile)
+        ds = ds.assign_coords(coords={'xm':(['x','y','z'], xm),
+                                      'ym':(['x','y','z'], ym),
+                                      'zm':(['x','y','z'], zm),
+                                      'time':dtime['time'],
+                                     })
+        dtime.close()
+        iplane = paramdict['iplane']
+        levels = eval(paramdict['levels']) 
+        for itime in itimevec:
+            # Create a figure
+            fig, ax = plt.subplots(1,1,figsize=paramdict['figsize'], dpi=paramdict['dpi'])
+            vy = extractvar(ds, 'velocityy', itime)
+            vx = extractvar(ds, 'velocityx', itime)
+            vh = np.sqrt(vx**2 + vy**2)
+            c=ax.contourf(ds['xm'][iplane,:,:],
+                          ds['zm'][iplane,:,:],
+                          vh[iplane,:,:], levels=levels, cmap='coolwarm')
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cbar=fig.colorbar(c, ax=ax, cax=cax)
+            cbar.ax.tick_params(labelsize=paramdict['fontsize'])
+            ax.set_aspect('equal')
+            setfigtextsize(ax, paramdict['fontsize'])        
+            ax.set_title(paramdict['title']+' Time: %0.1f'%ds['time'][itime], fontsize=paramdict['fontsize'])
+            ax.set_xlabel(paramdict['xlabel'])
+            ax.set_ylabel(paramdict['ylabel'])
+            
+            savefilename=savefile.format(itime=itime, time=ds['time'][itime], iplane=iplane)
+            if verbose>0:
+                print("Writing "+savefilename)
+            plt.savefig(savefilename)        
+    return
+    
 # ========================================================================
 #
 # Main
@@ -189,7 +232,7 @@ if __name__ == "__main__":
         '--orientation',
         nargs='?',
         default='XY',
-        choices=['XY','YZ',],
+        choices=['XY','YZ', 'XZ'],
         help="Plot orientation (default: %(default)s)",
         )
     parser.add_argument('-v', '--verbose', 
@@ -206,9 +249,8 @@ if __name__ == "__main__":
     printinfo = args.printinfo
     orient    = args.orientation
     indict    = eval(args.paramdict)
-    if orient=='YZ':
-        defaultdict['xlabel'] = 'y [m]'
-        defaultdict['ylabel'] = 'z [m]'
+    defaultdict['xlabel'] = '%s [m]'%orient[0]
+    defaultdict['ylabel'] = '%s [m]'%orient[1]
     defaultdict.update(indict)
 
     if verbose>0:
@@ -225,3 +267,5 @@ if __name__ == "__main__":
             makeXYpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
         elif orient == 'YZ':
             makeYZpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
+        elif orient == 'XZ':
+            makeXZpng(ncfile, itime, outfile, defaultdict, verbose=verbose)
