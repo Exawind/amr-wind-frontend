@@ -1061,6 +1061,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     outputto= getdictval(pdict['options'], 'outputto', defaultopt)
     outputfreq = getdictval(pdict['options'], 'outputfreq', defaultopt)
     outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
+    wholedomain= bool(getdictval(pdict['options'], 'wholedomain', defaultopt))
     if outputvars is not None:
         outputvars = outputvars.split(',')
         #print('outputvars = '+repr(outputvars))
@@ -1141,12 +1142,22 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
         lateral    = scale*float(pdict['lateral'])
         below      = scale*float(pdict['below'])
 
-        origin     = probecenter - upstream*streamwise - below*vert
-        origin     = origin - lateral*crossstream
+        if wholedomain:
+            prob_lo     = self.inputvars['prob_lo'].getval()
+            prob_hi     = self.inputvars['prob_hi'].getval()
+            streamwise  = np.array([1.0, 0.0, 0.0])
+            crossstream = np.array([0.0, 1.0, 0.0])
+            vert        = np.array([0.0, 0.0, 1.0])
+            origin      = np.array([prob_lo[0], prob_lo[1], probecenter[2]])
+            L1          = prob_hi[0] - prob_lo[0]
+            L2          = prob_hi[1] - prob_lo[1]
+        else:
+            origin     = probecenter - upstream*streamwise - below*vert
+            origin     = origin - lateral*crossstream
 
-        # Calculate dimensions
-        L1         = upstream + downstream
-        L2         = 2.0*lateral
+            # Calculate dimensions
+            L1         = upstream + downstream
+            L2         = 2.0*lateral
 
         # Calculate the grid points
         if usedx is None:
@@ -1268,6 +1279,7 @@ def sampling_createAllProbes(self, verbose=False):
                   'outputfreq':None,         # Output at this frequency
                   'outputvars':None,         # Output these variables
                   'applyto':'',              # Act only on specific turbs
+                  'wholedomain':False        # Create this probe across whole domain
                  }
 
     reqheaders = ['name', 'type', 'upstream', 'downstream', 'lateral', 
