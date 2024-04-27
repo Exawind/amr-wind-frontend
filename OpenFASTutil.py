@@ -194,6 +194,9 @@ def loadalldata(allfiles):
     return adat, header0, units0, names
 
 def getDensity(fstfile, verbose=False):
+    """
+    Gets the density in OpenFAST input file
+    """
     # Get the version of the fstfile
     ver, match = findOFversion.findversion(fstfile)
     if verbose: print("Version: "+repr(ver))
@@ -223,4 +226,33 @@ def getDensity(fstfile, verbose=False):
             return float(fstdensity)
         else:
             return float(AirDensString)
+    return
+
+def setDensity(fstfile, density, verbose=False):
+    """
+    Sets the density in OpenFAST input file
+    """
+    # Get the version of the fstfile
+    ver, match = findOFversion.findversion(fstfile)
+    if verbose: print("Version: "+repr(ver))
+    if (match != findOFversion.versionmatch.MATCH):
+        print("No matching version found for "+fstfile)
+        sys.exit(1)
+        return
+
+    verindex   = findOFversion.convertversiontoindex((ver['major'], ver['minor']))
+    ver31index = findOFversion.convertversiontoindex((3,1))
+    if verindex < ver31index:
+        # Set density in the AeroFile
+        # Get the AeroFile
+        AeroFile      = getVarFromFST(fstfile, 'AeroFile').strip('"')
+        AeroFileWPath = os.path.join(os.path.dirname(fstfile), AeroFile)
+        editFASTfile(AeroFileWPath, {'AirDens':density})
+        if verbose:
+            print("Set AirDens in %s: %f"%(AeroFile, float(AirDens)))
+    else:
+        # Set density in the FST file
+        editFASTfile(fstfile, {'AirDens':density})
+        if verbose:
+            print("Set AirDens in %s: %f"%(fstfile, float(AirDens)))
     return

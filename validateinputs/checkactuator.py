@@ -61,8 +61,12 @@ class Check_Actuator_FSTfile():
 
         # Get the defaults
         default_type   = app.inputvars['Actuator_default_type'].getval()
-        default_turbD  = app.inputvars['Actuator_TurbineFastLine_rotor_diameter'].getval()
-        default_hh     = app.inputvars['Actuator_TurbineFastLine_hub_height'].getval()
+        default_type   = default_type[0] if len(default_type) > 1 else 'TurbineFastLine'
+        default_turbD  = app.inputvars['Actuator_%s_rotor_diameter'%default_type].getval()
+        default_hh     = app.inputvars['Actuator_%s_hub_height'%default_type].getval()
+        default_density= app.inputvars['Actuator_%s_density'%default_type].getval()
+        #default_turbD  = app.inputvars['Actuator_TurbineFastLine_rotor_diameter'].getval()
+        #default_hh     = app.inputvars['Actuator_TurbineFastLine_hub_height'].getval()
         for turb in allturbtags:
             checkstatus                = {'mesg':''}   
             checkstatus['subname']     = turb
@@ -86,6 +90,11 @@ class Check_Actuator_FSTfile():
 
             # Now check for other things in the input file
             if checkstatus['result'] == status.PASS:
+                # Check AMR density
+                amrdensity = default_type if 'Actuator_density' not in tdict else tdict['Actuator_density']
+                check = Check_Actuator_AMR_density.check(app, amrdensity, subname=turb)
+                for c in check: checklist.append(c)
+
                 # Check CompInflow
                 check = Check_Actuator_FST_CompInflow.check(app, fstfile, subname=turb)
                 for c in check: checklist.append(c)
@@ -94,6 +103,29 @@ class Check_Actuator_FSTfile():
                 for c in check: checklist.append(c)
 
         return checklist
+
+# Don't register this one, it's called by Check_Actuator_FSTfile
+class Check_Actuator_AMR_density():
+    """
+    Check density
+    """
+    name = "AMR density"
+
+    @classmethod
+    def check(self, app, amrdensity, subname=''):
+        checkstatus = {'subname':subname}
+        incflo_density = app.inputvars['density'].getval()
+        if amrdensity is None:
+            checkstatus['result'] = status.FAIL
+            checkstatus['mesg']   = 'Actuator density=%s, does not match incflo.density=%f'%(repr(amrdensity), incflo_density)
+        elif abs(amrdensity - incflo_density) > 1.0E-6:
+            checkstatus['result'] = status.FAIL
+            checkstatus['mesg']   = 'Actuator density=%f, does not match incflo.density=%f'%(amrdensity, incflo_density)
+        else:
+            checkstatus['result'] = status.PASS
+            checkstatus['mesg']   = 'Actuator density=%f, matches incflo.density=%f'%(amrdensity, incflo_density)
+        return [checkstatus]
+
 
 # Don't register this one, it's called by Check_Actuator_FSTfile
 class Check_Actuator_FST_CompInflow(): 

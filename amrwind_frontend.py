@@ -1927,7 +1927,7 @@ class MyApp(tkyg.App, object):
             self.turbinemodels_checkupdateFAST(window=window)
         return
 
-    def turbinemodels_checkupdateFAST(self, window=None, inputdict={}):
+    def turbinemodels_checkupdateFAST(self, window=None, inputdict={}, TOL = 1.0E-6):
         if (window is None) and (len(inputdict)==0):
             return
 
@@ -1956,23 +1956,37 @@ class MyApp(tkyg.App, object):
         EDdict   = OpenFAST.FASTfile2dict(EDfile)
         EDyaw    = float(EDdict['NacYaw'])
 
-        TOL = 1.0E-6
         if (yaw is not None) and abs(yaw - (270.0-EDyaw))>TOL:
             # Correct the yaw in Elastodyn
             EDyaw = 270.0 - yaw
             print("Fixing yaw in %s"%EDfile)
             OpenFAST.editFASTfile(EDfile, {'NacYaw':EDyaw})
 
-        # Check aerodyn
-        CompAero = OpenFAST.getFileFromFST(fstfile,'CompAero')
-        if (density is not None) and (CompAero != 0):
-            # Check density
-            AeroFile = OpenFAST.getFileFromFST(fstfile,'AeroFile')
-            print(AeroFile)
-            AeroDict = OpenFAST.FASTfile2dict(AeroFile)
-            AirDens  = float(AeroDict['AirDens'])
-            if abs(density - AirDens) > TOL:
-                OpenFAST.editFASTfile(AeroFile, {'AirDens':density})        
+        # --- Check density section ---
+        def setdensity(window, inputdict, rho):
+            if window is not None:
+                window.temp_inputvars['Actuator_density'] = rho
+            else:
+                inputdict['Actuator_density'] = rho
+            return
+
+        # first check/set density from the AMR-Wind side
+        incflodensity = self.inputvars['density'].getval()
+        if density is None:
+            setdensity(window, inputdict, incflodensity)
+        else:
+            # check for consistency
+            if abs(density - incflodensity) > TOL:
+                print('MISMATCH between incflo.density = %f and Actuator density = %f'%(incflodensity, density))
+                print('USING incflo value')
+                setdensity(window, inputdict, incflodensity)
+                density = incflodensity
+        # then check OpenFAST density
+        OFdensity = OpenFAST.getDensity(fstfile)
+        if abs(OFdensity - incflodensity) > TOL:
+            print('MISMATCH between incflo.density = %f and OpenFAST density = %f'%(incflodensity, OFdensity))
+            print('USING incflo value')
+            OpenFAST.setDensity(fstfile, incflodensity)
         return
 
     # ---- Local run stuff ----
