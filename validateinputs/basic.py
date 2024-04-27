@@ -1,5 +1,7 @@
 from validateinputs import registerplugin
 from validateinputs import CheckStatus as status
+from validateinputs import setcheckstatus
+import os
 
 """
 See README.md for details on the structure of classes here
@@ -40,3 +42,42 @@ class Check_dt_cfl():
             checkstatus['result']  = status.PASS  
             checkstatus['mesg']    = 'DT and CFL OK'
         return [checkstatus]              # Must be a list of dicts
+
+@registerplugin
+class Check_restart_dir():
+    name = "restart dir"
+
+    def check(self, app):
+        checkstatus                = {}   # Dict containing return status
+        checkstatus['subname']     = ''   # Additional name info
+
+        restartdir = app.inputvars['restart_file'].getval()
+        if restartdir is None:
+            setcheckstatus(checkstatus, status.SKIP, 'No restart file specified')
+        else:
+            # Check to make sure that the restart dir exists
+            if os.path.exists(restartdir):
+                setcheckstatus(checkstatus, status.PASS, 'Restart directory %s exists'%restartdir)
+            else:
+                setcheckstatus(checkstatus, status.FAIL, 'Restart directory %s does not exist'%restartdir)
+        return [checkstatus]
+
+@registerplugin
+class Check_bndry_dir():
+    name = "boundary plane dir"
+
+    def check(self, app):
+        checkstatus                = {}   # Dict containing return status
+        checkstatus['subname']     = ''   # Additional name info
+
+        iomode = int(app.inputvars['ABL_bndry_io_mode'].getval())
+        if iomode == 1:
+            bndrydir = app.inputvars['ABL_bndry_file'].getval()
+            # Check to make sure that the boundary data dir exists
+            if os.path.exists(bndrydir):
+                setcheckstatus(checkstatus, status.PASS, 'Restart directory %s exists'%bndrydir)
+            else:
+                setcheckstatus(checkstatus, status.FAIL, 'Restart directory %s does not exist'%bndrydir)
+        else:
+            setcheckstatus(checkstatus, status.SKIP, 'ABL.bndry_io_mode is not 1')
+        return [checkstatus]

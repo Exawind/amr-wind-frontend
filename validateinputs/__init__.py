@@ -36,6 +36,14 @@ class CheckStatus(Enum):
     FAIL = 3
     WARN = 4
 
+def setcheckstatus(c, result, mesg):
+    """
+    Sets the result and message of the check dict
+    """
+    c['result'] = result
+    c['mesg']   = mesg
+    return
+
 # Small utility to automatically load modules
 def load_module(path):
     name = os.path.split(path)[-1]
