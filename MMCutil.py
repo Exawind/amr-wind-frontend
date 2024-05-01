@@ -96,11 +96,11 @@ def writeUVW_NC(ncfilename, Nx, Ny, Nz, Ux, Uy, Uz, ndim=3):
     # Close the file
     rootgrp.close()
 
-def InterpVelocity(z1, v1, x, y, z):
-    """
-    Assumes that the velocity is only a function of z
-    """
-    return np.interp(z, z1, v1)
+# def InterpVelocity(z1, v1, x, y, z):
+#     """
+#     Assumes that the velocity is only a function of z
+#     """
+#     return np.interp(z, z1, v1)
 
 def makeIC_zonly(prob_lo, prob_hi, n_cell, ufunc, vfunc, wfunc, ncfilename,
                  verbose=False):
@@ -110,6 +110,35 @@ def makeIC_zonly(prob_lo, prob_hi, n_cell, ufunc, vfunc, wfunc, ncfilename,
     writeUVW_NC(ncfilename, n_cell[0], n_cell[1], n_cell[2], uvel, vvel, wvel)
     return
 
+
+def makeIC_fromMMC(prob_lo, prob_hi, n_cell, udata, vdata, Tdata,
+                   MMCtime, zMMC, ncfilename, tstart, verbose=False):
+    """
+    Creates the initial condition based on the MMC profile data
+    provided
+    """
+    interpfunc = lambda zdat, fdat, x, y, z: np.interp(z, zdat, fdat)
+    # Get the initial profiles from MMC data
+    uinit, vinit, Tinit = [], [], []
+    for zi, z in enumerate(zMMC):
+        uinit.append(np.interp(tstart, MMCtime, udata[:,zi]))
+        vinit.append(np.interp(tstart, MMCtime, vdata[:,zi]))
+        Tinit.append(np.interp(tstart, MMCtime, Tdata[:,zi]))
+
+    # Get the inital profile functions
+    ufunc = partial(interpfunc, zMMC, uinit)
+    vfunc = partial(interpfunc, zMMC, vinit)
+    wfunc = lambda x, y, z: 0.0
+
+    uvel = makeVelArrayZvec(prob_hi, prob_lo, n_cell, ufunc, verbose=verbose)
+    vvel = makeVelArrayZvec(prob_hi, prob_lo, n_cell, vfunc, verbose=verbose)
+    wvel = makeVelArrayZvec(prob_hi, prob_lo, n_cell, wfunc, verbose=verbose)
+    writeUVW_NC(ncfilename, n_cell[0], n_cell[1], n_cell[2], uvel, vvel, wvel)
+
+    # Get the temperature inputs
+    Theights = ' '.join([str(x) for x in zMMC])
+    Ttemps   = ' '.join([str(x) for x in Tinit])
+    return Theights, Ttemps
 
 def makeMMCforcing(probe_lo, probe_hi, n_cell, udata, vdata, Tdata,
                    fluxdata, MMCtime, zMMC, ncfilename, sign=-1):
