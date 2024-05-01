@@ -98,6 +98,9 @@ frames:
     tab:   ABL
     title: ABL Boundary Plane
     row:   11
+  - name:  frame_ABLMMC
+    tab:   ABL
+    title: Meso-microscale coupling
 
   # ==== IO frames ==== 
   - name:  frame_IOplotting
@@ -1188,6 +1191,7 @@ inputwidgets:
       - ['ActuatorForcing',   'ActuatorForcing',     '']
       - ['BodyForce',         'BodyForce',         '']
       - ['ABLMeanBoussinesq', 'ABLMeanBoussinesq',   '']
+      - ['ABLMesoForcingMom', 'ABLMesoForcingMom',   '']
     outputdef:
       AMR-Wind: ICNS.source_terms
 
@@ -1208,6 +1212,64 @@ inputwidgets:
     defaultval: netcdf
     outputdef:
       AMR-Wind: ABL.stats_output_format
+
+  # ========== ABL MMC parameters =============================
+  - name:       Temperature_source_terms
+    label:    
+    frame:      frame_ABLMMC
+    inputtype:  mergedboollist
+    mergedboollist:
+      - ['ABLMesoForcingTemp',   'ABLMesoForcingTemp',    '']
+    outputdef:
+      AMR-Wind: Temperature.source_terms
+
+  - name:       ABLMesoForcingMom
+    label:      add MMC momentum forcing
+    frame:      frame_ABLMMC
+    inputtype:  bool
+    defaultval: 0
+    ctrlelem:  
+      - frame:   frame_ABLprop
+
+  - name:       ABLMesoForcingTemp
+    label:      add MMC temperature forcing
+    frame:      frame_ABLMMC
+    inputtype:  bool
+    defaultval: 0
+    ctrlelem:  
+      - frame:   frame_ABLTprof        
+
+  - name:       ABLMesoForcingMom_forcing_scheme
+    label:      MMC mom forcing scheme
+    frame:      frame_ABLMMC
+    inputtype:  str
+    defaultval:
+    optionlist: ['direct', 'indirect']
+    outputdef:
+      AMR-Wind: ABLMesoForcingMom.forcing_scheme
+
+  - name:       ABLMesoForcingTemp_forcing_scheme
+    label:      MMC temp forcing scheme
+    frame:      frame_ABLMMC
+    inputtype:  str
+    defaultval:
+    optionlist: ['direct', 'indirect']
+    outputdef:
+      AMR-Wind: ABLMesoForcingTemp.forcing_scheme
+
+  - name:       ABL_initial_condition_input_file
+    label:      Initial condition file
+    frame:      frame_ABLMMC
+    inputtype:  filename
+    outputdef:
+      AMR-Wind: ABL.initial_condition_input_file
+
+  - name:       ABL_mesoscale_forcing
+    label:      MMC input file
+    frame:      frame_ABLMMC
+    inputtype:  filename
+    outputdef:
+      AMR-Wind: ABL.mesoscale_forcing
 
   # ========== ABL output parameters ==========================
   - name:       ABL_useboundaryplane
