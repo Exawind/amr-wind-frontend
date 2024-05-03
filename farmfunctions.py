@@ -1045,6 +1045,36 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
 
     return sampledict
 
+def intersectLinePlane(l0, l, p0, n):
+    """
+    Returns the intersection of a line and a plane
+    https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+    """
+    d = np.dot(p0 - l0, n)/np.dot(l, n)
+    return d
+
+def intersectLineDomain(l0, l, problo, probhi):
+    """
+    Returns the forward and backward intersection points
+    """
+    allplanes = [{'name':'xlo', 'p0':problo, 'n':[1, 0, 0]},
+                 {'name':'ylo', 'p0':problo, 'n':[0, 1, 0]},
+                 {'name':'zlo', 'p0':problo, 'n':[0, 0, 1]},
+                 {'name':'xhi', 'p0':probhi, 'n':[1, 0, 0]},
+                 {'name':'yhi', 'p0':probhi, 'n':[0, 1, 0]},
+                 {'name':'zhi', 'p0':probhi, 'n':[0, 0, 1]},
+                 ]
+    lnorm = l/np.linalg.norm(l)
+    # intersect line with all planes
+    for plane in allplanes:
+        plane['d'] = intersectLinePlane(l0, lnorm,
+                                        np.array(plane['p0']), np.array(plane['n']))
+    # get the closest intersection planes
+    alldist = np.array([p['d'] for p in allplanes])
+    forwardind  = np.where(alldist > 0.0, alldist, np.inf).argmin()   # smallest positive number
+    backwardind = np.where(alldist < 0.0, alldist, -np.inf).argmax()  # smallest negative number
+    return alldist[forwardind], alldist[backwardind]
+
 def sampling_createDictForFarm(self, pdict, AvgCenter,
                                AvgTurbD, AvgHH, defaultopt):
     """
@@ -1224,11 +1254,21 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
 
     # --- Create streamwise sampling planes --- 
     elif probetype == 'streamwise':
-        # Calculate the geometry
-        upstream   = scale*float(pdict['upstream'])
-        downstream = scale*float(pdict['downstream'])
-        below      = scale*float(pdict['below'])
-        above      = scale*float(pdict['above'])
+        if wholedomain:
+            problo     = self.inputvars['prob_lo'].getval()
+            probhi     = self.inputvars['prob_hi'].getval()
+            upstream, downstream = intersectLineDomain(probecenter, -streamwise, problo, probhi)
+            # Calculate the geometry
+            upstream   = np.abs(upstream)
+            downstream = np.abs(downstream)
+            below      = probecenter[2] - problo[2]
+            above      = probhi[2] - probecenter[2]
+        else:
+            # Calculate the geometry
+            upstream   = scale*float(pdict['upstream'])
+            downstream = scale*float(pdict['downstream'])
+            below      = scale*float(pdict['below'])
+            above      = scale*float(pdict['above'])
 
         origin     = probecenter - upstream*streamwise - below*vert
 
