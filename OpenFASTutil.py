@@ -25,6 +25,7 @@ def is_number(s):
 
 def editFASTfile(FASTfile, replacedict):
     commentchars = ['=', '#']
+    OutListCount = 0
     for line in fileinput.input(FASTfile, inplace=True, backup='.bak'):
         #sys.stdout.write("# "+line)
         linesplit=re.split('[, ;]+', line.strip())
@@ -34,9 +35,18 @@ def editFASTfile(FASTfile, replacedict):
         if len(line.strip())>0: firstchar = line.strip()[0]
         if firstchar in commentchars: 
             outline=str(line)
-        # Ignore any lines with less than two items
-        if len(linesplit)<2:
-            outline=str(line)
+        # Edit the Outlist if applicable
+        if (linesplit[0]=='OutList'):
+            if ('OutList' in replacedict.keys()) or ('OutList'+repr(OutListCount) in replacedict.keys()):
+                targetkey = 'OutList' if 'OutList' in replacedict.keys() else 'OutList'+repr(OutListCount)
+                sys.stderr.write('Adding %s to OutList\n'%(repr(replacedict[targetkey])))
+                outline = str(line)
+                outline += replacedict[targetkey]+'\n'
+            OutListCount += 1
+        else:
+            # Ignore any lines with less than two items
+            if len(linesplit)<2:
+                outline=str(line)
             
         # Check to make sure line is not all numbers
         allnums = [is_number(x) for x in linesplit]
@@ -51,7 +61,6 @@ def editFASTfile(FASTfile, replacedict):
                 idx = allnums.index(False)
 
             keyword = linesplit[idx]
-        
             if keyword in replacedict.keys():
                 replacestring = repr(replacedict[keyword]).replace("'",'')
                 outline  = '%10s '%replacestring 
@@ -63,6 +72,48 @@ def editFASTfile(FASTfile, replacedict):
 
         # Write out the line
         sys.stdout.write(outline)
+    return
+
+def editDISCONfile(DISCONfile, replacedict):
+    """
+    Edits a value in the DISCON file
+    """
+    findsubstring = lambda s, start, end: s.split(start)[1].split(end)[0]
+    commentchars = ['!']
+    iline = 0
+    for line in fileinput.input(DISCONfile, inplace=True, backup='.bak'):
+        outline=""
+        # Ignore the line if it starts with a comment
+        if len(line.strip())>0: firstchar = line.strip()[0]
+        if firstchar in commentchars: 
+            outline=str(line)
+        
+        # Replace the line by number
+        linekey = 'line'+str(iline)
+        if linekey in replacedict.keys():
+            outline = replacedict[linekey]+'\n'
+            sys.stderr.write('replacing line %i with \n%s'%(iline, outline))
+            
+        # Look for a keyword in the discon file
+        keystart = '!'
+        keyend   = '-'
+        try:
+            keyword = findsubstring(line, keystart, keyend).strip()
+        except:
+            keyword = None
+        if (keyword is not None) and keyword in replacedict.keys():
+            # Replace everything in the beginning of the line
+            linesplit = line.split(keystart, 1)
+            endline = linesplit[1].strip()
+            outline = str(replacedict[keyword])+' ! '+endline+' [EDITED]\n'
+            sys.stderr.write(outline)            
+            
+        # If nothing needs to be modified in the line, keep it original
+        if outline=="":
+            outline=line
+        # Write out the line
+        sys.stdout.write(outline)
+        iline += 1
     return
 
 def FASTfile2dict(FASTfile):

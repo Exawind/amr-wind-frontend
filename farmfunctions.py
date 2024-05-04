@@ -747,6 +747,13 @@ def turbines_createAllTurbines(self):
                 print(EDoptions)
                 EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
                 OpenFAST.editFASTfile(EDfile, EDoptions)
+            # Make any edits to DISCON
+            DISCONoptions = extractkeystartingwith(options, 'DISCONparam_', removeprefix=True)
+            if bool(DISCONoptions):
+                print(DISCONoptions)
+                SDfile       = OpenFAST.getFileFromFST(fstfile,'ServoFile')
+                DISCONfile   = OpenFAST.getFileFromFST(SDfile, 'DLL_InFile')
+                OpenFAST.editDISCONfile(DISCONfile, DISCONoptions)
 
 
         # Add the turbine to the list
