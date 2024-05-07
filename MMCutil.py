@@ -5,6 +5,7 @@ from netCDF4 import Dataset
 import numpy as     np
 import sys
 from scipy import interpolate
+from scipy.interpolate import CubicSpline
 
 import time
 from functools import partial
@@ -136,9 +137,14 @@ def makeIC_fromMMC(prob_lo, prob_hi, n_cell, udata, vdata, Tdata,
     writeUVW_NC(ncfilename, n_cell[0], n_cell[1], n_cell[2], uvel, vvel, wvel)
 
     # Get the temperature inputs
-    Theights = ' '.join([str(x) for x in zMMC])
-    Ttemps   = ' '.join([str(x) for x in Tinit])
-    return Theights, Ttemps
+    Theights = zMMC
+    Ttemps   = Tinit
+    if zMMC[-1] < (prob_hi[2]):
+        Theights = np.append(Theights, zMMC[-1])
+        Ttemps   = np.append(Ttemps, Tinit[-1])
+    strTheights = ' '.join([str(x) for x in Theights])
+    strTtemps   = ' '.join([str(x) for x in Tinit])
+    return strTheights, strTtemps
 
 def makeMMCforcing(probe_lo, probe_hi, n_cell, udata, vdata, Tdata,
                    fluxdata, MMCtime, zMMC, ncfilename, sign=-1):
@@ -173,20 +179,26 @@ def makeMMCforcing(probe_lo, probe_hi, n_cell, udata, vdata, Tdata,
     nc_momu     = rootgrp.createVariable("momentum_u", "f8", 
                                          ("ntime", "nheight",))
     for i in range(len(times)):
-        nc_momu[i,:] = np.interp(zamr, zMMC, udata[i,:])
+        #nc_momu[i,:] = np.interp(zamr, zMMC, udata[i,:])
+        spl = CubicSpline(zMMC, udata[i,:])
+        nc_momu[i,:] = spl(zamr)
 
     # Add momentum v profiles
     nc_momv     = rootgrp.createVariable("momentum_v", "f8", 
                                          ("ntime", "nheight",))
     for i in range(len(times)):
-        nc_momv[i,:] = np.interp(zamr, zMMC, vdata[i,:])
+        #nc_momv[i,:] = np.interp(zamr, zMMC, vdata[i,:])
+        spl = CubicSpline(zMMC, vdata[i,:])
+        nc_momv[i,:] = spl(zamr)
     print("Wrote momentum profiles")
 
     # Add the temperature profiles
     nc_temp     = rootgrp.createVariable("temperature", "f8", 
                                          ("ntime", "nheight",))
     for i in range(len(times)):
-        nc_temp[i,:] = np.interp(zamr, zMMC, Tdata[i,:])
+        #nc_temp[i,:] = np.interp(zamr, zMMC, Tdata[i,:])
+        spl = CubicSpline(zMMC, Tdata[i,:])
+        nc_temp[i,:] = spl(zamr)
     print("Wrote temperature profiles")
 
     # Add the temperature fluxes

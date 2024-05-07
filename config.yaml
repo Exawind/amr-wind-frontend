@@ -1230,6 +1230,9 @@ inputwidgets:
     defaultval: 0
     ctrlelem:  
       - frame:   frame_ABLprop
+      - frame:   frame_ABLpeturb
+      - frame:   frame_ABLoutput
+      - frame:   frame_ABLTprof
 
   - name:       ABLMesoForcingTemp
     label:      add MMC temperature forcing
@@ -1270,6 +1273,56 @@ inputwidgets:
     inputtype:  filename
     outputdef:
       AMR-Wind: ABL.mesoscale_forcing
+
+  - name:       ABLMesoForcingMom_forcing_transition
+    label:      MMC mom forcing transition
+    frame:      frame_ABLMMC
+    inputtype:  str
+    defaultval:
+    optionlist: ['none', 'directToConstant', 'indirectToConstant', 'indirectToDirect']
+    outputdef:
+      AMR-Wind: ABLMesoForcingMom.forcing_transition
+
+  - name:       ABLMesoForcingMom_constant_transition_height
+    label:      MMC mom transition height
+    frame:      frame_ABLMMC
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: ABLMesoForcingMom.constant_transition_height
+
+  - name:       ABLMesoForcingMom_transition_thickness
+    label:      MMC mom transition thickness
+    frame:      frame_ABLMMC
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: ABLMesoForcingMom.transition_thickness
+
+  - name:       ABLMesoForcingTemp_forcing_transition
+    label:      MMC temp forcing transition
+    frame:      frame_ABLMMC
+    inputtype:  str
+    defaultval:
+    optionlist: ['none', 'directToConstant', 'indirectToConstant', 'indirectToDirect']
+    outputdef:
+      AMR-Wind: ABLMesoForcingTemp.forcing_transition
+
+  - name:       ABLMesoForcingTemp_constant_transition_height
+    label:      MMC temp transition height
+    frame:      frame_ABLMMC
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: ABLMesoForcingTemp.constant_transition_height
+
+  - name:       ABLMesoForcingTemp_transition_thickness
+    label:      MMC temp transition thickness
+    frame:      frame_ABLMMC
+    inputtype:  float
+    defaultval:
+    outputdef:
+      AMR-Wind: ABLMesoForcingTemp.transition_thickness
 
   # ========== ABL output parameters ==========================
   - name:       ABL_useboundaryplane
