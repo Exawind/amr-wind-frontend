@@ -25,7 +25,9 @@ stdvars = ['u',         'v',      'w',        'theta',
            u"u'u'_r",  u"u'v'_r", u"u'w'_r", 
            u"v'v'_r",  u"v'w'_r", u"w'w'_r",
            u"u'theta'_r", u"v'theta'_r", u"w'theta'_r", 
-           'k_sgs', 'k_rans', 'sdr', 'eps', 'mueff']
+           'k_sgs', 'k_rans', 'sdr', 'eps', 'mueff',
+           'abl_meso_forcing_mom_x', 'abl_meso_forcing_mom_y',
+           'abl_meso_forcing_mom_theta']
 
 exprvars = { "u":'[u]',
              "v":'[v]',
@@ -45,6 +47,9 @@ exprvars = { "u":'[u]',
              'mueff':'[mueff]',
              'sdr':'[sdr]',
              'eps':'[eps]',
+             'abl_meso_forcing_mom_x':'[abl_meso_forcing_mom_x]',
+             'abl_meso_forcing_mom_y':'[abl_meso_forcing_mom_y]',
+             'abl_meso_forcing_mom_theta':'[abl_meso_forcing_mom_theta]',
            }
 
 def timeaverage(t, dat, t1, t2):
@@ -297,6 +302,12 @@ statsprofiles=OrderedDict([
                   'header':'ObukhovL',
                   'expr':'calculateObukhovL', 
                   'funcstring':True}),
+    ('MMC-forcing', {'requiredvars':['abl_meso_forcing_mom_x',
+                                     'abl_meso_forcing_mom_y',
+                                    ],
+                     'header':'abl_meso_forcing_mom_x abl_meso_forcing_mom_y',
+                     'expr':'[[abl_meso_forcing_mom_x], [abl_meso_forcing_mom_y]]',
+                     'funcstring':False}),
 ])
     
 class CalculatedProfile:
