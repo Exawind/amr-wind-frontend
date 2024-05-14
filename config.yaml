@@ -1592,6 +1592,28 @@ inputwidgets:
     outputdef:
       AMR-Wind: BodyForce.magnitude
 
+  - name:       BodyForce_type
+    label:      Body force type
+    frame:      frame_Bodyforce
+    inputtype:  str
+    optionlist: [uniform_constant, height_varying, oscillatory, uniform_constant]
+    outputdef:
+      AMR-Wind: BodyForce.type
+
+  - name:       BodyForce_bodyforce_file
+    label:      Body force file
+    frame:      frame_Bodyforce
+    inputtype:  filename
+    outputdef:
+      AMR-Wind: BodyForce.bodyforce_file
+
+  - name:       BodyForce_uniform_timetable_file
+    label:      Unif. timetable file
+    frame:      frame_Bodyforce
+    inputtype:  filename
+    outputdef:
+      AMR-Wind: BodyForce.uniform_timetable_file
+
   - name:       temperature_heights
     label:      Temp profile z
     frame:      frame_ABLTprof

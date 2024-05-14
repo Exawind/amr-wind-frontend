@@ -2157,6 +2157,8 @@ class MyApp(tkyg.App, object):
                               autooutflow=True,
                               forcingdict={},
                               autoset_ABLForcing=True,
+                              autoset_BodyForcing=True,
+                              autoset_MMCForcing=False,
                               autoset_ABLMeanBoussinesq=True,
                               autoset_ABLwallshearstresstype=True,
                               checkpointdir=None,
@@ -2227,7 +2229,7 @@ class MyApp(tkyg.App, object):
                     printverbose('SET', oface+'_tke')
 
         # Set the body force
-        if len(forcingdict)>0:
+        if (len(forcingdict)>0) and (autoset_BodyForcing):
             # Calculate the body force
             ncfile = forcingdict['ablstatfile']
             tavg   = forcingdict['tavg']
@@ -2251,6 +2253,41 @@ class MyApp(tkyg.App, object):
         if autoset_ABLForcing:
             self.inputvars['ABLForcing'].setval(False)
             if verbose: printverbose('SET','ABLForcing')
+
+        # Set the MMC body force
+        if (len(forcingdict)>0) and (autoset_MMCForcing):
+            # Calculate the body force
+            ncfile = forcingdict['ablstatfile']
+            tavg   = forcingdict['tavg']
+            bforcefile = forcingdict['bodyforce_file']
+            if os.path.exists(ncfile):
+                abl_ncdat = postpro.loadnetcdffile(ncfile)
+                var  = 'MMC-forcing'
+                prof = postpro.CalculatedProfile.fromdict(postpro.statsprofiles[var],
+                                                          abl_ncdat,
+                                                          self.abl_profiledata,
+                                                          tavg)
+
+                z, plotdat = prof.calculate()
+                bforcedat = np.vstack((z, plotdat.transpose()))
+                with open(bforcefile,'w') as f:
+                    f.write('%i\n'%len(z))
+                    np.savetxt(f, bforcedat.transpose())
+            # Set the body force
+            self.inputvars['BodyForce'].setval(True)
+            self.inputvars['BodyForce_type'].setval('height_varying')
+            self.inputvars['BodyForce_bodyforce_file'].setval(bforcefile)
+            self.inputvars['ABLMesoForcingMom'].setval(False)
+            self.inputvars['ABL_initial_condition_input_file'].setval(None)
+            self.inputvars['ABL_mesoscale_forcing'].setval(None)
+            if verbose:
+                printverbose('SET','BodyForce')
+                printverbose('SET','BodyForce_type')
+                print('Wrote %s'%bforcefile)
+                printverbose('SET','BodyForce_bodyforce_file')
+                printverbose('SET','ABLMesoForcingMom')
+                printverbose('SET','ABL_initial_condition_input_file')
+                printverbose('SET','ABL_mesoscale_forcing')
 
         # Set the ABLMeanBoussinesq term
         if autoset_ABLMeanBoussinesq:
