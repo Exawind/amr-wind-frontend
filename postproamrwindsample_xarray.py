@@ -77,12 +77,13 @@ def getPlanePtsXR(ncfile, itimevec, ptlist,
         for v in varnames:
             db[pt][v] = []
     db['timesteps'] = []
+    Ntimes = len(ppsample.getVar(ppsample.loadDataset(ncfile), 'time'))
     timevec = None
     if gettimes:
         timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
         db['times'] = []
     if len(itimevec)==0:
-        itimevec = list(range(len(ppsample.getVar(ppsample.loadDataset(ncfile), 'time'))))
+        itimevec = list(range(Ntimes))
     # Now load the ncfile data
     if groupname is None:
         groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
@@ -99,7 +100,8 @@ def getPlanePtsXR(ncfile, itimevec, ptlist,
         db['x'] = xm
         db['y'] = ym
         db['z'] = zm
-        for ind, itime in enumerate(itimevec):
+        for ind, itimeraw in enumerate(itimevec):
+            itime = Ntimes+itimeraw if itimeraw<0 else itimeraw
             if verbose: progress(ind+1, len(itimevec))
             db['timesteps'].append(itime)
             if gettimes:
