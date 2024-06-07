@@ -115,7 +115,7 @@ def getPlanePtsXR(ncfile, itimevec, ptlist,
                 db[k] = g
     return db
 
-def avgPlaneXR(ncfile, timerange,
+def avgPlaneXR_OLD(ncfile, timerange,
                extrafuncs=[],
                varnames=['velocityx','velocityy','velocityz'],
                savepklfile='',
@@ -190,6 +190,102 @@ def avgPlaneXR(ncfile, timerange,
             dbfile = open(savepklfile, 'wb')
             pickle.dump(db, dbfile, protocol=2)
             dbfile.close()
+    return db
+
+def avgPlaneXR(ncfileinput, timerange,
+               extrafuncs=[],
+               varnames=['velocityx','velocityy','velocityz'],
+               savepklfile='',
+               groupname=None, verbose=False, includeattr=False, 
+               replacenan=False):
+    """
+    Compute the average of ncfile variables
+    """
+    # make sure input is a list
+    if type(ncfileinput) is not list:
+        ncfilelist = [ncfileinput]
+    else:
+        ncfilelist = ncfileinput
+    ncfile=ncfilelist[0]
+    suf='_avg'
+    # Create a fresh db dictionary
+    db = {}
+    eps = 1.0E-10
+    t1 = timerange[0]-eps
+    t2 = timerange[1]
+    db['times'] = []
+    # Now load the ncfile data
+    if groupname is None:
+        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
+        group = groups[0]
+    else:
+        group = groupname
+    db['group'] = group
+    Ncount = 0
+    for ncfile in ncfilelist:
+        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+        Ntotal      = len(filtertime[0])
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+            #print("%f %f"%(t1, t2))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            if 'x' not in ds:
+                reshapeijk = ds.attrs['ijk_dims'][::-1]
+                xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
+                ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
+                zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
+                db['x'] = xm
+                db['y'] = ym
+                db['z'] = zm
+            # Set up the initial mean fields
+            zeroarray = extractvar(ds, varnames[0], 0)
+            for v in varnames:
+                if v+suf not in db:
+                    db[v+suf] = np.full_like(zeroarray, 0.0)
+            if len(extrafuncs)>0:
+                for f in extrafuncs:
+                    if f['name']+suf not in db:
+                        db[f['name']+suf] = np.full_like(zeroarray, 0.0)
+            # Loop through and accumulate
+            for itime, t in enumerate(timevec):
+                if (t1 < t) and (t <= t2):
+                    t1 = t
+                    if verbose: progress(localNcount+1, Ntotal)
+                    db['times'].append(float(t))
+                    vdat = {}
+                    for v in varnames:
+                        vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
+                        db[v+suf] += vdat[v]
+                    if len(extrafuncs)>0:
+                        for f in extrafuncs:
+                            name = f['name']+suf
+                            func = f['func']
+                            db[name] += func(vdat)
+                    Ncount += 1
+                    localNcount += 1
+            print()  # Done with this file
+    # Normalize the result
+    if Ncount > 0:
+        for v in varnames:
+            db[v+suf] /= float(Ncount)
+        if len(extrafuncs)>0:
+            for f in extrafuncs:
+                name = f['name']+suf
+                db[name] /= float(Ncount)
+    if verbose:
+        print("Ncount = %i"%Ncount)
+        print()
+    # include attributes
+    if includeattr:
+        for k, g in ds.attrs.items():
+            db[k] = g
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
     return db
 
 def MinMaxStd_PlaneXR(ncfile, timerange,

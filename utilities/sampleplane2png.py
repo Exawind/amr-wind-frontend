@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 
 # Get the location where this script is being run
 import sys, os
@@ -19,6 +20,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import xarray as xr
 import argparse
+
+try:
+    import argcomplete
+    has_argcomplete = True
+except:
+    has_argcomplete = False
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 
@@ -93,6 +100,7 @@ def makeXYpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             if verbose>0:
                 print("Writing "+savefilename)
             plt.savefig(savefilename)
+            plt.close()
     return
 
 def makeYZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
@@ -138,7 +146,8 @@ def makeYZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             savefilename=savefile.format(itime=itime, time=ds['time'][itime], iplane=iplane)
             if verbose>0:
                 print("Writing "+savefilename)
-            plt.savefig(savefilename)        
+            plt.savefig(savefilename)
+            plt.close()
     return
 
 def makeXZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
@@ -182,7 +191,8 @@ def makeXZpng(ncfile, itimevec, savefile, paramdict, verbose=0):
             savefilename=savefile.format(itime=itime, time=ds['time'][itime], iplane=iplane)
             if verbose>0:
                 print("Writing "+savefilename)
-            plt.savefig(savefilename)        
+            plt.savefig(savefilename)
+            plt.close()
     return
     
 # ========================================================================
@@ -241,6 +251,7 @@ if __name__ == "__main__":
                         default=0)
 
     # Load the options
+    if has_argcomplete: argcomplete.autocomplete(parser)
     args      = parser.parse_args()
     ncfile    = args.ncfile
     itime     = args.itime
