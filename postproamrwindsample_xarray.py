@@ -4,6 +4,8 @@ import numpy             as np
 import sys
 import xarray as xr
 import pickle
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
@@ -487,3 +489,39 @@ def getLineXR(ncfile, itimevec, varnames, groupname=None,
             for k, g in ds.attrs.items():
                 db[k] = g
     return db
+
+def RotorAvgVelocity(dbavg, Radius, yc=None,zc=None,iplanes=[0,],verbose=False, plot=False):
+    """
+    Compute the rotor averaged velocity of a cross-flow plane(s)
+    """
+
+    rotor_avg = {}
+    for iplane in iplanes:
+        iplane = int(iplane)
+        x = dbavg['x'][iplane,0,0]
+        y = dbavg['y'][iplane,:,:]
+        z = dbavg['z'][iplane,:,:]
+        vel_avg = dbavg['velocityx'+'_avg'][iplane,:,:]
+        if yc == None: yc = (y[-1]+y[0])/2.0
+        if zc == None: zc = (z[-1]+z[0])/2.0
+        Routside = ((y-yc)**2 + (z-zc)**2) > Radius**2
+        masked_vel = np.ma.array(vel_avg,mask=Routside)
+        rotor_avg[iplane] = masked_vel.mean()
+        if verbose:
+            print("Rotor Average Velocity at x = ",x,": ",rotor_avg[iplane])
+        if plot:
+            fig, ax = plt.subplots(1,1,figsize=(12,5), dpi=125)
+            xaxis    = 'y'
+            yaxis    = 'z'
+            c=plt.contourf(dbavg[xaxis][iplane,:,:], 
+                        dbavg[yaxis][iplane,:,:], dbavg['velocityx_avg'][iplane, :, :], 
+                        levels=121,cmap='coolwarm', extend='both')
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="3%", pad=0.05)
+            cbar=fig.colorbar(c, ax=ax, cax=cax)
+            cbar.ax.tick_params(labelsize=7)
+            ax.set_xlabel(xaxis)
+            ax.set_ylabel(yaxis)
+            ax.axis('scaled')
+            plt.savefig('rotor_avg_iplane_'+str(iplane)+'.png')
+    return rotor_avg
