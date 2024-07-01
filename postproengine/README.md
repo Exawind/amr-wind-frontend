@@ -101,3 +101,22 @@ class postpro_task1():
             print('Executing action1')
             return
 ```
+
+## Self-documenting the tasks and actions
+
+This part we still have to work out, but it might work something like this:
+```python
+>>> import postproengine as ppeng
+
+>>> ppeng.print_inputs()
+---
+Description of task
+name                : An arbitrary name
+filename            : OpenFAST inputfile
+prop1               : random property
+
+---
+Description of task
+name                : An arbitrary name
+filename            : NetCDF inputfile
+```
