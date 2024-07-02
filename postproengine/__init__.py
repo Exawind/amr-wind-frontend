@@ -75,13 +75,19 @@ def print_inputs(subset=[], plist=pluginlist):
         # Print out info on each task
         inputdefs = plist[task].inputdefs
         print('---')
-        print(plist[task].blurb)
+        print(task+': '+plist[task].blurb)
         for input in inputdefs:
-            print('%-20s: %s'%(input['key'], input['help']))
+            print('  %-20s: %s'%(input['key'], input['help']))
+        # Loop through the action items
+        if len(plist[task].actionlist)>0:
+            for action in plist[task].actionlist:
+                print('  %s'%action)
+                for input in plist[task].actionlist[action].actiondefs:
+                    print('    %-18s: %s'%(input['key'], input['help']))
         print()
     return
 
-def driver(yamldict, subset=[], plist=pluginlist):
+def driver(yamldict, subset=[], plist=pluginlist, verbose=False):
     """
     Run through and execute all tasks
     """
@@ -91,16 +97,16 @@ def driver(yamldict, subset=[], plist=pluginlist):
         looptasks = plist.keys()
     for task in looptasks:
         if task in yamldict:
-            taskitem = plist[task](yamldict[task])
-            taskitem.execute()
+            taskitem = plist[task](yamldict[task], verbose=verbose)
+            taskitem.execute(verbose=verbose)
     return
 
 def test():
     # Only execute this if test.py is included
     yamldict = {
-        'task1':{'name':'MyTask1',
+        'task1':[{'name':'MyTask1',
                  'filename':'myfile',
-                 'action1':{'name':'myaction'}},
+                 'action1':{'name':'myaction'}}],
         'task2':{'name':'MyTask2', 'filename':'myfile2', },
     }
     driver(yamldict)
