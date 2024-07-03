@@ -490,38 +490,42 @@ def getLineXR(ncfile, itimevec, varnames, groupname=None,
                 db[k] = g
     return db
 
-def RotorAvgVelocity(dbavg, Radius, yc=None,zc=None,iplanes=[0,],verbose=False, plot=False):
-    """
-    Compute the rotor averaged velocity of a cross-flow plane(s)
-    """
+# def getFullPlaneXR(ncfile,group_name):        
+#     if not self.filename:
+#         raise Exception('No filename provided')
+#     if not os.path.isfile(self.filename):
+#         raise OSError(2,'File not found:',self.filename)
+#     if os.stat(self.filename).st_size == 0:
+#         raise Exception('File is empty:',self.filename)
+    
+#     ds = xr.open_dataset(ncfile,group=group_name)    
+#     coordinates = {"x":(0,"axial"), "y":(1,"lateral"),"z":(2,"vertical")}
+#     c           = {}
+#     for coordinate,(i,desc) in coordinates.items():
+#         c[coordinate] = xr.IndexVariable( 
+#                                             dims=[coordinate],
+#                                             data=np.sort(np.unique(ds['coordinates'].isel(ndim=i))), 
+#                                             attrs={"description":"{0} coordinate".format(desc),"units":"m"}
+#                                         )
+#     c["t"]                    = xr.IndexVariable( 
+#                                                     dims=["t"],
+#                                                     data=ds.num_time_steps*self.output_dt,
+#                                                     attrs={"description":"time from start of simulation","units":"s"}
+#                                                 )    
 
-    rotor_avg = {}
-    for iplane in iplanes:
-        iplane = int(iplane)
-        x = dbavg['x'][iplane,0,0]
-        y = dbavg['y'][iplane,:,:]
-        z = dbavg['z'][iplane,:,:]
-        vel_avg = dbavg['velocityx'+'_avg'][iplane,:,:]
-        if yc == None: yc = (y[-1]+y[0])/2.0
-        if zc == None: zc = (z[-1]+z[0])/2.0
-        Routside = ((y-yc)**2 + (z-zc)**2) > Radius**2
-        masked_vel = np.ma.array(vel_avg,mask=Routside)
-        rotor_avg[iplane] = masked_vel.mean()
-        if verbose:
-            print("Rotor Average Velocity at x = ",x,": ",rotor_avg[iplane])
-        if plot:
-            fig, ax = plt.subplots(1,1,figsize=(12,5), dpi=125)
-            xaxis    = 'y'
-            yaxis    = 'z'
-            c=plt.contourf(dbavg[xaxis][iplane,:,:], 
-                        dbavg[yaxis][iplane,:,:], dbavg['velocityx_avg'][iplane, :, :], 
-                        levels=121,cmap='coolwarm', extend='both')
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="3%", pad=0.05)
-            cbar=fig.colorbar(c, ax=ax, cax=cax)
-            cbar.ax.tick_params(labelsize=7)
-            ax.set_xlabel(xaxis)
-            ax.set_ylabel(yaxis)
-            ax.axis('scaled')
-            plt.savefig('rotor_avg_iplane_'+str(iplane)+'.png')
-    return rotor_avg
+#     nt = len(c["t"])
+#     nx = len(c["x"])
+#     ny = len(c["y"])
+#     nz = len(c["z"])
+#     coordinates = {"x":(0,"axial","u"), "y":(1,"lateral","v"),"z":(2,"vertical","w")}    
+#     v           = {}    
+#     for coordinate,(i,desc,u) in coordinates.items():        
+#         v[u] = xr.DataArray(np.reshape(getattr(ds,"velocity{0}".format(coordinate)).values,(self.nt,self.nx,self.nz,self.ny)), 
+#                                 coords=c, 
+#                                 dims=["t","x","z","y"],
+#                                 name="{0} velocity".format(desc), 
+#                                 attrs={"description":"velocity along {0}".format(coordinate),"units":"m/s"})
+
+#     ds = xr.Dataset(data_vars=v, coords=v[u].coords)           
+    
+#     return ds 
