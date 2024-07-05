@@ -73,6 +73,9 @@ if useruamel:
 getsuffix = lambda x: re.search(r"(\d+)$", x).group()
 
 def getFromDict(dataDict, mapList):
+    """
+    gets the entry from dataDict which corresponds to the list of keywords in mapList
+    """
     return reduce(operator.getitem, mapList, dataDict)
 
 def setInDict(dataDict, mapList, value, verbose=False):
@@ -338,7 +341,7 @@ Restart a hybrid Exawind simulation
             oldrstname = yamlturbname['restart']
             yamlturbname.pop('restart')
         else:
-            oldrstname = getFromDict(ymaldict, yamlpath)
+            oldrstname = getFromDict(yamldict, yamlpath)
         rstname    = os.path.basename(oldrstname)
         oldpath    = os.path.dirname(oldrstname)
         newpath    = getNewFilename(oldpath)
@@ -355,7 +358,7 @@ Restart a hybrid Exawind simulation
             oldlogname = yamlturbname['logfile']
             yamlturbname.pop('logfile')
         else:
-            oldlogname = getFromDict(ymaldict, yamlpath)
+            oldlogname = getFromDict(yamldict, yamlpath)
         newlogname = getNewFilename(oldlogname)
         setInDict(yamldict, yamlpath, 
                   newlogname, verbose=verbose)
