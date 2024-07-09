@@ -66,7 +66,7 @@ class postpro_averageplanes():
         # Loop through and create plots
         for plane in self.yamldictlist:
             tavg     = plane['tavg']
-            ncfile   = plane['ncfile'][0]
+            ncfile   = plane['ncfile']
             group    = plane['group']
             xaxis    = plane['xaxis']
             yaxis    = plane['yaxis']
@@ -74,13 +74,22 @@ class postpro_averageplanes():
             pklfile  = plane['savepklfile']
             varnames = plane['varnames']
             #Get all times if not specified 
+            filelist = []
+            for fileiter in range(0,len(ncfile)):
+                filelist.append(ncfile[fileiter])
+
             if tavg==[]:
-                timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-                tavg = [timevec[0].data,timevec[-1].data]
+                for fileiter, file in enumerate(filelist):
+                    timevec = ppsample.getVar(ppsample.loadDataset(file), 'time')
+                    if fileiter == 0:
+                        tavg = [timevec[0].data,timevec[-1].data]
+                    else:
+                        if timevec[0].data < tavg[0]: tavg[0] = timevec[0].data
+                        if timevec[-1].data > tavg[1]: tavg[1] = timevec[-1].data
                 print("No time interval specified. Averaging over entire file: ",tavg)
 
             # Load the plane
-            self.dbavg  = ppsamplexr.avgPlaneXR(ncfile, tavg, varnames=varnames, groupname=group, savepklfile=pklfile, verbose=verbose)
+            self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group, savepklfile=pklfile, verbose=verbose)
             # Do any sub-actions required for this task
             for a in self.actionlist:
                 action = self.actionlist[a]
