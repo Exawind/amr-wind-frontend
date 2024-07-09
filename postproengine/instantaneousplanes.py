@@ -136,11 +136,11 @@ class postpro_instantaneousplanes():
             for a in self.actionlist:
                 action = self.actionlist[a]
                 # Check to make sure required actions are there
-                if action.required and (action.actionname not in yamldict.keys()):
+                if action.required and (action.actionname not in self.yamldictlist[0].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in yamldict.keys():
-                    actionitem = action(self, yamldict[action.actionname])
+                if action.actionname in self.yamldictlist[0].keys():
+                    actionitem = action(self, self.yamldictlist[0][action.actionname])
                     actionitem.execute()
         return
 
@@ -157,11 +157,12 @@ class postpro_instantaneousplanes():
         
         def __init__(self, parent, inputs):
             self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
             print('Initialized '+self.actionname+' inside '+parent.name)
             print(self.actiondict)
             return
 
         def execute(self):
-            print('Executing action1')
+            print('Executing ' + self.actionname)
             return
 
