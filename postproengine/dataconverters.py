@@ -43,7 +43,7 @@ class postpro_dataconverts():
         {'key':'iterrange',    'required':True,  'default':[0,1],
         'help':'Range of iterations to pull from netcdf file (inclusive)', },
         {'key':'times',    'required':False,  'default':None,
-         'help':'Which times to pull from netcdf file (overrides iters)', },        
+         'help':'Which times to pull from netcdf file (overrides iters). An empty list, [], indicates use all times.', },        
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -70,6 +70,7 @@ class postpro_dataconverts():
 
             # Get the times instead
             iters = np.arange(iters[0],iters[1]+1)
+            notRead = True
             if not times == None:
                 timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
                 if times == []:
@@ -78,12 +79,12 @@ class postpro_dataconverts():
                     output_dt = (timevec[-1]-timevec[0])/(len(timevec)-1)
                     if not groupname == None:
                         self.db = ppsamplexr.getFullPlaneXR(ncfile, len(timevec), output_dt,groupname=group)
+                        notRead = False
                 else:
                     find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
                     iters = [find_nearest(timevec, t) for t in times]
-                    self.db = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True)
             
-            else:
+            if notRead:
                 # Load the plane
                 self.db = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True)
 
@@ -106,7 +107,7 @@ class postpro_dataconverts():
         blurb      = 'Converts data to bts files'
         required   = False
         actiondefs = [
-            {'key':'iplane',   'required':True,  'help':'List of iplane values',  'default':[0,]},
+            {'key':'iplane',   'required':True,  'help':'Index of x location to read',  'default':0},
             {'key':'yhh',       'required':True,  'help':'Hub height location in y',  'default':None},
             {'key':'zhh',       'required':True,  'help':'Hub height location in z',  'default':None},
             {'key':'btsfile',   'required':True,  'default':None,'help':'bts file name to save results'},
@@ -208,7 +209,6 @@ class postpro_dataconverts():
             t = np.array(self.parent.db['times'])
             tsteps = np.array(self.parent.db['timesteps'])
             for titer , tval in enumerate(tsteps):
-                #print(np.swapaxes(np.array(self.parent.db['velocityx'][tval]),1,2)[xind,:,:])
                 ts['u'][0,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityx'][tval]),1,2)[xind,:,:]
                 ts['u'][1,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityy'][tval]),1,2)[xind,:,:]
                 ts['u'][2,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityz'][tval]),1,2)[xind,:,:]
