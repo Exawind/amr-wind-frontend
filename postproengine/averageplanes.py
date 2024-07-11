@@ -162,7 +162,8 @@ class postpro_averageplanes():
         required   = False
         actiondefs = [
                 {'key':'iplane'             , 'required':True  , 'default': [0] , 'help':'List of iplane values'},
-                {'key':'noturbine_pkl_file' , 'required':True  , 'default':None , 'help':'pickle file containing rotor planes for the case with no turbine'},
+                {'key':'noturbine_pkl_file' , 'required':False , 'default':None , 'help':'pickle file containing rotor planes for the case with no turbine'},
+                {'key':'U_inf'              , 'required':False , 'default':None , 'help':'constant value for U_inf for cases with uniform inflow'},
                 {'key':'savefile'           , 'required':False , 'default':None , 'help':'csv filename to save results'},
         ]
 
@@ -194,7 +195,8 @@ class postpro_averageplanes():
             xloc = {}
             delta = {}
             theta = {}
-            RP_noturb = loadpickle(self.actiondict['noturbine_pkl_file'])
+            if(self.actiondict['noturbine_pkl_file'] is not None):
+                RP_noturb = loadpickle(self.actiondict['noturbine_pkl_file'])
             if not isinstance(iplanes, list): iplanes = [iplanes,]
             for iplane in iplanes:
                 iplane = int(iplane)
@@ -202,7 +204,10 @@ class postpro_averageplanes():
                 y = self.parent.dbavg['y'][iplane,:,:]
                 z = self.parent.dbavg['z'][iplane,:,:]
                 Uh_turbine = np.sqrt(self.parent.dbavg['velocityx_avg'][iplane,:,:]**2 + self.parent.dbavg['velocityy_avg'][iplane,:,:]**2)
-                Uh_noturbine = np.sqrt(RP_noturb['velocityx_avg'][iplane,:,:]**2+RP_noturb['velocityy_avg'][iplane,:,:]**2)
+                if(self.actiondict['noturbine_pkl_file'] is not None):
+                    Uh_noturbine = np.sqrt(RP_noturb['velocityx_avg'][iplane,:,:]**2+RP_noturb['velocityy_avg'][iplane,:,:]**2)
+                elif self.actiondict['U_inf'] is not None:
+                    Uh_noturbine = self.actiondict['U_inf']
                 delta[iplane] = self.calcDelta(y, z, Uh_turbine, Uh_noturbine)
                 theta[iplane] = self.calcTheta(y, z, Uh_turbine, Uh_noturbine)
                 xloc[iplane] = x
