@@ -102,7 +102,9 @@ class postpro_openfast():
             self.extension  = entry['extension']
             self.output_dir =  entry['output_dir']
 
+
             self.df = pd.read_csv(filename,sep='\s+',skiprows=(0,1,2,3,4,5,7), usecols=lambda col: any(keyword in col for keyword in varnames))
+            self.df.drop_duplicates(subset='Time', inplace=True)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
