@@ -84,7 +84,7 @@ def setInDict(dataDict, mapList, value, verbose=False):
         print('SET  %-40s = '%keyloc+repr(value))
     getFromDict(dataDict, mapList[:-1])[mapList[-1]] = value
 
-def getNewFilename(filename):
+def getNewFilename(filename, checkforendingT=True):
     basename, ext =os.path.splitext(os.path.basename(filename))
     trailingnums = re.search(r"(\d+)$", basename) #.group()
     if trailingnums is None:
@@ -93,9 +93,13 @@ def getNewFilename(filename):
     else:
         oldnum = trailingnums.group()
         Nlength= len(oldnum)
-        newnum = int(oldnum)+1
-        newnum = str(newnum).zfill(Nlength)
         newbase= basename[:-Nlength]
+        if (newbase[-1] == 'T') and checkforendingT:
+            newnum = '1'
+            newbase = basename+'_'
+        else:
+            newnum = int(oldnum)+1
+            newnum = str(newnum).zfill(Nlength)
 
     newfilename=newbase+newnum+ext
     #print(basename, ext, newnum, newfilename)
@@ -127,12 +131,14 @@ def updateAMRWind(inputfile, chkdirs, outfile, verbose=False):
 
     # Set the latest check point for restart
     case.setAMRWindInput('restart_file', latestdir)    
-    
-    newinput=case.writeAMRWindInput(outfile)
+
+    if outfile != 'sys.stdout':
+        newinput=case.writeAMRWindInput(outfile)
     if verbose:
         print(newinput)
+    return
 
-def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, verbose=False):
+def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, full_nalu_replace, verbose=False):
     # Load the NaluWind inputfile
     with open(inputfile, 'r') as fp:
         naluyaml = Loader(fp, **loaderkwargs)
@@ -149,7 +155,9 @@ def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, verbose=False):
 
             
         # Change the realm restart time
-        #realm0['restart']['restart_time'] = restart_time
+        if restart_time is None:
+            lastrstfile      = getlatestfile(realm0['restart']['restart_data_base_name']+'.*')
+            restart_time = getrsttime(lastrstfile)
         setInDict(naluyaml, ['realms', 0, 'restart', 'restart_time'], restart_time, verbose=verbose)
 
         # Incremement the restart data_base_names
@@ -179,7 +187,37 @@ def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, verbose=False):
         time_integ = naluyaml['Time_Integrators']
         time_integ[0]['StandardTimeIntegrator']['start_time'] = restart_time
         setInDict(naluyaml, ['Time_Integrators', 0, 'StandardTimeIntegrator', 'start_time'], restart_time, verbose=verbose)
-        
+
+        if full_nalu_replace:
+            # -- Set openfast_restart
+            yamlpath = ['openfast_fsi','Turbine0','restart_filename']
+            OFrestart = getFromDict(realm0, yamlpath)
+            basename, ext = os.path.splitext(OFrestart)
+            newchkp = basename+'.'+repr(chkpiter)
+            setInDict(realm0, yamlpath, newchkp, verbose=verbose)
+            
+            # -- Set force log file --
+            yamlpath = ['post_processing',0,'output_file_name']
+            oldforce = getFromDict(realm0, yamlpath)
+            newforce = getNewFilename(oldforce)
+            setInDict(realm0, yamlpath, newforce, verbose=verbose)
+            
+            # # -- Set output --
+            # yamlpath = ['output','output_data_base_name']
+            # oldoutname = getFromDict(realm0, yamlpath)
+            # outname    = os.path.basename(oldoutname)
+            # oldpath    = os.path.dirname(oldoutname)
+            # newpath    = getNewFilename(oldpath)
+            # newoutname = os.path.join(newpath, outname)
+            # setInDict(realm0, yamlpath, newoutname, verbose=verbose)        
+            
+            # -- Set restart --
+            setInDict(realm0, ['mesh',], oldrstname, verbose=verbose)
+            
+            # -- Set the log file
+            # Skip this for now
+            
+        # Write out the file
         outfile=sys.stdout if outputfile.strip()=='sys.stdout' else open(outputfile, 'w')
         print('Writing new nalu yaml file to: '+repr(outputfile))
         yaml.dump(naluyaml, outfile, **dumperkwargs)
@@ -261,23 +299,20 @@ Restart a hybrid Exawind simulation
 
     # Get a list of nalu input files
     nalu_wind_inputs = yamldict['exawind']['nalu_wind_inp']
-    nalufilelist     = [x['base_input_file'] for x in nalu_wind_inputs] 
+    #nalufilelist     = [x['base_input_file'] for x in nalu_wind_inputs]
+    nalufilelist     = []
+    for f in nalu_wind_inputs:
+        if isinstance(f, dict):
+            nalufilelist.append(f['base_input_file'])
+        else:
+            nalufilelist.append(f)
     uniquelist = list(set(nalufilelist))
+    full_nalu_replace = False
     # Check if the uniquelist has more than 1 file
     if len(uniquelist)>1:
-        raise RuntimeError('More than 1 nalu_wind_inp provided')
-    
-    # Get a list of the nalu restart files
-    nalurestarts     = [x['replace']['realms'][0]['restart'] for x in nalu_wind_inputs]
-    lastrstfile      = getlatestfile(nalurestarts[0]['restart_data_base_name']+'.*')
-    nalu_restarttime = getrsttime(lastrstfile)
-    
-    # ==== Set up the nalu-wind restart file ==== 
-    old_nalu_inp = uniquelist[0]
-    new_nalu_inp = getNewFilename(old_nalu_inp)
-    updateNaluWind(old_nalu_inp, new_nalu_inp, nalu_restarttime, chkpiter, verbose=verbose)
-    print()
-    
+        full_nalu_replace = True
+        #raise RuntimeError('More than 1 nalu_wind_inp provided')
+
     # ==== Set up the amr-wind restart file ==== 
     # Load certain inputs
     amr_wind_inp = yamldict['exawind']['amr_wind_inp']
@@ -289,91 +324,120 @@ Restart a hybrid Exawind simulation
     #yamldict['exawind']['amr_wind_inp'] = new_amr_wind_inp
     setInDict(yamldict, ['exawind', 'amr_wind_inp'], new_amr_wind_inp, verbose=verbose)    
 
+    # ==== Do Nalu-Wind stuff =====
+    # =============================
+    # Get the nalu restart time
+    if full_nalu_replace:
+        # Get the restart time for each individual nalu case
+        nalu_restarttime = None
+    else:
+        nalurestarts     = [x['replace']['realms'][0]['restart'] for x in nalu_wind_inputs]
+        lastrstfile      = getlatestfile(nalurestarts[0]['restart_data_base_name']+'.*')
+        nalu_restarttime = getrsttime(lastrstfile)
+    
+    # ==== Set up the nalu-wind restart file ====
+    if full_nalu_replace:
+        all_new_nalu_inp = []
+        for old_nalu_inp in uniquelist:
+            new_nalu_inp = getNewFilename(old_nalu_inp)
+            all_new_nalu_inp.append(new_nalu_inp)
+            updateNaluWind(old_nalu_inp, new_nalu_inp, nalu_restarttime, chkpiter, full_nalu_replace, verbose=verbose)
+            setInDict(yamldict, ['exawind', 'nalu_wind_inp'], all_new_nalu_inp, verbose=verbose)            
+    else:
+        old_nalu_inp = uniquelist[0]
+        new_nalu_inp = getNewFilename(old_nalu_inp)
+        updateNaluWind(old_nalu_inp, new_nalu_inp, nalu_restarttime, chkpiter, full_nalu_replace, verbose=verbose)
+    print()
+    
     # Load the turbine info
-    turbine_info = yamldict['turbine_info']
-    Nturbines = len(turbine_info)
-    # Change every turbine
-    for iturb in range(Nturbines):
-        turbname = 'turb'+repr(iturb)
-        yamlturbname = yamldict['turbine_info'][turbname]
-        naluturb     = yamldict['exawind']['nalu_wind_inp'][iturb]
-        # -- Set openfast_restart
-        yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'openfast_fsi','Turbine0','restart_filename']
-        if 'openfast_restart' in yamlturbname:
-            OFrestart = yamlturbname['openfast_restart']
-            yamlturbname.pop('openfast_restart')
-        else:
-            OFrestart = getFromDict(yamldict, yamlpath)
-        basename, ext =os.path.splitext(OFrestart)
-        newchkp = basename+'.'+repr(chkpiter)
-        setInDict(yamldict, yamlpath,
-                  newchkp, verbose=verbose)
+    if not full_nalu_replace:
+        turbine_info = yamldict['turbine_info']
+        Nturbines = len(turbine_info)
+        # Change every turbine
+        for iturb in range(Nturbines):
+            turbname = 'turb'+repr(iturb)
+            yamlturbname = yamldict['turbine_info'][turbname]
+            naluturb     = yamldict['exawind']['nalu_wind_inp'][iturb]
+            # -- Set openfast_restart
+            yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'openfast_fsi','Turbine0','restart_filename']
+            if 'openfast_restart' in yamlturbname:
+                OFrestart = yamlturbname['openfast_restart']
+                yamlturbname.pop('openfast_restart')
+            else:
+                OFrestart = getFromDict(yamldict, yamlpath)
+            basename, ext =os.path.splitext(OFrestart)
+            newchkp = basename+'.'+repr(chkpiter)
+            setInDict(yamldict, yamlpath,
+                      newchkp, verbose=verbose)
         
-        # -- Set force log file
-        yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'post_processing',0,'output_file_name']
-        if 'force' in yamlturbname:
-            oldforce = yamlturbname['force']
-            yamlturbname.pop('force')
-        else:
-            oldforce = getFromDict(yamldict, yamlpath)
-        newforce = getNewFilename(oldforce)
-        setInDict(yamldict,
-                  yamlpath,
-                  newforce, verbose=verbose)
+            # -- Set force log file
+            yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'post_processing',0,'output_file_name']
+            if 'force' in yamlturbname:
+                oldforce = yamlturbname['force']
+                yamlturbname.pop('force')
+            else:
+                oldforce = getFromDict(yamldict, yamlpath)
+            newforce = getNewFilename(oldforce)
+            setInDict(yamldict,
+                      yamlpath,
+                      newforce, verbose=verbose)
 
-        # -- Set output ---
-        yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'output','output_data_base_name']
-        if 'output' in yamlturbname:
-            oldoutname = yamlturbname['output']
-            yamlturbname.pop('output')
-        else:
-            oldoutname = getFromDict(yamldict, yamlpath)
-        outname    = os.path.basename(oldoutname)
-        oldpath    = os.path.dirname(oldoutname)
-        newpath    = getNewFilename(oldpath)
-        newoutname = os.path.join(newpath, outname)
-        setInDict(yamldict, yamlpath,
-                  newoutname, verbose=verbose)        
+            # -- Set output ---
+            yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'output','output_data_base_name']
+            if 'output' in yamlturbname:
+                oldoutname = yamlturbname['output']
+                yamlturbname.pop('output')
+            else:
+                oldoutname = getFromDict(yamldict, yamlpath)
+            outname    = os.path.basename(oldoutname)
+            oldpath    = os.path.dirname(oldoutname)
+            newpath    = getNewFilename(oldpath)
+            newoutname = os.path.join(newpath, outname)
+            setInDict(yamldict, yamlpath,
+                      newoutname, verbose=verbose)        
 
-        # -- Set restart --
-        yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'restart','restart_data_base_name']
-        if 'restart' in yamlturbname:
-            oldrstname = yamlturbname['restart']
-            yamlturbname.pop('restart')
-        else:
-            oldrstname = getFromDict(yamldict, yamlpath)
-        rstname    = os.path.basename(oldrstname)
-        oldpath    = os.path.dirname(oldrstname)
-        newpath    = getNewFilename(oldpath)
-        newrstname = os.path.join(newpath, rstname)
-        setInDict(yamldict, yamlpath, 
-                  newrstname, verbose=verbose)
-        setInDict(yamldict, 
-                  ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'mesh',],
-                  oldrstname, verbose=verbose)
+            # -- Set restart --
+            yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'restart','restart_data_base_name']
+            if 'restart' in yamlturbname:
+                oldrstname = yamlturbname['restart']
+                yamlturbname.pop('restart')
+            else:
+                oldrstname = getFromDict(yamldict, yamlpath)
+            rstname    = os.path.basename(oldrstname)
+            oldpath    = os.path.dirname(oldrstname)
+            newpath    = getNewFilename(oldpath)
+            newrstname = os.path.join(newpath, rstname)
+            setInDict(yamldict, yamlpath, 
+                      newrstname, verbose=verbose)
+            # Set the mesh
+            setInDict(yamldict, 
+                      ['exawind', 'nalu_wind_inp', iturb, 'replace', 'realms', 0, 'mesh',],
+                      oldrstname, verbose=verbose)
 
-        # -- Set the log file
-        yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'logfile']
-        if 'logfile' in yamlturbname:
-            oldlogname = yamlturbname['logfile']
-            yamlturbname.pop('logfile')
-        else:
-            oldlogname = getFromDict(yamldict, yamlpath)
-        newlogname = getNewFilename(oldlogname)
-        setInDict(yamldict, yamlpath, 
-                  newlogname, verbose=verbose)
+            # -- Set the log file
+            yamlpath = ['exawind', 'nalu_wind_inp', iturb, 'logfile']
+            if 'logfile' in yamlturbname:
+                oldlogname = yamlturbname['logfile']
+                yamlturbname.pop('logfile')
+            else:
+                oldlogname = getFromDict(yamldict, yamlpath)
+            newlogname = getNewFilename(oldlogname)
+            setInDict(yamldict, yamlpath, 
+                      newlogname, verbose=verbose)
         
         
-        # -- Remove mesh transformation
-        if 'mesh_transformation' in naluturb['replace']['realms'][0]:
-            naluturb['replace']['realms'][0].pop('mesh_transformation')
+            # -- Remove mesh transformation
+            if 'mesh_transformation' in naluturb['replace']['realms'][0]:
+                naluturb['replace']['realms'][0].pop('mesh_transformation')
 
-        # -- change the base_input_file
-        setInDict(yamldict, 
-                  ['exawind', 'nalu_wind_inp', iturb, 'base_input_file'],
-                  new_nalu_inp, verbose=verbose)
+            # -- change the base_input_file
+            setInDict(yamldict, 
+                      ['exawind', 'nalu_wind_inp', iturb, 'base_input_file'],
+                      new_nalu_inp, verbose=verbose)
            
-        #print(yamldict['turbine_info']['turb'+repr(iturb)])
+            #print(yamldict['turbine_info']['turb'+repr(iturb)])
+            # END loop over all turbines
+            
     yamlpath = ['exawind', 'num_timesteps']
     curriter = getFromDict(yamldict, yamlpath)
     setInDict(yamldict, yamlpath, curriter+additer, verbose=verbose)
