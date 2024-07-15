@@ -112,7 +112,7 @@ class postpro_openfast():
             for fileiter , file  in enumerate(filenames):
                 self.name  = names[fileiter]
                 print(self.name, file)
-                self.df = pd.read_csv(file,sep='\s+',skiprows=(0,1,2,3,4,5,7), usecols=lambda col: any(keyword in col for keyword in varnames))
+                self.df = pd.read_csv(file,sep='\s+',skiprows=(0,1,2,3,4,5,7), comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
                 self.df.drop_duplicates(subset='Time', inplace=True)
 
                 # Do any sub-actions required for this task
@@ -152,8 +152,14 @@ class postpro_openfast():
             output_dir=  self.parent.output_dir
             prefix = self.parent.name
 
+            # Go to the run directory
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
             if not extension == None:
-                csvfile = output_dir + prefix + extension
+                csvfile = os.path.join(output_dir, prefix+extension)
+            else:
+                csvfile = os.path.join(output_dir, prefix)
 
             #print("Writing global csv file: ",csvfile)
             self.parent.df.to_csv(csvfile, index=False,float_format='%.15f')
@@ -173,7 +179,7 @@ class postpro_openfast():
                         filename += extension
 
                     # Write the subset DataFrame to a CSV file
-                    subset_df.to_csv(output_dir + filename, index=False)
+                    subset_df.to_csv(os.path.join(output_dir, filename), index=False)
 
             return 
 
