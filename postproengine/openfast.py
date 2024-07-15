@@ -96,26 +96,35 @@ class postpro_openfast():
         if verbose: print('Running '+self.name)
         # Loop through and create plots
         for entry in self.yamldictlist:
-            self.name  = entry['name']
-            filename   = entry['filename']
+            names = entry['name']
+            if type(entry['name']) is str:
+                names = []
+                names.append(entry['name'])
+
+            filenames = entry['filename']
+            if type(entry['filename']) is str:
+                filenames = []
+                filenames.append(entry['filename'])
             varnames   = list(entry['vars'])
             self.extension  = entry['extension']
             self.output_dir =  entry['output_dir']
 
+            for fileiter , file  in enumerate(filenames):
+                self.name  = names[fileiter]
+                print(self.name, file)
+                self.df = pd.read_csv(file,sep='\s+',skiprows=(0,1,2,3,4,5,7), usecols=lambda col: any(keyword in col for keyword in varnames))
+                self.df.drop_duplicates(subset='Time', inplace=True)
 
-            self.df = pd.read_csv(filename,sep='\s+',skiprows=(0,1,2,3,4,5,7), usecols=lambda col: any(keyword in col for keyword in varnames))
-            self.df.drop_duplicates(subset='Time', inplace=True)
-
-            # Do any sub-actions required for this task
-            for a in self.actionlist:
-                action = self.actionlist[a]
-                # Check to make sure required actions are there
-                if action.required and (action.actionname not in self.yamldictlist[0].keys()):
-                    # This is a problem, stop things
-                    raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[0].keys():
-                    actionitem = action(self, self.yamldictlist[0][action.actionname])
-                    actionitem.execute()
+                # Do any sub-actions required for this task
+                for a in self.actionlist:
+                    action = self.actionlist[a]
+                    # Check to make sure required actions are there
+                    if action.required and (action.actionname not in self.yamldictlist[0].keys()):
+                        # This is a problem, stop things
+                        raise ValueError('Required action %s not present'%action.actionname)
+                    if action.actionname in self.yamldictlist[0].keys():
+                        actionitem = action(self, self.yamldictlist[0][action.actionname])
+                        actionitem.execute()
         return 
 
 
