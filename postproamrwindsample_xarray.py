@@ -379,7 +379,7 @@ def MinMaxStd_PlaneXR(ncfile, timerange,
             dbfile.close()        
     return db
 
-def ReynoldsStress_PlaneXR(ncfile, timerange,
+def ReynoldsStress_PlaneXR_OLD(ncfile, timerange,
                            extrafuncs=[], avgdb = None,
                            varnames=['velocityx','velocityy','velocityz'],
                            savepklfile='', groupname=None, verbose=False, includeattr=False):
@@ -445,7 +445,90 @@ def ReynoldsStress_PlaneXR(ncfile, timerange,
             pickle.dump(db, dbfile, protocol=2)
             dbfile.close()
     return db
-        
+
+def ReynoldsStress_PlaneXR(ncfileinput, timerange,
+                           extrafuncs=[], avgdb = None,
+                           varnames=['velocityx','velocityy','velocityz'],
+                           savepklfile='', groupname=None, verbose=False, includeattr=False):
+    """
+    Calculate the reynolds stresses
+    """
+    # make sure input is a list
+    if type(ncfileinput) is not list:
+        ncfilelist = [ncfileinput]
+    else:
+        ncfilelist = ncfileinput
+    ncfile=ncfilelist[0]
+    eps     = 1.0E-10
+    t1      = timerange[0]-eps
+    t2      = timerange[1]    
+    savg = '_avg'
+    corrlist = [
+        # name   variable1   variable2
+        ['uu_avg', 'velocityx', 'velocityx'],
+        ['uv_avg', 'velocityx', 'velocityy'],
+        ['uw_avg', 'velocityx', 'velocityz'],
+        ['vv_avg', 'velocityy', 'velocityy'],
+        ['vw_avg', 'velocityy', 'velocityz'],
+        ['ww_avg', 'velocityz', 'velocityz'],
+    ]
+    db = {}
+    if avgdb is None:
+        if verbose: print("Calculating averages")
+        db = avgPlaneXR(ncfileinput, timerange,
+                        extrafuncs=extrafuncs,
+                        varnames=varnames,
+                        groupname=groupname, verbose=verbose, includeattr=includeattr)
+    else:
+        db.update(avgdb)
+    group   = db['group']
+    Ncount = 0    
+    for ncfile in ncfilelist:
+        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+        Ntotal      = len(filtertime[0])
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            reshapeijk = ds.attrs['ijk_dims'][::-1]
+            zeroarray = extractvar(ds, varnames[0], 0)
+            # Set up the initial mean fields
+            for corr in corrlist:
+                suff = corr[0]
+                if suff not in db:
+                    db[suff] =  np.full_like(zeroarray, 0.0)
+            # Loop through and accumulate
+            if verbose: print("Calculating reynolds-stress")
+            for itime, t in enumerate(timevec):
+                if (t1 < t) and (t <= t2):
+                    t1 = t
+                    if verbose: progress(localNcount+1, Ntotal)
+                    vdat = {}
+                    for v in varnames:
+                        vdat[v] = extractvar(ds, v, itime)        
+                    for corr in corrlist:
+                        name = corr[0]
+                        v1   = corr[1]
+                        v2   = corr[2]
+                        # Standard dev
+                        db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
+                    Ncount += 1
+                    localNcount += 1
+            print()  # Done with this file
+    # Normalize and sqrt std dev
+    if Ncount > 0:
+        for corr in corrlist:
+            name = corr[0]
+            db[name] = db[name]/float(Ncount)
+    if verbose: print()
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
+    return db
+
 def getLineXR(ncfile, itimevec, varnames, groupname=None,
               verbose=0, includeattr=False, gettimes=False):
     # Create a fresh db dictionary
