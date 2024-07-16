@@ -14,6 +14,7 @@ Average netcdf sample planes
 ```
 
 ## Actions: 
+```
   rotorAvgVel         : ACTION: Computes the rotor averaged velocity (Optional)
     iplane            : List of iplane values (Required)
     Diam              : Turbine Diameter (Required)
@@ -29,3 +30,4 @@ Average netcdf sample planes
     ylabel            : Label on the Y-axis (Optional, Default: 'Y [m]')
     title             : Title of the plot (Optional, Default: '')
     plotfunc          : Function to plot (lambda expression) (Optional, Default: 'lambda u, v, w: u')
+```

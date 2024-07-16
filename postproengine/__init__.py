@@ -113,6 +113,7 @@ def print_executor(f, task, docformat='markdown'):
     f.write('## Actions: \n')
     # Loop through the action items
     if len(task.actionlist)>0:
+        f.write('```\n')
         for action in task.actionlist:
             description = task.actionlist[action].blurb
             if task.actionlist[action].required:
@@ -126,6 +127,7 @@ def print_executor(f, task, docformat='markdown'):
                 else:
                     extrainfo = '(Optional, Default: %s)'%repr(input['default'])
                 f.write('    %-18s: %s %s\n'%(input['key'], input['help'], extrainfo))
+        f.write('```\n')
     # Write any examples
     if hasattr(task, 'example'):
         f.write('\n')

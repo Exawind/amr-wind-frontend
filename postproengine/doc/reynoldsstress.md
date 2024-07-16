@@ -13,6 +13,7 @@ Reynolds-Stress average netcdf sample planes
 ```
 
 ## Actions: 
+```
   contourplot         : ACTION: Plot rotor averaged planes (Optional)
     dpi               : Figure resolution (Optional, Default: 125)
     figsize           : Figure size (inches) (Optional, Default: [12, 8])
@@ -25,6 +26,7 @@ Reynolds-Stress average netcdf sample planes
     ylabel            : Label on the Y-axis (Optional, Default: 'Y [m]')
     title             : Title of the plot (Optional, Default: '')
     plotfunc          : Function to plot (lambda expression) (Optional, Default: 'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])')
+```
 
 ## Example
 ```yaml

@@ -11,6 +11,7 @@ Postprocessing of openfast variables
 ```
 
 ## Actions: 
+```
   csv                 : ACTION: Writes the openfast variables to a csv file (Optional)
     individual_files  : Write each variable to a separate csv file (Optional, Default: True)
   operate             : ACTION: Operates on the openfast data and saves to a csv file (Optional)
@@ -21,3 +22,4 @@ Postprocessing of openfast variables
     St                : Forcing Strouhal number (Optional, Default: 0.3)
     diam              : Turbine diameter (Optional, Default: 0)
     U_st              : Wind speed to define Strouhal number (Optional, Default: 0)
+```
