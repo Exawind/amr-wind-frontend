@@ -22,7 +22,7 @@ See README.md for details on the structure of classes here
 """
 
 @registerplugin
-class postpro_averageplanes():
+class postpro_reynoldsstress():
     """
     Postprocess averaged planes
     """
