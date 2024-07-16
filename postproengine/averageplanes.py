@@ -156,6 +156,72 @@ class postpro_averageplanes():
             return 
 
     @registeraction(actionlist)
+    class compute_wake_thickness():
+        actionname = 'wakeThickness'
+        blurb      = 'Computes the wake displacement and momentum thickness'
+        required   = False
+        actiondefs = [
+                {'key':'iplane'             , 'required':True  , 'default': [0] , 'help':'List of iplane values'},
+                {'key':'noturbine_pkl_file' , 'required':False , 'default':None , 'help':'pickle file containing rotor planes for the case with no turbine'},
+                {'key':'U_inf'              , 'required':False , 'default':None , 'help':'constant value for U_inf for cases with uniform inflow'},
+                {'key':'savefile'           , 'required':False , 'default':None , 'help':'csv filename to save results'},
+        ]
+
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def calcDelta(self, x, y, U, Uinf):
+            xvec = x[0,:]
+            yvec = y[:,0]
+            deltaInt = 1.0 - U/Uinf
+            delta = np.trapz(np.trapz(deltaInt, yvec, axis=0), xvec, axis=0)
+            return delta
+
+        def calcTheta(self, x, y, U, Uinf):
+            xvec = x[0,:]
+            yvec = y[:,0]
+            thetaInt = U/Uinf*(1.0 - U/Uinf)
+            theta = np.trapz(np.trapz(thetaInt, yvec, axis=0), xvec, axis=0)
+            return theta
+
+        def execute(self):
+            print(f'Executing {self.actionname}')
+            iplanes = self.actiondict['iplane']
+            savefile = self.actiondict['savefile']
+            rotor_avg = {}
+            xloc = {}
+            delta = {}
+            theta = {}
+            if(self.actiondict['noturbine_pkl_file'] is not None):
+                RP_noturb = loadpickle(self.actiondict['noturbine_pkl_file'])
+            if not isinstance(iplanes, list): iplanes = [iplanes,]
+            for iplane in iplanes:
+                iplane = int(iplane)
+                x = self.parent.dbavg['x'][iplane,0,0]
+                y = self.parent.dbavg['y'][iplane,:,:]
+                z = self.parent.dbavg['z'][iplane,:,:]
+                Uh_turbine = np.sqrt(self.parent.dbavg['velocityx_avg'][iplane,:,:]**2 + self.parent.dbavg['velocityy_avg'][iplane,:,:]**2)
+                if(self.actiondict['noturbine_pkl_file'] is not None):
+                    Uh_noturbine = np.sqrt(RP_noturb['velocityx_avg'][iplane,:,:]**2+RP_noturb['velocityy_avg'][iplane,:,:]**2)
+                elif self.actiondict['U_inf'] is not None:
+                    Uh_noturbine = self.actiondict['U_inf']
+                delta[iplane] = self.calcDelta(y, z, Uh_turbine, Uh_noturbine)
+                theta[iplane] = self.calcTheta(y, z, Uh_turbine, Uh_noturbine)
+                xloc[iplane] = x
+                print(f"Wake thickness at x = {x}: displacement thickness = {delta[iplane]}, momentum thickness = {theta[iplane]}")
+
+            # Write the data to the CSV file
+            if not savefile == None:
+                with open(savefile, mode='w') as file:
+                    file.write("x_location, displacement_thickness, momentum_thickness\n")  # Write header row
+                    for iplane in iplanes:
+                        file.write("{:.15f}, {:.15f}, {:.15f}\n".format(xloc[iplane], delta[iplane], theta[iplane]))
+            return
+
+    @registeraction(actionlist)
     class plot():
         actionname = 'plot'
         blurb      = 'Plot rotor averaged planes'
