@@ -45,7 +45,8 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_l
     datadict['y'] = np.copy(YY[:,:].T)
     y_grid_center = (datadict['y'][-1,0] + datadict['y'][0,0])/2.0 
     datadict['z'] = np.copy(ZZ[:,:].T)
-    datadict['u'] = np.array([np.copy(u[i,:,:,0].T) for i in range(0,u.shape[0])])
+    datadict['u'] = u[:,:,:,0].transpose(0,2,1).copy()
+    
     wakedata = PlanarData(datadict)
     wake = track(wakedata.sliceI(),method=method,verbose=True)
     wake.remove_shear(method='fringe',Navg=u.shape[0])
