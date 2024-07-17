@@ -27,10 +27,10 @@ if (spec := importlib.util.find_spec(name)) is not None:
     spec.loader.exec_module(module)
     from samwich.dataloaders import PlanarData
     from samwich.waketrackers import track
-    usesamwhich=True
+    usesamwich=True
 else:
     print(f"can't find the {name!r} module")
-    usesamwhich=False
+    usesamwich=False
 
 """
 Plugin for computing wake meandering statistics
@@ -85,7 +85,7 @@ class postpro_wakemeander():
         {'key':'zhub',    'required':False,  'default':None,
             'help':'Vertical hub-height', }, 
         {'key':'method',    'required':True,  'default':'ConstantArea',
-            'help':'Method for computing wake center', }, 
+            'help':'Method for computing wake center. Options include: ConstantArea, ConstantFlux, Gaussian', }, 
         {'key':'diam',    'required':False,  'default':0,
             'help':'Rotor diameter', }, 
         {'key':'Uinf',    'required':False,  'default':None,
@@ -200,16 +200,23 @@ class postpro_wakemeander():
             arg=None
             if method == 'ConstantArea':
                 arg = np.pi * (diam/2.0)**2
-            if method == 'ConstantFlux':
+            elif method == 'ConstantFlux':
                 arg = np.pi * (diam/2.0)**2 * Ct * Uinf ** 2
-            if method == 'Gaussian':
+            elif method == 'Gaussian':
                 arg = diam/2.0
+            else: 
+                print("Error: Method " + str(method) + " uknown. Exiting.")
+                sys.exit()
 
             for iplane in iplanes:
                 self.dfcenters = pd.DataFrame()
                 self.iplane = iplane
                 self.dfcenters['t'] = t
                 self.dfcenters['xc'] = xc[iplane]
+                if not usesamwich:
+                    print("Error: Samwich package required to compute wake centers")
+                    sys.exit()
+
                 self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
 
                 if not os.path.exists(self.output_dir):
