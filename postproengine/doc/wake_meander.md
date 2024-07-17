@@ -8,8 +8,8 @@ Compute wake meandering statistics
   ncfile              : NetCDF sampling files of cross-flow planes (Required)
   group               : Which group to pull from netcdf file (Optional, Default: None)
   trange              : Which times to postprocess (Optional, Default: [])
-  yhub                : Lateral hub-height center (Required)
-  zhub                : Vertical hub-height (Required)
+  yhub                : Lateral hub-height center (Optional, Default: None)
+  zhub                : Vertical hub-height (Optional, Default: None)
   method              : Method for computing wake center (Required)
   diam                : Rotor diameter (Optional, Default: 0)
   Uinf                : U velocity for momentum flux wake centering (Optional, Default: None)
@@ -35,6 +35,8 @@ Compute wake meandering statistics
     mean              : Boolean to compute mean wake center (Optional, Default: True)
     std               : Boolean to compute std wake center (Optional, Default: True)
     anisotropy        : Boolean to compute wake anisotropy metric (Optional, Default: False)
+    compute_uv        : Boolean to compute eigenvectors of PCA (Optional, Default: False)
+    pklfile           : File to save eigenvectors of PCA (Optional, Default: '')
 ```
 
 ## Example
@@ -69,4 +71,6 @@ Compute wake meandering statistics
             mean: True
             std: True
             anisotropy: True
+            compute_uv: True
+            pklfile: pcs.pkl
     ```

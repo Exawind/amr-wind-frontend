@@ -16,13 +16,21 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-# samwichdir = '/projects/wind_uq/gyalla/src/waketracking/'
-# sys.path.insert(0,samwichdir)
-try:
+import importlib.util
+import sys
+
+# Add check for samwich package
+name = 'samwich'
+if name in sys.modules:
+elif (spec := importlib.util.find_spec(name)) is not None:
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
     from samwich.dataloaders import PlanarData
     from samwich.waketrackers import track
     usesamwhich=True
-except:
+else:
+    print(f"can't find the {name!r} module")
     usesamwhich=False
 
 """
@@ -31,9 +39,10 @@ Plugin for computing wake meandering statistics
 See README.md for details on the structure of classes here
 """
 
-def get_wake_centers(u,YY,ZZ,yhub,method='ConstantArea',weighting=lambda u: np.ones_like(u),args=None):
+def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_like(u),args=None):
     datadict = {}
     datadict['y'] = np.copy(YY[:,:].T)
+    y_grid_center = (datadict['y'][-1,0] - datadict['y'][0,0])/2.0 + datadict['y'][0,0]
     datadict['z'] = np.copy(ZZ[:,:].T)
     datadict['u'] = np.array([np.copy(u[i,:,:,0].T) for i in range(0,u.shape[0])])
     wakedata = PlanarData(datadict)
@@ -49,7 +58,7 @@ def get_wake_centers(u,YY,ZZ,yhub,method='ConstantArea',weighting=lambda u: np.o
     if method=='ConstantFlux':
         flux = lambda u,u_w: -u * u_w  # function arguments correspond to field_names
         yc,zc = wake.find_centers(args,flux_function=flux,field_names=('u','u_tot'))
-    return wake, yc + yhub ,zc
+    return wake, yc + y_grid_center ,zc
 
 
 @registerplugin
@@ -73,9 +82,9 @@ class postpro_wakemeander():
          'help':'Which group to pull from netcdf file', },
         {'key':'trange',    'required':False,  'default':[],
             'help':'Which times to postprocess', }, 
-        {'key':'yhub',    'required':True,  'default':0,
+        {'key':'yhub',    'required':False,  'default':None,
             'help':'Lateral hub-height center', }, 
-        {'key':'zhub',    'required':True,  'default':0,
+        {'key':'zhub',    'required':False,  'default':None,
             'help':'Vertical hub-height', }, 
         {'key':'method',    'required':True,  'default':'ConstantArea',
             'help':'Method for computing wake center', }, 
@@ -120,6 +129,8 @@ class postpro_wakemeander():
             mean: True
             std: True
             anisotropy: True
+            compute_uv: True
+            pklfile: pcs.pkl
     """
     actionlist = {}                    # Dictionary for holding sub-actions
 
@@ -201,7 +212,7 @@ class postpro_wakemeander():
                 self.iplane = iplane
                 self.dfcenters['t'] = t
                 self.dfcenters['xc'] = xc[iplane]
-                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,self.yhub,method=method,weighting=lambda u: np.ones_like(u),args=arg)
+                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
 
                 if not os.path.exists(self.output_dir):
                     os.makedirs(self.output_dir)
@@ -298,6 +309,10 @@ class postpro_wakemeander():
          'help':'Boolean to compute std wake center', },
         {'key':'anisotropy',  'required':False,  'default':False,
          'help':'Boolean to compute wake anisotropy metric', },
+        {'key':'compute_uv',  'required':False,  'default':False,
+         'help':'Boolean to compute eigenvectors of PCA', },
+        {'key':'pklfile',  'required':False,  'default':"",
+         'help':'File to save eigenvectors of PCA', },
         ]
         
         def __init__(self, parent, inputs):
@@ -312,27 +327,37 @@ class postpro_wakemeander():
             computeMean = self.actiondict['mean']
             computeStd = self.actiondict['std']
             computeAniso = self.actiondict['anisotropy']
+            compute_uv = self.actiondict['compute_uv']
+            pklfile  = self.actiondict['pklfile']
 
             wake_meandering_stats = {}
+            if self.parent.yhub != None and self.parent.zhub !=None:
+                calc_hub_dist = True
+                dist_from_hub = np.sqrt( (self.parent.dfcenters['zc']-self.parent.zhub)**2 + (self.parent.dfcenters['yc']-self.parent.yhub)**2 )
+            else:
+                calc_hub_dist = False
 
-            dist_from_hub = np.sqrt( (self.parent.dfcenters['zc']-self.parent.zhub)**2 + (self.parent.dfcenters['yc']-self.parent.yhub)**2 )
 
             if computeMean:
                 wake_meandering_stats['xc_mean'] = np.mean(self.parent.dfcenters['xc'])
                 wake_meandering_stats['yc_mean'] = np.mean(self.parent.dfcenters['yc'])
                 wake_meandering_stats['zc_mean'] = np.mean(self.parent.dfcenters['zc'])
-                wake_meandering_stats['hub_distance_mean'] = np.mean(dist_from_hub)
+                if calc_hub_dist:
+                    wake_meandering_stats['hub_distance_mean'] = np.mean(dist_from_hub)
 
             if computeStd:
                 wake_meandering_stats['xc_std'] = np.std(self.parent.dfcenters['xc'])
                 wake_meandering_stats['yc_std'] = np.std(self.parent.dfcenters['yc'])
                 wake_meandering_stats['zc_std'] = np.std(self.parent.dfcenters['zc'])
-                wake_meandering_stats['hub_distance_std'] = np.std(dist_from_hub)
+                if calc_hub_dist:
+                    wake_meandering_stats['hub_distance_std'] = np.std(dist_from_hub)
 
             if computeAniso:
                 try:
                     numSamples = self.parent.wake.u.shape[0]
                     eig_ratio = np.zeros(numSamples)
+                    if compute_uv:
+                        pcs = np.zeros((numSamples,2,2))
                     for sample in range(numSamples):
                         wakeu = self.parent.wake.u[sample,:,:]
                         wakey = self.parent.wake.y
@@ -344,15 +369,18 @@ class postpro_wakemeander():
                         pca_data = np.zeros((len(maskz[maskz != 0]),2))
                         pca_data[:,0] = masky[maskz != 0]
                         pca_data[:,1] = maskz[maskz != 0] - np.mean(maskz[maskz != 0])
-                        # if compute_uv:
-                        #     U, S, Vt = np.linalg.svd(pca_data,full_matrices=False)
-                        #     pcs = U
-                        #     pcs = np.dot(pcs.T,pca_data)
-                        # else:
-                        S = np.linalg.svd(pca_data,full_matrices=False,compute_uv=False)
+                        if compute_uv:
+                            U, S, Vt = np.linalg.svd(pca_data,full_matrices=False)
+                            pc = U
+                            pcs[sample,:,:] = np.dot(pc.T,pca_data)
+                        else:
+                            S = np.linalg.svd(pca_data,full_matrices=False,compute_uv=False)
                         eig_ratio[sample]= S[1]/S[0]
                     wake_meandering_stats['aniso_mean'] = np.mean(eig_ratio)
                     wake_meandering_stats['aniso_std']  = np.std(eig_ratio)
+                    if compute_uv:
+                        with open(pklfile, 'wb') as file:
+                            pickle.dump(pcs, file)
                 except:
                     print("Error computing PCA for ansitropy metric")
 
