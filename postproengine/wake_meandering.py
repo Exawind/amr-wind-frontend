@@ -21,9 +21,7 @@ import sys
 
 # Add check for samwich package
 name = 'samwich'
-if name in sys.modules:
-    usesamwhich=True
-elif (spec := importlib.util.find_spec(name)) is not None:
+if (spec := importlib.util.find_spec(name)) is not None:
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
