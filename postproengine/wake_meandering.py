@@ -42,7 +42,7 @@ See README.md for details on the structure of classes here
 def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_like(u),args=None):
     datadict = {}
     datadict['y'] = np.copy(YY[:,:].T)
-    y_grid_center = (datadict['y'][-1,0] - datadict['y'][0,0])/2.0 + datadict['y'][0,0]
+    y_grid_center = (datadict['y'][-1,0] + datadict['y'][0,0])/2.0 
     datadict['z'] = np.copy(ZZ[:,:].T)
     datadict['u'] = np.array([np.copy(u[i,:,:,0].T) for i in range(0,u.shape[0])])
     wakedata = PlanarData(datadict)
@@ -50,8 +50,6 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_l
     wake.remove_shear(method='fringe',Navg=u.shape[0])
     wake.wake_tracked = False
     if method=='Gaussian':
-        #max_VD = -np.min(wake.u,axis=(1,2))  # max velocity deficit, u.shape == (Ntimes,Nh,Nv)
-        #sigma_opt = np.sqrt(ref_thrust / (np.pi*max_VD*(2*Uref - max_VD)))
         yc,zc = wake.find_centers(umin=None,sigma=args)
     if method=='ConstantArea':
         yc,zc = wake.find_centers(args,weighted_center=weighting)
