@@ -8,3 +8,4 @@ The following workflows are available:
 - [convert](convert.md): Converts netcdf sample planes to different file formats
 - [openfast](openfast.md): Postprocessing of openfast variables
 - [reynoldsstress](reynoldsstress.md): Reynolds-Stress average netcdf sample planes
+- [wake_meander](wake_meander.md): Compute wake meandering statistics
