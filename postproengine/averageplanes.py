@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 """
-Plugin for creating instantaneous planar images
+Plugin for post processing averaged planes
 
 See README.md for details on the structure of classes here
 """
