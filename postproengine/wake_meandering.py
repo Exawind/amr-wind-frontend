@@ -43,7 +43,7 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_l
     datadict['y'] = np.copy(YY[:,:].T)
     y_grid_center = (datadict['y'][-1,0] + datadict['y'][0,0])/2.0 
     datadict['z'] = np.copy(ZZ[:,:].T)
-    datadict['u'] = u[:,:,:,0].transpose(0,2,1).copy()
+    datadict['u'] = u[:,:,:,0]
     
     wakedata = PlanarData(datadict)
     wake = track(wakedata.sliceI(),method=method,verbose=True)
@@ -181,25 +181,55 @@ class postpro_wakemeander():
                 t = np.asarray(np.array(self.db['times']).data)
                 for iplane in iplanes:
                     xc[iplane] = np.asarray(self.db['x'].data[iplane])
-                    udata[iplane] = np.zeros((len(t),len(z),len(y),3))
-                    udata[iplane][:,:,:,0] = np.array(self.db['velocityx'][:,iplane,:,:])
-                    udata[iplane][:,:,:,1] = np.array(self.db['velocityy'][:,iplane,:,:])
-                    udata[iplane][:,:,:,2] = np.array(self.db['velocityz'][:,iplane,:,:])
+                    udata[iplane] = np.zeros((len(t),len(y),len(z),3))
+                    udata[iplane][:,:,:,0] = np.array(self.db['velocityx'][:,iplane,:,:]).transpose(0,2,1)
+                    udata[iplane][:,:,:,1] = np.array(self.db['velocityy'][:,iplane,:,:]).transpose(0,2,1)
+                    udata[iplane][:,:,:,2] = np.array(self.db['velocityz'][:,iplane,:,:]).transpose(0,2,1)
             else:
                 find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
                 iters = [find_nearest(timevec, t) for t in trange]
                 iters = np.arange(iters[0],iters[1]+1)
-                self.db = ppsamplexr.getPlaneXR(ncfile,iters,varnames,groupname=group,verbose=0,includeattr=False,gettimes=True)
-                y = np.asarray(self.db['y'][0][0,:])
-                z = np.asarray(self.db['z'][0][:,0])
+                self.db = ppsamplexr.getPlaneXR(ncfile,iters,varnames,groupname=group,verbose=0,includeattr=True,gettimes=True)
+                YY = np.array(self.db['y'])
+                ZZ = np.array(self.db['z'])
+
+                flow_index  = -np.ones(3)
+                for i in range(0,3):
+                    if (sum(self.db['axis'+str(i+1)]) != 0):
+                        flow_index[i] = np.nonzero(self.db['axis'+str(i+1)])[0][0]
+                for i in range(0,3):
+                    if flow_index[i] == -1:
+                        flow_index[i] = 3 - (flow_index[i-1] + flow_index[i-2])
+
+                streamwise_index = 2-np.where(flow_index == 0)[0][0]
+                lateral_index = 2-np.where(flow_index == 1)[0][0]
+                vertical_index = 2-np.where(flow_index == 2)[0][0]
+
+                slices = [slice(None)] * 3
+                slices[streamwise_index] = 0
+                slices[vertical_index] = 0
+                y = YY[tuple(slices)]
+
+                slices = [slice(None)] * 3
+                slices[streamwise_index] = 0
+                slices[lateral_index] = 0
+                z = ZZ[tuple(slices)]
+
+                permutation = [streamwise_index, lateral_index, vertical_index]
+
                 t = np.asarray(np.array(self.db['times']).data)
                 for iplane in iplanes:
                     xc[iplane] = np.asarray(self.db['x'][iplane][0,0])
-                    udata[iplane] = np.zeros((len(t),len(z),len(y),3))
+                    udata[iplane] = np.zeros((len(t),len(y),len(z),3))
                     for i,tstep in enumerate(iters):
-                        udata[iplane][i,:,:,0] = np.array(self.db['velocityx'][tstep][iplane,:,:])
-                        udata[iplane][i,:,:,1] = np.array(self.db['velocityy'][tstep][iplane,:,:])
-                        udata[iplane][i,:,:,2] = np.array(self.db['velocityz'][tstep][iplane,:,:])
+                        ordered_data = np.transpose(np.array(self.db['velocityx'][tstep]),permutation)
+                        udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
+
+                        ordered_data = np.transpose(np.array(self.db['velocityy'][tstep]),permutation)
+                        udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
+
+                        ordered_data = np.transpose(np.array(self.db['velocityz'][tstep]),permutation)
+                        udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
 
             YY , ZZ = np.meshgrid(y,z)
             arg=None
@@ -219,13 +249,13 @@ class postpro_wakemeander():
             for iplane in iplanes:
                 self.dfcenters = pd.DataFrame()
                 self.iplane = iplane
-                self.dfcenters['t'] = t
+                self.dfcenters['t'] = t[0:1]
                 self.dfcenters['xc'] = xc[iplane]
                 if not usesamwich:
                     print("Error: Samwich package required to compute wake centers")
                     sys.exit()
 
-                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
+                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane][0:1,:,:,:],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
 
                 if not os.path.exists(self.output_dir):
                     os.makedirs(self.output_dir)
