@@ -38,7 +38,7 @@ Plugin for computing wake meandering statistics
 See README.md for details on the structure of classes here
 """
 
-def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_like(u),args=None):
+def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighted_center=True,args=None):
     datadict = {}
     datadict['y'] = np.copy(YY[:,:].T)
     y_grid_center = (datadict['y'][-1,0] + datadict['y'][0,0])/2.0 
@@ -52,11 +52,11 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_l
     if method=='Gaussian':
         yc,zc = wake.find_centers(umin=None,sigma=args)
     if method=='ConstantArea':
-        yc,zc = wake.find_centers(args,weighted_center=weighting)
+        yc,zc = wake.find_centers(args,weighted_center=weighted_center)
     if method=='ConstantFlux':
         print('ref thrust (momentum deficit) is',args,'N')
         flux = lambda u,u_w: -u * u_w  # function arguments correspond to field_names
-        yc,zc = wake.find_centers(args,flux_function=flux,field_names=('u','u_tot'))
+        yc,zc = wake.find_centers(args,flux_function=flux,field_names=('u','u_tot'),weighted_center=weighted_center)
     return wake, yc + y_grid_center ,zc
 
 
@@ -98,6 +98,7 @@ class postpro_wakemeander():
         {'key':'savefile', 'required':False,  'default':"",
             'help':'File to save timeseries of wake centers, per iplane', }, 
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
+        {'key':'weighted_center',  'required':False,  'default':True,'help':'If True, calculate the velocity-deficit-weighted "center of mass"; if False, calculate the geometric center of the wake.'}
     ]
     example = """
     wake_meander:
@@ -155,6 +156,7 @@ class postpro_wakemeander():
             self.yhub     = entry['yhub']
             self.zhub     = entry['zhub']
             diam     = entry['diam']
+            weighted_center = entry['weighted_center']
             Ct       = entry['Ct']
             Uinf     = entry['Uinf']
             RotThrust= entry['rotthrust']
@@ -255,7 +257,7 @@ class postpro_wakemeander():
                     print("Error: Samwich package required to compute wake centers")
                     sys.exit()
 
-                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
+                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighted_center=weighted_center,args=arg)
 
                 if not os.path.exists(self.output_dir):
                     os.makedirs(self.output_dir)

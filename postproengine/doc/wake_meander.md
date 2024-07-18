@@ -17,6 +17,7 @@ Compute wake meandering statistics
   rotthrust           : Target rotor thrust for ConstantFlux method. (Optional, Default: None)
   savefile            : File to save timeseries of wake centers, per iplane (Optional, Default: '')
   output_dir          : Directory to save results (Optional, Default: './')
+  weighted_center     : If True, calculate the velocity-deficit-weighted "center of mass"; if False, calculate the geometric center of the wake. (Optional, Default: True)
 ```
 
 ## Actions: 
