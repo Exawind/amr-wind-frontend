@@ -249,13 +249,13 @@ class postpro_wakemeander():
             for iplane in iplanes:
                 self.dfcenters = pd.DataFrame()
                 self.iplane = iplane
-                self.dfcenters['t'] = t[0:1]
+                self.dfcenters['t'] = t
                 self.dfcenters['xc'] = xc[iplane]
                 if not usesamwich:
                     print("Error: Samwich package required to compute wake centers")
                     sys.exit()
 
-                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane][0:1,:,:,:],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
+                self.wake, self.dfcenters['yc'], self.dfcenters['zc'] = get_wake_centers(udata[iplane],YY,ZZ,method=method,weighting=lambda u: np.ones_like(u),args=arg)
 
                 if not os.path.exists(self.output_dir):
                     os.makedirs(self.output_dir)
