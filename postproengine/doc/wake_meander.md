@@ -12,8 +12,9 @@ Compute wake meandering statistics
   zhub                : Vertical hub-height (Optional, Default: None)
   method              : Method for computing wake center. Options include: ConstantArea, ConstantFlux, Gaussian (Required)
   diam                : Rotor diameter (Optional, Default: 0)
-  Uinf                : U velocity for momentum flux wake centering (Optional, Default: None)
-  Ct                  : Thrust coefficient (Optional, Default: 0)
+  Uinf                : U velocity for approximating rotor thrust for ConstantFlux method (Optional, Default: None)
+  Ct                  : Thrust coefficient for approximating rotor thrust for ConstantFlux method (Optional, Default: 0)
+  rotthrust           : Target rotor thrust for ConstantFlux method. (Optional, Default: None)
   savefile            : File to save timeseries of wake centers, per iplane (Optional, Default: '')
   output_dir          : Directory to save results (Optional, Default: './')
 ```

@@ -54,6 +54,7 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighting=lambda u: np.ones_l
     if method=='ConstantArea':
         yc,zc = wake.find_centers(args,weighted_center=weighting)
     if method=='ConstantFlux':
+        print('ref thrust (momentum deficit) is',args,'N')
         flux = lambda u,u_w: -u * u_w  # function arguments correspond to field_names
         yc,zc = wake.find_centers(args,flux_function=flux,field_names=('u','u_tot'))
     return wake, yc + y_grid_center ,zc
@@ -89,9 +90,11 @@ class postpro_wakemeander():
         {'key':'diam',    'required':False,  'default':0,
             'help':'Rotor diameter', }, 
         {'key':'Uinf',    'required':False,  'default':None,
-            'help':'U velocity for momentum flux wake centering', }, 
+            'help':'U velocity for approximating rotor thrust for ConstantFlux method', }, 
         {'key':'Ct',    'required':False,  'default':0,
-            'help':'Thrust coefficient', }, 
+            'help':'Thrust coefficient for approximating rotor thrust for ConstantFlux method', }, 
+        {'key':'rotthrust',    'required':False,  'default':None,
+            'help':'Target rotor thrust for ConstantFlux method.', }, 
         {'key':'savefile', 'required':False,  'default':"",
             'help':'File to save timeseries of wake centers, per iplane', }, 
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
@@ -154,6 +157,8 @@ class postpro_wakemeander():
             diam     = entry['diam']
             Ct       = entry['Ct']
             Uinf     = entry['Uinf']
+            RotThrust= entry['rotthrust']
+            Uinf     = entry['Uinf']
             method   = entry['method']
             savefile = entry['savefile']
             varnames = ['velocityx','velocityy','velocityz']
@@ -201,7 +206,10 @@ class postpro_wakemeander():
             if method == 'ConstantArea':
                 arg = np.pi * (diam/2.0)**2
             elif method == 'ConstantFlux':
-                arg = np.pi * (diam/2.0)**2 * Ct * Uinf ** 2
+                if RotThrust != None:
+                    arg = RotThrust
+                else:
+                    arg = 0.5 * np.pi * (diam/2.0)**2 * Ct * Uinf ** 2
             elif method == 'Gaussian':
                 arg = diam/2.0
             else: 
