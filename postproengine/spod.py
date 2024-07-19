@@ -309,8 +309,8 @@ class postpro_spod():
                 w = np.hamming(nperseg)
                 NB = time_segments.shape[0] #number of blocks 
                 LT = time_segments[0][-1]-time_segments[0][0]
-                angtfreq = get_angular_wavenumbers(nperseg,LT)
-                angtfreq = angtfreq[0:Nkt]
+                angfreq = get_angular_wavenumbers(nperseg,LT)
+                angfreq = angfreq[0:Nkt]
 
                 print("--> Fourier transforming in time (number of blocks = "+str(NB) + ")")
                 udata_that = np.zeros((NR,NTheta,NB,Nkt,3),dtype=complex)
@@ -343,9 +343,12 @@ class postpro_spod():
                 Compute the POD via the SVD for each ktheta and kt of interest
                 """
 
-                POD_modes       = {corr: 0 for corr in correlations}
+                if compute_eigen_vectors:
+                    POD_modes       = {corr: 0 for corr in correlations}
                 POD_eigenvalues = {corr: 0 for corr in correlations}
 
+                if sort:
+                    sorted_inds  = {corr: {} for corr in correlations}
 
                 W1D = form_weighting_matrix_simpsons_rule(r)
                 scaling_factor_k = dt / (sum(np.hamming(nperseg)*NB)) 
@@ -365,13 +368,12 @@ class postpro_spod():
                         else:
                             Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
                     if compute_eigen_vectors:
-                        POD_modes[corr]       = np.zeros((len(ktheta),len(tfreq),NR,NB,len(corr_inds)),dtype=complex)
+                        POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
                     POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
 
                     for ktheta_ind , ktheta_val in enumerate(ktheta):
                         for tfreq_ind , tfreq_val in enumerate(tfreq):
 
-                            #U-V-W Correlations
                             POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
                             for corr_ind_iter , corr_ind in enumerate(corr_inds):
                                 POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
@@ -385,7 +387,7 @@ class postpro_spod():
                                 for corr_ind_iter , corr_ind in enumerate(corr_inds):
                                     eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
 
-                                POD_modes[corr][ktheta_ind,tfreq_ind,:,:,:]   = eigmodes
+                                POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
 
                             else:
                                 ssvd = np.linalg.svd(POD_Mat,full_matrices=False,compute_uv=False)
@@ -393,10 +395,14 @@ class postpro_spod():
                             eigval = ssvd**2
                             POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
 
+                    if sort:
+                        sorted_eigind = np.argsort(POD_eigenvalues[corr],axis=None)[::-1]
+                        sorted_inds[corr]['ktheta'] , sorted_inds[corr]['angfreq'], sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,POD_eigenvalues['U'][:,:,:].shape)
+
 
                 if len(savefile)>0:
                     variables = {}
-                    variables['angtfreq'] = angtfreq
+                    variables['angfreq'] = angfreq
                     variables['ktheta']   = ktheta
                     variables['r']        = r
                     variables['theta']    = theta
@@ -406,10 +412,13 @@ class postpro_spod():
                         os.makedirs(output_dir)
                     savefile = os.path.join(output_dir, savefile)
                     print("--> Saving to: ",savefile)
+                    objects = [] 
+                    objects.append(POD_eigenvalues)
+                    objects.append(variables)
                     if compute_eigen_vectors:
-                        objects = [POD_eigenvalues, POD_modes, variables]
-                    else:
-                        objects = [POD_eigenvalues, variables]
+                        objects.append(POD_modes)
+                    if sort:
+                        objects.append(sorted_inds)
                     with open(savefile, 'wb') as f:
                         for obj in objects:
                             pickle.dump(obj, f)
@@ -418,9 +427,11 @@ class postpro_spod():
                 print("--> Loading from: ",loadpklfile)
                 with open(loadpklfile, 'rb') as f:
                     POD_eigenvalues = pickle.load(f)
+                    variables = pickle.load(f)
                     if compute_eigen_vectors:
                         POD_modes = pickle.load(f)
-                    variables = pickle.load(f)
+                    if sort:
+                        sorted_inds = pickle.load(f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
