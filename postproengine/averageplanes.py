@@ -37,11 +37,9 @@ class postpro_averageplanes():
         {'key':'ncfile',   'required':True,  'default':'',
         'help':'NetCDF sampling file', },
         {'key':'tavg',    'required':False,  'default':[],
-            'help':'Which times to average over', }, 
-        {'key':'xaxis',    'required':False,  'default':'x',
-        'help':'Which axis to use on the abscissa', },
-        {'key':'yaxis',    'required':False,  'default':'y',
-        'help':'Which axis to use on the ordinate', },
+            'help':'Which times to average over', },
+        {'key':'loadpklfile', 'required':False,  'default':'',
+        'help':'Load previously computed results from this pickle file', },        
         {'key':'savepklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save results', },
         {'key':'group',   'required':False,  'default':None,
@@ -51,7 +49,22 @@ class postpro_averageplanes():
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
-
+    example = """
+avgplanes:
+  - name: avg_smallXYplane
+    ncfile:
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_35000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_50000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_65000.nc    
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_77500.nc
+    tavg: [17800, 18500]
+    plot:
+      plotfunc: 'lambda u, v, w: np.sqrt(u**2 + v**2)'
+      title: 'AVG horizontal velocity'
+      xaxis: x           # Which axis to use on the abscissa 
+      yaxis: y           # Which axis to use on the ordinate 
+      iplane: 1    
+"""
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
         self.yamldictlist = []
@@ -68,9 +81,7 @@ class postpro_averageplanes():
             tavg     = plane['tavg']
             ncfile   = plane['ncfile']
             group    = plane['group']
-            xaxis    = plane['xaxis']
-            yaxis    = plane['yaxis']
-            yaxis    = plane['yaxis']
+            loadpkl  = plane['loadpklfile']            
             pklfile  = plane['savepklfile']
             varnames = plane['varnames']
             #Get all times if not specified 
@@ -89,7 +100,16 @@ class postpro_averageplanes():
                 print("No time interval specified. Averaging over entire file: ",tavg)
 
             # Load the plane
-            self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group, savepklfile=pklfile, verbose=verbose)
+            if len(loadpkl)>0:
+                # Load from existing file
+                pfile          = open(loadpkl, 'rb')
+                self.dbavg     = pickle.load(pfile)
+                pfile.close()                
+            else:
+                # Compute the result
+                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group,
+                                                    includeattr=False, savepklfile=pklfile, verbose=verbose)
+            
             # Do any sub-actions required for this task
             for a in self.actionlist:
                 action = self.actionlist[a]
