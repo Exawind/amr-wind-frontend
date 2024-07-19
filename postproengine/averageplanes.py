@@ -108,7 +108,7 @@ avgplanes:
             else:
                 # Compute the result
                 self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group,
-                                                    includeattr=False, savepklfile=pklfile, verbose=verbose)
+                                                    includeattr=True, savepklfile=pklfile, verbose=verbose)
             
             # Do any sub-actions required for this task
             for a in self.actionlist:
