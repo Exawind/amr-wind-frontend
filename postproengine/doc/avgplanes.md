@@ -6,8 +6,7 @@ Average netcdf sample planes
   name                : An arbitrary name (Required)
   ncfile              : NetCDF sampling file (Required)
   tavg                : Which times to average over (Optional, Default: [])
-  xaxis               : Which axis to use on the abscissa (Optional, Default: 'x')
-  yaxis               : Which axis to use on the ordinate (Optional, Default: 'y')
+  loadpklfile         : Load previously computed results from this pickle file (Optional, Default: '')
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
@@ -35,4 +34,22 @@ Average netcdf sample planes
     ylabel            : Label on the Y-axis (Optional, Default: 'Y [m]')
     title             : Title of the plot (Optional, Default: '')
     plotfunc          : Function to plot (lambda expression) (Optional, Default: 'lambda u, v, w: u')
+```
+
+## Example
+```yaml
+avgplanes:
+  - name: avg_smallXYplane
+    ncfile:
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_35000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_50000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_65000.nc    
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_77500.nc
+    tavg: [17800, 18500]
+    plot:
+      plotfunc: 'lambda u, v, w: np.sqrt(u**2 + v**2)'
+      title: 'AVG horizontal velocity'
+      xaxis: x           # Which axis to use on the abscissa 
+      yaxis: y           # Which axis to use on the ordinate 
+      iplane: 1    
 ```
