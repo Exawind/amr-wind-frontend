@@ -12,6 +12,7 @@ Make plots of csv files
   ylabel              : Label on the Y-axis (Optional, Default: '')
   title               : Title of the plot (Optional, Default: '')
   legendopts          : Dictionary with legend options (Optional, Default: {})
+  postplotfunc        : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
 ```
 
 ## Actions: 
