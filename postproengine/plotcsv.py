@@ -51,7 +51,9 @@ class postpro_plotcsv():
         {'key':'title',     'required':False,  'default':'',
          'help':'Title of the plot',},
         {'key':'legendopts', 'required':False,  'default':{},
-         'help':'Dictionary with legend options',},        
+         'help':'Dictionary with legend options',},
+        {'key':'postplotfunc', 'required':False,  'default':'',
+         'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},                
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
@@ -86,6 +88,7 @@ plotcsv:
             ylabel   = plotitem['ylabel']
             title    = plotitem['title']
             legendopts = plotitem['legendopts']
+            postplotfunc = plotitem['postplotfunc']
             
             fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
 
@@ -99,11 +102,23 @@ plotcsv:
                 self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
                 ax.plot(self.df[xcol], self.df[ycol], **lineopts)
 
+            # Set up axes and labels
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
             ax.set_title(title)
             ax.legend(**legendopts)
 
+            # Run any post plot functions
+            if len(postplotfunc)>0:
+                modname = postplotfunc.split('.')[0]
+                funcname = postplotfunc.split('.')[1]
+                #print(modname, funcname)
+                #func = getattr(udfmodulelist[modname], funcname)
+                #func = globals()[modname](funcname)
+                func = getattr(sys.modules[modname], funcname)
+                func(fig, ax)
+
+            # Save the figure
             if len(savefile)>0:
                 savefname = savefile.format(time=time, iplane=iplane)
                 if verbose: print('Saving '+savefname)
