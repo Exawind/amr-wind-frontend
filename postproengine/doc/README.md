@@ -9,3 +9,4 @@ The following workflows are available:
 - [openfast](openfast.md): Postprocessing of openfast variables
 - [reynoldsstress](reynoldsstress.md): Reynolds-Stress average netcdf sample planes
 - [wake_meander](wake_meander.md): Compute wake meandering statistics
+- [plotcsv](plotcsv.md): Make plots of csv files
