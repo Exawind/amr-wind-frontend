@@ -112,9 +112,6 @@ plotcsv:
             if len(postplotfunc)>0:
                 modname = postplotfunc.split('.')[0]
                 funcname = postplotfunc.split('.')[1]
-                #print(modname, funcname)
-                #func = getattr(udfmodulelist[modname], funcname)
-                #func = globals()[modname](funcname)
                 func = getattr(sys.modules[modname], funcname)
                 func(fig, ax)
 
