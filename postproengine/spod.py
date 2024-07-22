@@ -22,6 +22,41 @@ import matplotlib.pyplot as plt
 import amrwind_frontend as amrwind
 from itertools import product
 
+def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=None,ax=None):
+    if newfig == True:
+        fig, ax = plt.subplots(subplot_kw={'projection':'polar'})
+    else:
+        ax = ax
+
+    LR = r[-1]
+    #ax=plt.subplot(111,polar=True)
+    #im = ax.pcolormesh(theta,r,Ur,cmap='coolwarm',vmin=0,vmax=8)
+    if vmin == None or vmax == None:
+        im = ax.pcolormesh(theta,r,Ur,cmap=cmap)
+    else:
+        im = ax.pcolormesh(theta,r,Ur,cmap=cmap,vmin=vmin,vmax=vmax)
+    #im = ax.pcolormesh(theta,r,Ur,cmap='jet')
+    #cbar = plt.colorbar(im,orientation='horizontal')
+    #cbar = plt.colorbar(im,orientation='vertical')
+
+    # ---- mod here ---- #
+    #ax.set_theta_zero_location("N")  # theta=0 at the top
+    #ax.set_theta_direction(-1)  # theta increasing clockwise
+    ax.set_rmax(LR)
+    #ax.set_yticks([0, LR/4, LR/2, 3*LR/4,LR])  # less radial ticks
+    ax.set_yticks([0,LR/1.4, LR])  # less radial ticks
+    #ax.set_rlabel_position(-22.5)  # get radial labels away from plotted line
+    ax.set_yticklabels(["$0$","$R$","1.4$R$"])
+    ax.grid(True)
+    # skoet the locations of the angular gridlines
+    #lines, labels = thetagrids(range(45, 360, 90))
+
+    # set the locations and labels of the angular gridlines
+    lines, labels = plt.thetagrids([0,45,90,135,180,225,270,315], ("$90^\circ$","$45^\circ$","$0^\circ$","$315^\circ$","$270^\circ$","$225^\circ$","$180^\circ$","$135^\circ$"))
+    #ax.spines['polar'].set_visible(False)
+    return im
+
+
 def read_cart_data(ncfile,group,trange,iplanes):
     udata = {}
     xc = {}
@@ -226,7 +261,7 @@ class postpro_spod():
         {'key':'iplane',       'required':False,  'default':[0,],
          'help':'i-index of planes to postprocess', },
         {'key':'correlations','required':False,  'default':['U',],
-        'help':'List of correlations to include in SPOD. Options include: U-V-W, U,V,W,V-W', },
+            'help':'List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W ', },
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
         {'key':'savepklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save results', },
@@ -256,7 +291,7 @@ class postpro_spod():
             iplanes               = plane['iplane']
             trange                = plane['trange']
             ncfile                = plane['ncfile']
-            diam                  = plane['diam']
+            self.diam             = plane['diam']
             group                 = plane['group']
             LR_factor             = plane['LR_factor']
             ycenter               = plane['yc']
@@ -283,7 +318,7 @@ class postpro_spod():
                 """
                 Define polar grid 
                 """
-                LR = (diam/2.0)*LR_factor #specify radial extent for POD analysis 
+                LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
                 NR = 256 #np.ceil(LR/ np.sqrt( (dy)**2 + dz**2) 
                 LTheta = 2 * np.pi
                 NTheta = 256 #np.ceil(LTheta / np.arctan(dz/dy))
@@ -344,11 +379,11 @@ class postpro_spod():
                 """
 
                 if compute_eigen_vectors:
-                    POD_modes       = {corr: 0 for corr in correlations}
-                POD_eigenvalues = {corr: 0 for corr in correlations}
+                    self.POD_modes       = {corr: 0 for corr in correlations}
+                self.POD_eigenvalues = {corr: 0 for corr in correlations}
 
                 if sort:
-                    sorted_inds  = {corr: {} for corr in correlations}
+                    self.sorted_inds  = {corr: {} for corr in correlations}
 
                 W1D = form_weighting_matrix_simpsons_rule(r)
                 scaling_factor_k = dt / (sum(np.hamming(nperseg)*NB)) 
@@ -357,7 +392,7 @@ class postpro_spod():
                 for corr in correlations:
                     print("--> Computing SPOD for correlations: ",corr)
                     comp_corr = corr.split('-')
-                    corr_inds = [corr_dict[corr] for corr in comp_corr]
+                    corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
 
                     W = np.kron(np.eye(len(corr_inds)),W1D)
                     Wsqrt = np.sqrt(W)
@@ -368,8 +403,8 @@ class postpro_spod():
                         else:
                             Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
                     if compute_eigen_vectors:
-                        POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
-                    POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+                        self.POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
+                    self.POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
 
                     for ktheta_ind , ktheta_val in enumerate(ktheta):
                         for tfreq_ind , tfreq_val in enumerate(tfreq):
@@ -387,38 +422,38 @@ class postpro_spod():
                                 for corr_ind_iter , corr_ind in enumerate(corr_inds):
                                     eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
 
-                                POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
+                                self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
 
                             else:
                                 ssvd = np.linalg.svd(POD_Mat,full_matrices=False,compute_uv=False)
 
                             eigval = ssvd**2
-                            POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
+                            self.POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
 
                     if sort:
-                        sorted_eigind = np.argsort(POD_eigenvalues[corr],axis=None)[::-1]
-                        sorted_inds[corr]['ktheta'] , sorted_inds[corr]['angfreq'], sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,POD_eigenvalues['U'][:,:,:].shape)
+                        sorted_eigind = np.argsort(np.abs(self.POD_eigenvalues[corr]),axis=None)[::-1]
+                        self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues['U'][:,:,:].shape)
 
 
                 if len(savefile)>0:
-                    variables = {}
-                    variables['angfreq'] = angfreq
-                    variables['ktheta']   = ktheta
-                    variables['r']        = r
-                    variables['theta']    = theta
-                    variables['y']        = y
-                    variables['z']        = z
+                    self.variables = {}
+                    self.variables['angfreq'] = angfreq
+                    self.variables['ktheta']   = ktheta
+                    self.variables['r']        = r
+                    self.variables['theta']    = theta
+                    self.variables['y']        = y
+                    self.variables['z']        = z
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     savefile = os.path.join(output_dir, savefile)
                     print("--> Saving to: ",savefile)
                     objects = [] 
-                    objects.append(POD_eigenvalues)
-                    objects.append(variables)
+                    objects.append(self.POD_eigenvalues)
+                    objects.append(self.variables)
                     if compute_eigen_vectors:
-                        objects.append(POD_modes)
+                        objects.append(self.POD_modes)
                     if sort:
-                        objects.append(sorted_inds)
+                        objects.append(self.sorted_inds)
                     with open(savefile, 'wb') as f:
                         for obj in objects:
                             pickle.dump(obj, f)
@@ -426,12 +461,12 @@ class postpro_spod():
             if loadpklfile:
                 print("--> Loading from: ",loadpklfile)
                 with open(loadpklfile, 'rb') as f:
-                    POD_eigenvalues = pickle.load(f)
-                    variables = pickle.load(f)
+                    self.POD_eigenvalues = pickle.load(f)
+                    self.variables = pickle.load(f)
                     if compute_eigen_vectors:
-                        POD_modes = pickle.load(f)
+                        self.POD_modes = pickle.load(f)
                     if sort:
-                        sorted_inds = pickle.load(f)
+                        self.sorted_inds = pickle.load(f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -446,27 +481,25 @@ class postpro_spod():
         return 
 
     @registeraction(actionlist)
-    class plot():
+    class plot_eigvals():
         actionname = 'plot_eigvals'
-        blurb      = 'planes'
+        blurb      = 'Plots the leading eigenvalues and corresponding wavenumber and frequencies'
         required   = False
         actiondefs = [
-        {'key':'dpi',       'required':False,  'default':125,
-         'help':'Figure resolution', },
-        {'key':'figsize',   'required':False,  'default':[12,8],
+        {'key':'num',   'required':False,  'default':10,
+         'help':'Number of eigenvalues to plot', },
+        {'key':'figsize',   'required':False,  'default':[16,4],
          'help':'Figure size (inches)', },
         {'key':'savefile',  'required':False,  'default':'',
          'help':'Filename to save the picture', },
-        {'key':'clevels',   'required':False,  'default':'np.linspace(0, 12, 121)',
-         'help':'Color levels (eval expression)',},
-        {'key':'xlabel',    'required':False,  'default':'X [m]',
-         'help':'Label on the X-axis', },
-        {'key':'ylabel',    'required':False,  'default':'Y [m]',
-         'help':'Label on the Y-axis', },
         {'key':'title',     'required':False,  'default':'',
          'help':'Title of the plot',},
-        {'key':'plotfunc',  'required':False,  'default':'lambda u, v, w: u',
-         'help':'Function to plot (lambda expression)',},
+        {'key':'dpi',       'required':False,  'default':125,
+         'help':'Figure resolution', },
+        {'key':'correlations','required':False,  'default':['U',],
+         'help':'List of correlations to plot', },
+        {'key':'Uinf','required':True,  'default':0,
+         'help':'Velocity for compute strouhal frequency', },
         ]
         
         def __init__(self, parent, inputs):
@@ -478,33 +511,127 @@ class postpro_spod():
         def execute(self):
             print('Executing '+self.actionname)
             figsize  = self.actiondict['figsize']
-            xaxis    = self.actiondict['xaxis']
-            yaxis    = self.actiondict['yaxis']
             dpi      = self.actiondict['dpi']
-            iplanes  = self.actiondict['iplane']
             savefile = self.actiondict['savefile']
-            xlabel   = self.actiondict['xlabel']
-            ylabel   = self.actiondict['ylabel']
-            clevels  = eval(self.actiondict['clevels'])
             title    = self.actiondict['title']
-            plotfunc = eval(self.actiondict['plotfunc'])
-            if not isinstance(iplanes, list): iplanes = [iplanes,]
-            for iplane in iplanes:
-                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-                plotq = plotfunc(self.parent.dbavg['velocityx_avg'], self.parent.dbavg['velocityy_avg'], self.parent.dbavg['velocityz_avg'])
-                c=plt.contourf(self.parent.dbavg[xaxis][iplane,:,:], 
-                            self.parent.dbavg[yaxis][iplane,:,:], plotq[iplane, :, :], 
-                            levels=clevels,cmap='coolwarm', extend='both')
-                divider = make_axes_locatable(ax)
-                cax = divider.append_axes("right", size="3%", pad=0.05)
-                cbar=fig.colorbar(c, ax=ax, cax=cax)
-                cbar.ax.tick_params(labelsize=7)
-                ax.set_xlabel(xlabel)
-                ax.set_ylabel(ylabel)
-                ax.axis('scaled')
-                ax.set_title(eval("f'{}'".format(title)))
+            num      = self.actiondict['num']
+            Uinf     = self.actiondict['Uinf']
+            correlations = self.actiondict['correlations']
+            if not isinstance(correlations, list): correlations= [correlations,]
+            fig, axs = plt.subplots(len(correlations),3,figsize=(figsize[0],figsize[1]), dpi=dpi)
+            axs = np.reshape(axs, (len(correlations), 3))
+            fig.suptitle(eval("f'{}'".format(title)))
+            for corr_iter, corr in enumerate(correlations):
+                ax = axs[corr_iter,:]
 
-                if len(savefile)>0:
-                    savefname = savefile.format(iplane=iplane)
-                    plt.savefig(savefname)
+                ax[0].set_xlabel("Eigenvalue Index")
+                ax[1].set_xlabel("Eigenvalue Index")
+                ax[2].set_xlabel("Eigenvalue Index")
+
+                ax[0].set_ylabel("Normalized Eigenvalue")
+                ax[1].set_ylabel("$\kappa_\Theta$")
+                ax[2].set_ylabel("$\omega D/U 2 \pi$")
+
+                max_eigs = self.parent.POD_eigenvalues[corr][self.parent.sorted_inds[corr]['ktheta'][0:num],self.parent.sorted_inds[corr]['angfreq'][0:num],self.parent.sorted_inds[corr]['block'][0:num]]
+                max_eig = np.abs(max_eigs[0])
+                ax[0].semilogy(np.arange(0,num),np.abs(max_eigs)/max_eig)
+                ax[0].scatter(np.arange(0,num),np.abs(max_eigs)/max_eig)
+
+                ax[1].scatter(np.arange(0,num),self.parent.variables['ktheta'][self.parent.sorted_inds[corr]['ktheta'][0:num]])
+                ax[2].scatter(np.arange(0,num),self.parent.variables['angfreq'][self.parent.sorted_inds[corr]['angfreq'][0:num]]*self.parent.diam/(Uinf * 2 * np.pi))
+
+
+            if len(savefile)>0:
+                plt.savefig(savefile)
+
+            return
+
+    @registeraction(actionlist)
+    class plot_eigmodes():
+        actionname = 'plot_eigmodes'
+        blurb      = 'Plots leading eigenmodes'
+        required   = False
+        actiondefs = [
+        {'key':'num',   'required':False,  'default':1,
+         'help':'Number of eigenvectors to include in reconstruction', },
+        {'key':'figsize',   'required':False,  'default':[16,4],
+         'help':'Figure size (inches)', },
+        {'key':'savefile',  'required':False,  'default':'',
+         'help':'Filename to save the picture', },
+        {'key':'title',     'required':False,  'default':'',
+         'help':'Title of the plot',},
+        {'key':'dpi',       'required':False,  'default':125,
+         'help':'Figure resolution', },
+        {'key':'correlations','required':False,  'default':['U',],
+         'help':'List of correlations to plot', },
+        {'key':'Uinf','required':False,  'default':0,
+         'help':'Velocity for compute strouhal frequency', },
+        {'key':'St','required':False,  'default':None,
+         'help':'Plot leading eigenmodes at fixed Strouhal frequency', },
+        {'key':'itime','required':False,  'default':0,
+         'help':'Time iteration to plot', },
+        ]
+        
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            print('Executing '+self.actionname)
+            figsize  = self.actiondict['figsize']
+            dpi      = self.actiondict['dpi']
+            savefile = self.actiondict['savefile']
+            title    = self.actiondict['title']
+            numModes = self.actiondict['num']
+            Uinf     = self.actiondict['Uinf']
+            itime    = self.actiondict['itime']
+            St       = self.actiondict['St']
+            correlations = self.actiondict['correlations']
+            if not isinstance(correlations, list): correlations= [correlations,]
+
+            for corr in correlations:
+                eig_modes = self.parent.POD_modes[corr]
+                shape = self.parent.POD_modes[corr].shape
+                mode_rhat = np.zeros((shape[0],shape[1],shape[2],shape[4]),dtype=complex)
+
+                inds = np.arange(numModes)
+                scaling = self.parent.diam/(Uinf * 2 * np.pi)
+                if not St == None:
+                    for i in range(0,numModes):
+                        if i == 0:
+                            ind = 0
+                        else:
+                            ind = int(inds[i-1] + 1)
+
+                        st_index = np.argmin(np.abs(self.parent.variables['angfreq'] * scaling - St))
+                        cont_flag = False
+                        if not self.parent.sorted_inds[corr]['angfreq'][ind] == st_index: cont_flag = True
+                        while cont_flag:
+                            ind += 1
+                            st_index = np.argmin(np.abs(self.parent.variables['angfreq'] * scaling - St))
+                            if self.parent.sorted_inds[corr]['angfreq'][ind] == st_index: cont_flag = False
+                        inds[i]=int(ind)
+                for i in range(0,numModes):
+                    ind = int(inds[i])
+                    ktheta_ind = self.parent.sorted_inds[corr]['ktheta'][ind]
+                    angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][ind]
+                    block_ind = self.parent.sorted_inds[corr]['block'][ind]
+                    eigval_factor = self.parent.POD_eigenvalues[corr][ktheta_ind,angfreq_ind,block_ind]
+                    print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
+                    mode_rhat[:,ktheta_ind,angfreq_ind,:] += eigval_factor*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+
+                mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2)
+
+                #scaling = self.parent.diam/(Uinf * 2 * np.pi)
+                fig,ax = plt.subplots(1,1,sharey=False,sharex=False,figsize=(12,10),subplot_kw={'projection':'polar'})
+                val = mode_r[:,:,itime,0]
+                theta = self.parent.variables['theta']
+                r = self.parent.variables['r']
+                plot_radial(val,theta,r,cmap='jet',newfig=False,ax=ax)
+            
+            if len(savefile)>0:
+                plt.savefig(savefile)
+
             return
