@@ -32,7 +32,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
 
     if timerange is not None:
         if len(timerange) != 2:
-            print("Error: timerange must an array of length 2, e.g., [0,1]. Exiting")
+            print("Error: timerange must be an array of length 2, e.g., [t_start,t_end]. Exiting")
             sys.exit()
         find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
         itimevec = [find_nearest(timevec, t) for t in timerange]
