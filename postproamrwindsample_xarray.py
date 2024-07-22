@@ -10,47 +10,80 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
-def getPlaneXR(ncfile, itimevec, varnames, groupname=None,
-               verbose=0, includeattr=False, gettimes=False):
+def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
+               verbose=0, includeattr=False, gettimes=False,timerange=None):
+
+    if type(ncfileinput) is not list:
+        ncfilelist = [ncfileinput]
+    else:
+        ncfilelist = ncfileinput
+    
     # Create a fresh db dictionary
     db = {}
     for v in varnames: db[v] = {}
     db['timesteps'] = []
-    timevec = None
-    if gettimes:
-        timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-        db['times'] = []
-    # Now load the ncfile data
-    if groupname is None:
-        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
-        group = groups[0]
-    else:
-        group = groupname
-    with xr.open_dataset(ncfile, group=group) as ds:
-        reshapeijk = ds.attrs['ijk_dims'][::-1]
-        xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
-        ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
-        zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
-        dtime=xr.open_dataset(ncfile)
-        dtime.close()
-        db['x'] = xm
-        db['y'] = ym
-        db['z'] = zm        
-        for itime in itimevec:
-            if verbose>0:
-                print("extracting iter "+repr(itime))
-            db['timesteps'].append(itime)
-            if gettimes:
-                db['times'].append(float(timevec[itime]))
-            for v in varnames:
-                vvar = extractvar(ds, v, itime)
-                db[v][itime] = vvar
-            #vx = extractvar(ds, vxvar, itime)
-            #vy = extractvar(ds, vyvar, itime)
-            #vz = extractvar(ds, vzvar, itime)
-        if includeattr:
-            for k, g in ds.attrs.items():
-                db[k] = g
+
+    timevec = []
+    times   = []
+    for ncfileiter,ncfile in enumerate(ncfilelist):
+        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
+        timevec = np.concatenate((timevec, times[ncfileiter]))               
+        timevec = np.unique(timevec)
+
+    if timerange is not None:
+        if len(timerange) != 2:
+            print("Error: timerange must an array of length 2, e.g., [0,1]. Exiting")
+            sys.exit()
+        find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
+        itimevec = [find_nearest(timevec, t) for t in timerange]
+        itimevec = np.arange(itimevec[0],itimevec[1]+1)
+
+    itime_processed = []
+    for ncfileiter,ncfile in enumerate(ncfilelist):
+        if gettimes:
+            if ncfileiter == 0:
+                db['times'] = []
+
+        # Now load the ncfile data
+        if groupname is None:
+            groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
+            group = groups[0]
+        else:
+            group = groupname
+
+        with xr.open_dataset(ncfile, group=group) as ds:
+            if ncfileiter == 0:
+                reshapeijk = ds.attrs['ijk_dims'][::-1]
+                xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
+                ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
+                zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
+                dtime=xr.open_dataset(ncfile)
+                dtime.close()
+                db['x'] = xm
+                db['y'] = ym
+                db['z'] = zm        
+            for itime in itimevec:
+                local_ind = np.where(np.isin(times[ncfileiter], timevec[itime]))[0]
+                if itime not in itime_processed and len(local_ind)==1:
+                    if verbose>0:
+                        print("extracting iter "+repr(itime))
+                    db['timesteps'].append(itime)
+                    if gettimes:
+                        db['times'].append(float(timevec[itime]))
+                    for v in varnames:
+                        vvar = extractvar(ds, v, local_ind)
+                        db[v][itime] = vvar
+                    #vx = extractvar(ds, vxvar, itime)
+                    #vy = extractvar(ds, vyvar, itime)
+                    #vz = extractvar(ds, vzvar, itime)
+                    itime_processed.append(itime)
+                else:
+                    if verbose>0:
+                        print("Already processed itime: ",itime)
+            if ncfileiter == 0:
+                if includeattr:
+                    for k, g in ds.attrs.items():
+                        db[k] = g
     return db
 
 # See https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
