@@ -248,6 +248,8 @@ class postpro_spod():
          'help':'Lateral wake center', },
         {'key':'zc',   'required':True,  'default':None,
          'help':'Vertical wake center', },
+        {'key':'wake_meandering_stats_file','required':False,  'default':None,
+         'help':'The lateral and vertical wake center will be read from yc_mean and zc_mean columns of this file, overriding yc and zc.', },
         {'key':'LR_factor',   'required':False,  'default':1.4,
          'help':'Factor of blade-radius to define the radial domain extent.'},
         {'key':'NR',   'required':False,  'default':256,
@@ -273,6 +275,42 @@ class postpro_spod():
         'help':'Boolean to included sorted wavenumber and frequency indices by eigenvalue', },
         
     ]
+    example = """
+spod:
+  name: Wake YZ plane
+  ncfile: ./YZslice_00.50D_456.00s_1556.00s_cl00.nc
+  group: xslice
+  trange: [456.00,1556.50]
+  nperseg: 256
+  diam: 127
+  yc: 375.0
+  zc: 90
+  wake_meandering_stats_file: ./data_converter/wake_meandering_baseline_area_1p4R/wake_meandering/wake_stats_00.50D.csv
+  correlations:
+    - U
+    - V
+    - W
+    - U-V-W
+    - V-W
+  output_dir: ./test
+  savepklfile: test.pkl
+  #loadpklfile: ./test/test.pkl
+
+  plot_eigvals:
+    num: 11
+    savefile: ./test/test_eigvals.png
+    correlations:
+      - U
+    Uinf: 6.4
+
+  plot_eigmodes:
+    num: 2
+    St: 0.3
+    Uinf: 6.4
+    savefile: ./test/test_eigmode.png
+    correlations:
+      - U
+    """
     actionlist = {}                    # Dictionary for holding sub-actions
 
     # --- Stuff required for main task ---
@@ -294,6 +332,8 @@ class postpro_spod():
             self.diam             = plane['diam']
             group                 = plane['group']
             LR_factor             = plane['LR_factor']
+            NR                    = plane['NR']
+            NTheta                = plane['NTheta']
             ycenter               = plane['yc']
             zcenter               = plane['zc']
             nperseg               = plane['nperseg']
@@ -305,6 +345,7 @@ class postpro_spod():
             output_dir            = plane ['output_dir']
             compute_eigen_vectors = plane ['compute_eigen_vectors']
             sort                  =  plane ['sort']
+            wake_meandering_stats_file = plane['wake_meandering_stats_file']
 
             if not loadpklfile:
                 #Get all times if not specified 
@@ -319,9 +360,7 @@ class postpro_spod():
                 Define polar grid 
                 """
                 LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
-                NR = 256 #np.ceil(LR/ np.sqrt( (dy)**2 + dz**2) 
                 LTheta = 2 * np.pi
-                NTheta = 256 #np.ceil(LTheta / np.arctan(dz/dy))
                 r = np.linspace(0,LR,NR)
                 theta = np.linspace(0,LTheta,NTheta+1)[0:-1] #periodic grid in theta
                 RR, TT = np.meshgrid(r,theta,indexing='ij')
@@ -330,6 +369,15 @@ class postpro_spod():
                 components = ['velocityx','velocityy','velocityz']
 
                 print("--> Interpolating cartesian data to polar coordinates")
+
+                if wake_meandering_stats_file != None:
+                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                    ycenter = wake_meandering_stats['yc_mean'][0]
+                    zcenter = wake_meandering_stats['zc_mean'][0]
+                    print(ycenter)
+                    print(zcenter)
+                    print("--> Read in mean wake centers from ",wake_meandering_stats_file,". yc = ",ycenter,", zc = ",zcenter,".")
+
                 udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
                 for titer , t in enumerate(tsteps):
                     for compind in range(len(components)):
