@@ -31,7 +31,7 @@ def getFileList(ncfileinput):
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                verbose=0, includeattr=False, gettimes=False,timerange=None):
 
-    ncfilelist = get_filelist(ncfileinput)
+    ncfilelist = getFileList(ncfileinput)
 
     # Create a fresh db dictionary
     db = {}
