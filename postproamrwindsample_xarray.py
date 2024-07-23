@@ -11,9 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
-def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
-               verbose=0, includeattr=False, gettimes=False,timerange=None):
-
+def getFileList(ncfileinput):
     ncfilelist = []
     if type(ncfileinput) is str:
         ncfilelist=list(glob.glob(ncfileinput))
@@ -27,7 +25,14 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
             files = glob.glob(ncfile)
             for file in files:
                 ncfilelist.append(file)
-    
+
+    return ncfilelist
+
+def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
+               verbose=0, includeattr=False, gettimes=False,timerange=None):
+
+    ncfilelist = get_filelist(ncfileinput)
+
     # Create a fresh db dictionary
     db = {}
     for v in varnames: db[v] = {}
