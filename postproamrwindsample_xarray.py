@@ -5,6 +5,7 @@ import sys
 import xarray as xr
 import pickle
 import matplotlib.pyplot as plt
+import glob
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
@@ -13,10 +14,19 @@ nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                verbose=0, includeattr=False, gettimes=False,timerange=None):
 
-    if type(ncfileinput) is not list:
-        ncfilelist = [ncfileinput]
+    ncfilelist = []
+    if type(ncfileinput) is str:
+        ncfilelist=list(glob.glob(ncfileinput))
+    elif type(ncfileinput) is not list:
+        for ncfileiter, ncfile in enumerate(ncfileinput):
+            files = glob.glob(ncfile[ncfileiter])
+            for file in files:
+                ncfilelist.append(file)
     else:
-        ncfilelist = ncfileinput
+        for ncfileiter, ncfile in enumerate(ncfileinput):
+            files = glob.glob(ncfile)
+            for file in files:
+                ncfilelist.append(file)
     
     # Create a fresh db dictionary
     db = {}
