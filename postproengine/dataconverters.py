@@ -40,10 +40,8 @@ class postpro_dataconverts():
         'help':'NetCDF sampling file', },
         {'key':'group',   'required':False,  'default':None,
          'help':'Which group to pull from netcdf file', },
-        {'key':'iterrange',    'required':True,  'default':[0,1],
-        'help':'Range of iterations to pull from netcdf file (inclusive)', },
-        {'key':'times',    'required':False,  'default':None,
-         'help':'Which times to pull from netcdf file (overrides iters). An empty list, [], indicates use all times.', },        
+        {'key':'trange',    'required':True,  'default':None,
+         'help':'Which times to pull from netcdf file, e.g., [tstart,tend]', },        
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -62,31 +60,13 @@ class postpro_dataconverts():
         # Loop through and create plots
         for plane in self.yamldictlist:
             #Get all times if not specified 
-            iters    = plane['iterrange']
             ncfile   = plane['ncfile']
-            times    = plane['times']
+            times    = plane['trange']
             group    = plane['group']
             varnames = ['velocityx', 'velocityy', 'velocityz']
 
-            # Get the times instead
-            iters = np.arange(iters[0],iters[1]+1)
-            notRead = True
-            if not times == None:
-                timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-                if times == []:
-                    iters = np.arange(0,len(timevec))
-                    # Load the plane
-                    output_dt = (timevec[-1]-timevec[0])/(len(timevec)-1)
-                    if not groupname == None:
-                        self.db = ppsamplexr.getFullPlaneXR(ncfile, len(timevec), output_dt,groupname=group)
-                        notRead = False
-                else:
-                    find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-                    iters = [find_nearest(timevec, t) for t in times]
-            
-            if notRead:
-                # Load the plane
-                self.db = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True)
+            # Load the plane
+            self.db = ppsamplexr.getPlaneXR(ncfile, [0,1], varnames, groupname=group, verbose=verbose,includeattr=True,gettimes=True,timerange=times)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -119,9 +99,6 @@ class postpro_dataconverts():
             self.parent = parent
             print('Initialized '+self.actionname+' inside '+parent.name)
             return
-
-
-
 
         def execute(self):
             def bts_write(btsdict, filename):
@@ -192,12 +169,38 @@ class postpro_dataconverts():
             iplane = self.actiondict['iplane']
             btsfile = self.actiondict['btsfile']
             ID  = self.actiondict['ID']
-            x=np.asarray(self.parent.db['x'].data)
-            y=np.asarray(self.parent.db['y'].data)
-            z=np.asarray(self.parent.db['z'].data)
-            x=x[:,0,0]
-            y=y[0,0,:]
-            z=z[0,:,0]
+
+            XX = np.array(self.parent.db['x'])
+            YY = np.array(self.parent.db['y'])
+            ZZ = np.array(self.parent.db['z'])
+
+            flow_index  = -np.ones(3)
+            for i in range(0,3):
+                if (sum(self.parent.db['axis'+str(i+1)]) != 0):
+                    flow_index[i] = np.nonzero(self.parent.db['axis'+str(i+1)])[0][0]
+            for i in range(0,3):
+                if flow_index[i] == -1:
+                    flow_index[i] = 3 - (flow_index[i-1] + flow_index[i-2])
+
+            streamwise_index = 2-np.where(flow_index == 0)[0][0]
+            lateral_index = 2-np.where(flow_index == 1)[0][0]
+            vertical_index = 2-np.where(flow_index == 2)[0][0]
+
+            slices = [slice(None)] * 3
+            slices[lateral_index] = 0
+            slices[vertical_index] = 0
+            x = XX[tuple(slices)]
+
+            slices = [slice(None)] * 3
+            slices[streamwise_index] = 0
+            slices[vertical_index] = 0
+            y = YY[tuple(slices)]
+
+            slices = [slice(None)] * 3
+            slices[streamwise_index] = 0
+            slices[lateral_index] = 0
+            z = ZZ[tuple(slices)]
+
             xloc = x[iplane]
             nt = len(self.parent.db['times'])
             ny = len(y)
@@ -205,13 +208,16 @@ class postpro_dataconverts():
             xind = np.where(x == xloc)[0]
             yind = np.where(y == yloc)[0]
             zind = np.where(z == zloc)[0]
+
             ts["u"]          = np.ndarray((3,nt,ny,nz)) 
+            permutation = [streamwise_index, lateral_index, vertical_index]
             t = np.array(self.parent.db['times'])
             tsteps = np.array(self.parent.db['timesteps'])
             for titer , tval in enumerate(tsteps):
-                ts['u'][0,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityx'][tval]),1,2)[xind,:,:]
-                ts['u'][1,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityy'][tval]),1,2)[xind,:,:]
-                ts['u'][2,titer,:,:] = np.swapaxes(np.array(self.parent.db['velocityz'][tval]),1,2)[xind,:,:]
+                ts['u'][0,titer,:,:] = np.transpose(np.array(self.parent.db['velocityx'][tval]),permutation)[iplane,:,:]
+                ts['u'][1,titer,:,:] = np.transpose(np.array(self.parent.db['velocityy'][tval]),permutation)[iplane,:,:]
+                ts['u'][2,titer,:,:] = np.transpose(np.array(self.parent.db['velocityz'][tval]),permutation)[iplane,:,:]
+
             ts['t']  = np.round(t,decimals=7)
             ts['y']  = y - np.mean(y) # y always centered on 0
             ts['z']  = z
