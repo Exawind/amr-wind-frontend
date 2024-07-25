@@ -8,6 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import compute_axis1axis2_coords
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
@@ -110,7 +111,13 @@ class postpro_instantaneousplanes():
                 iters = [find_nearest(timevec, t) for t in times]
             
             # Load the plane
-            db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True)
+            db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True, includeattr=True)
+
+            # Convert to native axis1/axis2 coordinates if necessary
+            if ('a1' in [xaxis, yaxis]) or \
+               ('a2' in [xaxis, yaxis]) or \
+               ('a3' in [xaxis, yaxis]):
+                compute_axis1axis2_coords(db)
             
             # Loop through each time instance and plot
             for iplot, i in enumerate(iters):

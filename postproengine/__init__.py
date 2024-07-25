@@ -6,6 +6,7 @@ import io
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
+import numpy as np
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -135,7 +136,7 @@ def print_executor(f, task, docformat='markdown'):
         f.write('## Example\n')
         f.write('```yaml')
         f.write(task.example)
-        f.write('```\n')
+        f.write('\n```\n')
     return
 
 def makedocs(rootpath=scriptpath, docdir='doc', docformat='markdown'):
@@ -199,6 +200,65 @@ def print_inputs(subset=[], plist=pluginlist):
         print()
     return
 
+# =====================================================
+# --- ADD REUSABLE CLASSES AND METHODS HERE ---
+# =====================================================
+
+def compute_axis1axis2_coords(db):
+    """
+    Computes the native axis1 and axis2 coordinate system for a given
+    set of sample planes.
+
+    Note: this assumes db has the origin, axis1/2, and offset definitions
+    """
+
+    # Check to make sure db has everything needed
+    if ('origin' not in db) or \
+       ('axis1' not in db) or \
+       ('axis2' not in db) or \
+       ('axis3' not in db) or \
+       ('offsets') not in db:
+        print('Need to ensure that the sample plane data includes origin, axis1, axis2, axis3, and offset information')
+        return
+
+    # Pull out the coordate definitions
+    axis1  = np.array(db['axis1'])
+    axis2  = np.array(db['axis2'])
+    axis3  = np.array(db['axis3'])
+    origin = np.array(db['origin'])
+    offsets= db['offsets']
+    if not isinstance(offsets,list):
+        offsets = [offsets]
+    
+    # Compute the normals
+    n1 = axis1/np.linalg.norm(axis1)
+    n2 = axis2/np.linalg.norm(axis2)
+    if np.linalg.norm(axis3) > 0.0:
+        n3 = axis3/np.linalg.norm(axis3)
+    else:
+        n3 = axis3
+        
+    db['a1'] = np.full_like(db['x'], 0.0)
+    db['a2'] = np.full_like(db['x'], 0.0)
+    db['a3'] = np.full_like(db['x'], 0.0)    
+    ijk_idx = db['x'].shape
+
+    for k in range(ijk_idx[0]):
+        # Loop through each plane
+        for j in range(ijk_idx[1]):
+            for i in range(ijk_idx[2]):
+                x = db['x'][k, j, i]
+                y = db['y'][k, j, i]
+                z = db['z'][k, j, i]
+                plane_origin = origin + axis3*offsets[k]
+                pt = np.array([x, y, z])
+                a1coord  = np.dot(pt-plane_origin, n1)
+                a2coord  = np.dot(pt-plane_origin, n2)
+                a3coord  = np.dot(pt-plane_origin, n3)
+                db['a1'][k,j,i] = a1coord
+                db['a2'][k,j,i] = a2coord
+                db['a3'][k,j,i] = a3coord                
+    return
 
 # ------- reusable contour plot class -----------------
 class contourplottemplate():
@@ -254,6 +314,13 @@ class contourplottemplate():
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
         if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+        # Convert to native axis1/axis2 coordinates if necessary
+        if ('a1' in [xaxis, yaxis]) or \
+           ('a2' in [xaxis, yaxis]) or \
+           ('a3' in [xaxis, yaxis]):
+            compute_axis1axis2_coords(self.plotdb)
+        
         for iplane in iplanes:
             fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
             plotq = plotfunc(self.plotdb)
@@ -273,6 +340,8 @@ class contourplottemplate():
                 savefname = savefile.format(iplane=iplane)
                 plt.savefig(savefname)
         return
+
+# =====================================================
 
     
 def runtaskdict(taskdict, plist, looptasks, verbose):
