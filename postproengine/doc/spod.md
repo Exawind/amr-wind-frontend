@@ -16,13 +16,14 @@ Compute SPOD eigenvectors and eigenvalues
   NTheta              : Number of points in the azimuthal direction. (Optional, Default: 256)
   remove_temporal_mean: Boolean to remove temporal mean from SPOD. (Optional, Default: True)
   remove_azimuthal_mean: Boolean to remove azimuthal mean from SPOD. (Optional, Default: False)
-  iplane              : i-index of planes to postprocess (Optional, Default: [0])
+  iplane              : i-index of plane to postprocess (Optional, Default: 0)
   correlations        : List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W  (Optional, Default: ['U'])
   output_dir          : Directory to save results (Optional, Default: './')
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
   loadpklfile         : Name of pickle file to load to perform actions (Optional, Default: '')
   compute_eigen_vectors: Boolean to compute eigenvectors or just eigenvalues (Optional, Default: True)
   sort                : Boolean to included sorted wavenumber and frequency indices by eigenvalue (Optional, Default: True)
+  save_num_modes      : Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR). (Optional, Default: None)
 ```
 
 ## Actions: 

@@ -57,7 +57,7 @@ def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=
     return im
 
 
-def read_cart_data(ncfile,group,trange,iplanes):
+def read_cart_data(ncfile,group,trange,iplane):
     udata = {}
     xc = {}
     timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
@@ -68,17 +68,18 @@ def read_cart_data(ncfile,group,trange,iplanes):
         y = np.asarray(db['y'].data)
         z = np.asarray(db['z'].data)
         t = np.asarray(np.array(db['times']).data)
-        for iplane in iplanes:
-            xc[iplane] = np.asarray(db['x'].data[iplane])
-            udata[iplane] = np.zeros((len(t),len(z),len(y),3))
-            udata[iplane][:,:,:,0] = np.array(db['velocityx'][:,iplane,:,:])
-            udata[iplane][:,:,:,1] = np.array(db['velocityy'][:,iplane,:,:])
-            udata[iplane][:,:,:,2] = np.array(db['velocityz'][:,iplane,:,:])
+        xc = np.asarray(db['x'].data[iplane])
+        udata = np.zeros((len(t),len(z),len(y),3))
+        udata[:,:,:,0] = np.array(db['velocityx'][:,iplane,:,:])
+        udata[:,:,:,1] = np.array(db['velocityy'][:,iplane,:,:])
+        udata[:,:,:,2] = np.array(db['velocityz'][:,iplane,:,:])
     else:
         find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
         iters = [find_nearest(timevec, t) for t in trange]
         iters = np.arange(iters[0],iters[1]+1)
         db = ppsamplexr.getPlaneXR(ncfile,iters,varnames,groupname=group,verbose=0,includeattr=True,gettimes=True)
+
+        XX = np.array(db['x'])
         YY = np.array(db['y'])
         ZZ = np.array(db['z'])
 
@@ -95,6 +96,11 @@ def read_cart_data(ncfile,group,trange,iplanes):
         vertical_index = 2-np.where(flow_index == 2)[0][0]
 
         slices = [slice(None)] * 3
+        slices[lateral_index] = 0
+        slices[vertical_index] = 0
+        x = XX[tuple(slices)]
+
+        slices = [slice(None)] * 3
         slices[streamwise_index] = 0
         slices[vertical_index] = 0
         y = YY[tuple(slices)]
@@ -107,20 +113,19 @@ def read_cart_data(ncfile,group,trange,iplanes):
         permutation = [streamwise_index, vertical_index, lateral_index]
 
         t = np.asarray(np.array(db['times']).data)
-        for iplane in iplanes:
-            xc[iplane] = np.asarray(db['x'][iplane][0,0])
-            udata[iplane] = np.zeros((len(t),len(z),len(y),3))
-            for i,tstep in enumerate(iters):
-                ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
-                udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
+        xc = x[iplane]
+        udata = np.zeros((len(t),len(z),len(y),3))
+        for i,tstep in enumerate(iters):
+            ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
+            udata[i,:,:,0] = ordered_data[iplane,:,:]
 
-                ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
-                udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
+            ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
+            udata[i,:,:,1] = ordered_data[iplane,:,:]
 
-                ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
-                udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
+            ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
+            udata[i,:,:,2] = ordered_data[iplane,:,:]
 
-    return udata , y , z , t 
+    return udata , xc, y , z , t 
 
 def interpolate_radial_to_cart(U,rr,theta,YY,ZZ,offsety,offsetz):
     YR = np.sqrt(np.square((YY-offsety)) + np.square((ZZ-offsetz)))
@@ -260,8 +265,8 @@ class postpro_spod():
          'help':'Boolean to remove temporal mean from SPOD.'},
         {'key':'remove_azimuthal_mean',   'required':False,  'default':False,
          'help':'Boolean to remove azimuthal mean from SPOD.'},
-        {'key':'iplane',       'required':False,  'default':[0,],
-         'help':'i-index of planes to postprocess', },
+        {'key':'iplane',       'required':False,  'default':0,
+         'help':'i-index of plane to postprocess', },
         {'key':'correlations','required':False,  'default':['U',],
             'help':'List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W ', },
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
@@ -328,7 +333,7 @@ spod:
         print('Running '+self.name)
         # Loop through and create plots
         for plane in self.yamldictlist:
-            iplanes               = plane['iplane']
+            iplane               = plane['iplane']
             trange                = plane['trange']
             ncfile                = plane['ncfile']
             self.diam             = plane['diam']
@@ -352,11 +357,10 @@ spod:
 
             if not loadpklfile:
                 #Get all times if not specified 
-                if not isinstance(iplanes, list): iplanes = [iplanes,]
                 if not isinstance(correlations, list): correlations= [correlations,]
 
                 print("--> Reading in cartesian velocities")
-                udata_cart,y,z,times = read_cart_data(ncfile,group,trange,iplanes)
+                udata_cart,xc,y,z,times = read_cart_data(ncfile,group,trange,iplane)
                 tsteps = range(len(times))
 
                 """
@@ -387,7 +391,7 @@ spod:
                         if zcenter-LR < 0:
                             print("Error: zcenter - LR negative. Exiting")
                             sys.exit()
-                        udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[0][titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
+                        udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
 
                 Nkt = int(nperseg/2) + 1
                 time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
@@ -495,6 +499,7 @@ spod:
                     self.variables['theta']    = theta
                     self.variables['y']        = y
                     self.variables['z']        = z
+                    self.variables['x']        = x
                     if not os.path.exists(output_dir):
                         os.makedirs(output_dir)
                     savefile = os.path.join(output_dir, savefile)
