@@ -95,7 +95,7 @@ class postpro_openfast():
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
         # Loop through and create plots
-        for entry in self.yamldictlist:
+        for entryiter , entry in enumerate(self.yamldictlist):
             names = entry['name']
             if type(entry['name']) is str:
                 names = []
@@ -119,11 +119,11 @@ class postpro_openfast():
                 for a in self.actionlist:
                     action = self.actionlist[a]
                     # Check to make sure required actions are there
-                    if action.required and (action.actionname not in self.yamldictlist[0].keys()):
+                    if action.required and (action.actionname not in self.yamldictlist[entryiter].keys()):
                         # This is a problem, stop things
                         raise ValueError('Required action %s not present'%action.actionname)
-                    if action.actionname in self.yamldictlist[0].keys():
-                        actionitem = action(self, self.yamldictlist[0][action.actionname])
+                    if action.actionname in self.yamldictlist[entryiter].keys():
+                        actionitem = action(self, self.yamldictlist[entryiter][action.actionname])
                         actionitem.execute()
         return 
 
