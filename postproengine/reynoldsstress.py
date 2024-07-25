@@ -178,7 +178,6 @@ reynoldsstress:
                 sys.exit()
 
             self.parent.dbReAvg['uxur_avg']    = np.zeros_like(self.parent.dbReAvg['uv_avg'])
-            self.parent.dbReAvg['ux_avg_uxur_avg'] = np.zeros_like(self.parent.dbReAvg['uv_avg'])
             for iplaneiter, iplane in enumerate(iplanes):
                 if wake_center_files != None:
                     df = pd.read_csv(wake_center_files[iplaneiter])
@@ -193,12 +192,78 @@ reynoldsstress:
                 ZZ = self.parent.dbReAvg['z'][iplane,:,:]
                 uv_avg  = self.parent.dbReAvg['uv_avg'][iplane,:,:]
                 uw_avg  = self.parent.dbReAvg['uw_avg'][iplane,:,:]
-                ux_avg  = self.parent.dbReAvg['velocityx_avg'][iplane,:,:]
 
                 Theta = np.arctan2(ZZ-z_center,YY-y_center)
 
                 self.parent.dbReAvg['uxur_avg'][iplane,:,:] = uv_avg * np.sin(Theta) + uw_avg * np.cos(Theta)
-                self.parent.dbReAvg['ux_avg_uxur_avg'][iplane,:,:] = ux_avg * self.parent.dbReAvg['uxur_avg'][iplane,:,:]
+
+            # Overwrite picklefile
+            if len(self.parent.pklfile)>0:
+                dbfile = open(self.parent.pklfile, 'wb')
+                pickle.dump(self.parent.dbReAvg, dbfile, protocol=2)
+                dbfile.close()
+
+    @registeraction(actionlist)
+    class compute_turbulent_fluxes():
+        actionname = 'turbulent_fluxes'
+        blurb      = 'Computes the turbulent fluxes'
+        required   = False
+        actiondefs = [
+                {'key':'iplane', 'required':False, 'default':None, 'help':'List of iplane values. Default is all planes in ncfile.'},
+                {'key':'include_radial', 'required':False, 'default':None, 'help':'Boolean to compute radial reynolds shear stress flux.'},
+        ]
+
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            include_radial = self.actiondict['include_radial']
+            iplanes = self.actiondict['iplane']
+
+            if iplanes == None:
+                iplanes = list(range(0,self.parent.dbReAvg['x'].shape[0]))
+
+            turbulent_transport_list = ['u_avg_uu_avg','u_avg_uv_avg','u_avg_uw_avg',\
+                                        'v_avg_uv_avg','v_avg_vv_avg','v_avg_vw_avg',\
+                                        'w_avg_uw_avg','w_avg_vw_avg','w_avg_ww_avg']
+                                        
+            if include_radial:
+                self.parent.dbReAvg['ux_avg_uxur_avg'] = np.zeros_like(self.parent.dbReAvg['uv_avg'])
+
+            for term in turbulent_transport_list:
+                self.parent.dbReAvg[term] = np.zeros_like(self.parent.dbReAvg['uv_avg'])
+
+            for iplaneiter, iplane in enumerate(iplanes):
+                u_avg  = self.parent.dbReAvg['velocityx_avg'][iplane,:,:]
+                v_avg  = self.parent.dbReAvg['velocityy_avg'][iplane,:,:]
+                w_avg  = self.parent.dbReAvg['velocityz_avg'][iplane,:,:]
+
+                uu_avg  = self.parent.dbReAvg['uu_avg'][iplane,:,:]
+                uv_avg  = self.parent.dbReAvg['uv_avg'][iplane,:,:]
+                uw_avg  = self.parent.dbReAvg['uw_avg'][iplane,:,:]
+
+                vv_avg  = self.parent.dbReAvg['vv_avg'][iplane,:,:]
+                vw_avg  = self.parent.dbReAvg['vw_avg'][iplane,:,:]
+                ww_avg  = self.parent.dbReAvg['ww_avg'][iplane,:,:]
+
+
+                self.parent.dbReAvg['u_avg_uu_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uu_avg'][iplane,:,:]
+                self.parent.dbReAvg['u_avg_uv_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uv_avg'][iplane,:,:]
+                self.parent.dbReAvg['u_avg_uw_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uw_avg'][iplane,:,:]
+
+                self.parent.dbReAvg['v_avg_uv_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['uv_avg'][iplane,:,:]
+                self.parent.dbReAvg['v_avg_vv_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['vv_avg'][iplane,:,:]
+                self.parent.dbReAvg['v_avg_vw_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['vw_avg'][iplane,:,:]
+
+                self.parent.dbReAvg['w_avg_uw_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['uw_avg'][iplane,:,:]
+                self.parent.dbReAvg['w_avg_vw_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['vw_avg'][iplane,:,:]
+                self.parent.dbReAvg['w_avg_ww_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['ww_avg'][iplane,:,:]
+
+                if include_radial:
+                    self.parent.dbReAvg['ux_avg_uxur_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uxur_avg'][iplane,:,:]
 
             # Overwrite picklefile
             if len(self.parent.pklfile)>0:
@@ -213,3 +278,4 @@ reynoldsstress:
             super().__init__(parent, inputs)
             self.plotdb = self.parent.dbReAvg
             return
+
