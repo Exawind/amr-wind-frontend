@@ -77,7 +77,7 @@ avgplanes:
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
         # Loop through and create plots
-        for plane in self.yamldictlist:
+        for iplane, plane in enumerate(self.yamldictlist):
             tavg     = plane['tavg']
             ncfile   = plane['ncfile']
             group    = plane['group']
@@ -117,8 +117,8 @@ avgplanes:
                 if action.required and (action.actionname not in self.yamldictlist[0].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[0].keys():
-                    actionitem = action(self, self.yamldictlist[0][action.actionname])
+                if action.actionname in self.yamldictlist[iplane].keys():
+                    actionitem = action(self, self.yamldictlist[iplane][action.actionname])
                     actionitem.execute()
         return 
 
