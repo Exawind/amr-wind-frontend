@@ -381,8 +381,6 @@ spod:
                     wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
                     ycenter = wake_meandering_stats['yc_mean'][0]
                     zcenter = wake_meandering_stats['zc_mean'][0]
-                    print(ycenter)
-                    print(zcenter)
                     print("--> Read in mean wake centers from ",wake_meandering_stats_file,". yc = ",ycenter,", zc = ",zcenter,".")
 
                 udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
@@ -435,6 +433,7 @@ spod:
 
                 if compute_eigen_vectors:
                     self.POD_modes       = {corr: 0 for corr in correlations}
+                    self.POD_proj_coeff  = {corr: 0 for corr in correlations}
                 self.POD_eigenvalues = {corr: 0 for corr in correlations}
 
                 if sort:
@@ -459,6 +458,8 @@ spod:
                             Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
                     if compute_eigen_vectors:
                         self.POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
+                        self.POD_proj_coeff[corr]  = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+
                     self.POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
 
                     for ktheta_ind , ktheta_val in enumerate(ktheta):
@@ -467,10 +468,10 @@ spod:
                             POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
                             for corr_ind_iter , corr_ind in enumerate(corr_inds):
                                 POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
-                            POD_Mat = np.sqrt(scaling_factor_k) * np.dot(Wsqrt,POD_Mat)
+                            POD_Mat_scaled = np.sqrt(scaling_factor_k) * np.dot(Wsqrt,POD_Mat)
                             
                             if compute_eigen_vectors:
-                                lsvd, ssvd, rsvd = np.linalg.svd(POD_Mat,full_matrices=False,compute_uv=True)
+                                lsvd, ssvd, rsvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=True)
                                 eigmodes = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
 
                                 temp  = np.dot(Wsqrtinv,lsvd)
@@ -478,10 +479,14 @@ spod:
                                     eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
 
                                 self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
+                                for block_ind in range(NB):
+                                    self.POD_proj_coeff[corr][ktheta_ind,tfreq_ind,block_ind] += \
+                                            np.dot(np.dot(np.conj(POD_Mat[:,block_ind]).T,W),temp[:,block_ind])
 
                             else:
-                                ssvd = np.linalg.svd(POD_Mat,full_matrices=False,compute_uv=False)
+                                ssvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=False)
 
+                                
                             eigval = ssvd**2
                             self.POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
 
@@ -492,7 +497,7 @@ spod:
 
                 if len(savefile)>0:
                     self.variables = {}
-                    self.variables['angfreq'] = angfreq
+                    self.variables['angfreq']  = angfreq
                     self.variables['ktheta']   = ktheta
                     self.variables['blocks']   = np.arange(0,NB)
                     self.variables['r']        = r
@@ -514,12 +519,17 @@ spod:
                     if compute_eigen_vectors:
                         if save_num_modes == None:
                             objects.append(self.POD_modes)
+                            objects.append(self.POD_proj_coeff)
                         else:
-                            save_modes = {}
+                            save_modes      = {}
+                            save_proj_coeff = {}
                             for corr in correlations:
-                                save_modes[corr] = np.zeros((save_num_modes,NR))
-                                for mode in range(numModes_to_store):
-                                    save_modes[corr][mode,:] = POD_modes[corr][:,POD_sorted_inds[corr]['ktheta'][mode],POD_sorted_inds[corr]['angfreq'][mode],POD_sorted_inds[awc][dist]['block'][mode]]
+                                save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))))
+                                save_proj_coeff[corr] = np.zeros(save_num_modes)
+                                for mode in range(save_num_modes):
+                                    save_modes[corr][mode,:] = self.POD_modes[corr][:,self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode],:]
+
+                                    save_proj_coeff[corr][mode] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode]]
                             objects.append(save_modes)
 
 
@@ -535,7 +545,8 @@ spod:
                     if sort:
                         self.sorted_inds = pickle.load(f)
                     if compute_eigen_vectors:
-                        self.POD_modes = pickle.load(f)
+                        self.POD_modes      = pickle.load(f)
+                        self.POD_proj_coeff = pickle.load(f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -687,9 +698,9 @@ spod:
                     ktheta_ind = self.parent.sorted_inds[corr]['ktheta'][ind]
                     angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][ind]
                     block_ind = self.parent.sorted_inds[corr]['block'][ind]
-                    eigval_factor = self.parent.POD_eigenvalues[corr][ktheta_ind,angfreq_ind,block_ind]
+                    proj_coeff = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
                     print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
-                    mode_rhat[:,ktheta_ind,angfreq_ind,:] += eigval_factor*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+                    mode_rhat[:,ktheta_ind,angfreq_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
 
                 mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2)
 
