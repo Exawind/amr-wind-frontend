@@ -5,6 +5,7 @@ import copy
 import io
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from collections import OrderedDict
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -29,7 +30,7 @@ validateinputs/
 """
 
 # The list of all plugins is kept and built here
-pluginlist = {}
+pluginlist = OrderedDict()
 def registerplugin(f):
     """
     Register all the plugins to pluginlist
@@ -198,6 +199,8 @@ def print_inputs(subset=[], plist=pluginlist):
         print()
     return
 
+
+# ------- reusable contour plot class -----------------
 class contourplottemplate():
     """
     A contour plot template that can be used by other executors
@@ -271,18 +274,58 @@ class contourplottemplate():
                 plt.savefig(savefname)
         return
 
-def driver(yamldict, subset=[], plist=pluginlist, verbose=False):
+    
+def runtaskdict(taskdict, plist, looptasks, verbose):
+    for task in looptasks:
+        if task in taskdict:
+            taskitem = plist[task](taskdict[task], verbose=verbose)
+            taskitem.execute(verbose=verbose)
+    return
+    
+def driver(yamldict, plist=pluginlist, verbose=None):
     """
     Run through and execute all tasks
     """
-    if len(subset)>0:
-        looptasks = subset
+    looptasks = plist.keys()
+
+    # Get the global attributes
+    globattr = yamldict['globalattributes'] if 'globalattributes' in yamldict else {}
+    
+    # Set the verbosity
+    # Take verbosity from globalattributes
+    verbose_attr = globattr['verbose'] if 'verbose' in globattr else False
+    # Override with verbose if necessary
+    verbosity = verbose if verbose is not None else verbose_attr
+
+    # Load any user defined modules
+    if 'udfmodules' in globattr:
+        udfmodules = globattr['udfmodules']
+        for module in udfmodules:
+            name = os.path.splitext(os.path.basename(module))[0]
+            mod = load_module(module)
+            sys.modules[name] = mod
+
+            
+    # Check if executeorder is present
+    if 'executeorder' in globattr:
+        exeorder = globattr['executeorder']
+        for item in exeorder:
+            if isinstance(item, str):
+                if item in plist.keys():
+                    # item is the exact name of an executor, run it:
+                    taskitem = plist[item](yamldict[item], verbose=verbosity)
+                    taskitem.execute(verbose=verbosity)
+                else:
+                    # item is an entire workflow, run that
+                    runtaskdict(yamldict[item], plist, looptasks, verbosity)
+            else:
+                # item is a workflow with a specific set of tasks
+                wflowname  = next(iter(item))
+                wflowtasks = item[wflowname]
+                runtaskdict(yamldict[wflowname], plist, wflowtasks, verbosity)
     else:
-        looptasks = plist.keys()
-    for task in looptasks:
-        if task in yamldict:
-            taskitem = plist[task](yamldict[task], verbose=verbose)
-            taskitem.execute(verbose=verbose)
+        # Run everything in yamldict
+        runtaskdict(yamldict, plist, looptasks, verbosity)  
     return
 
 

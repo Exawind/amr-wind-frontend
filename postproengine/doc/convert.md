@@ -6,8 +6,7 @@ Converts netcdf sample planes to different file formats
   name                : An arbitrary name (Required)
   ncfile              : NetCDF sampling file (Required)
   group               : Which group to pull from netcdf file (Optional, Default: None)
-  iterrange           : Range of iterations to pull from netcdf file (inclusive) (Required)
-  times               : Which times to pull from netcdf file (overrides iters). An empty list, [], indicates use all times. (Optional, Default: None)
+  trange              : Which times to pull from netcdf file, e.g., [tstart,tend] (Required)
 ```
 
 ## Actions: 

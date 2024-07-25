@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 """
-Plugin for creating instantaneous planar images
+Plugin for post processing averaged planes
 
 See README.md for details on the structure of classes here
 """
@@ -37,11 +37,9 @@ class postpro_averageplanes():
         {'key':'ncfile',   'required':True,  'default':'',
         'help':'NetCDF sampling file', },
         {'key':'tavg',    'required':False,  'default':[],
-            'help':'Which times to average over', }, 
-        {'key':'xaxis',    'required':False,  'default':'x',
-        'help':'Which axis to use on the abscissa', },
-        {'key':'yaxis',    'required':False,  'default':'y',
-        'help':'Which axis to use on the ordinate', },
+            'help':'Which times to average over', },
+        {'key':'loadpklfile', 'required':False,  'default':'',
+        'help':'Load previously computed results from this pickle file', },        
         {'key':'savepklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save results', },
         {'key':'group',   'required':False,  'default':None,
@@ -51,7 +49,22 @@ class postpro_averageplanes():
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
-
+    example = """
+avgplanes:
+  - name: avg_smallXYplane
+    ncfile:
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_35000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_50000.nc
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_65000.nc    
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_77500.nc
+    tavg: [17800, 18500]
+    plot:
+      plotfunc: 'lambda u, v, w: np.sqrt(u**2 + v**2)'
+      title: 'AVG horizontal velocity'
+      xaxis: x           # Which axis to use on the abscissa 
+      yaxis: y           # Which axis to use on the ordinate 
+      iplane: 1    
+"""
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
         self.yamldictlist = []
@@ -64,13 +77,11 @@ class postpro_averageplanes():
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
         # Loop through and create plots
-        for plane in self.yamldictlist:
+        for iplane, plane in enumerate(self.yamldictlist):
             tavg     = plane['tavg']
             ncfile   = plane['ncfile']
             group    = plane['group']
-            xaxis    = plane['xaxis']
-            yaxis    = plane['yaxis']
-            yaxis    = plane['yaxis']
+            loadpkl  = plane['loadpklfile']            
             pklfile  = plane['savepklfile']
             varnames = plane['varnames']
             #Get all times if not specified 
@@ -89,7 +100,16 @@ class postpro_averageplanes():
                 print("No time interval specified. Averaging over entire file: ",tavg)
 
             # Load the plane
-            self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group, savepklfile=pklfile, verbose=verbose)
+            if len(loadpkl)>0:
+                # Load from existing file
+                pfile          = open(loadpkl, 'rb')
+                self.dbavg     = pickle.load(pfile)
+                pfile.close()                
+            else:
+                # Compute the result
+                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group,
+                                                    includeattr=True, savepklfile=pklfile, verbose=verbose)
+            
             # Do any sub-actions required for this task
             for a in self.actionlist:
                 action = self.actionlist[a]
@@ -97,8 +117,8 @@ class postpro_averageplanes():
                 if action.required and (action.actionname not in self.yamldictlist[0].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[0].keys():
-                    actionitem = action(self, self.yamldictlist[0][action.actionname])
+                if action.actionname in self.yamldictlist[iplane].keys():
+                    actionitem = action(self, self.yamldictlist[iplane][action.actionname])
                     actionitem.execute()
         return 
 
