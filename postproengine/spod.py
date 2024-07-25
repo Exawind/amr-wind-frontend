@@ -273,6 +273,8 @@ class postpro_spod():
         'help':'Boolean to compute eigenvectors or just eigenvalues', },
         {'key':'sort', 'required':False,  'default':True,
         'help':'Boolean to included sorted wavenumber and frequency indices by eigenvalue', },
+        {'key':'save_num_modes', 'required':False,  'default':None,
+        'help':'Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR).', },
         
     ]
     example = """
@@ -346,6 +348,7 @@ spod:
             compute_eigen_vectors = plane ['compute_eigen_vectors']
             sort                  =  plane ['sort']
             wake_meandering_stats_file = plane['wake_meandering_stats_file']
+            save_num_modes        = plane['save_num_modes']
 
             if not loadpklfile:
                 #Get all times if not specified 
@@ -480,13 +483,14 @@ spod:
 
                     if sort:
                         sorted_eigind = np.argsort(np.abs(self.POD_eigenvalues[corr]),axis=None)[::-1]
-                        self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues['U'][:,:,:].shape)
+                        self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues[corr][:,:,:].shape)
 
 
                 if len(savefile)>0:
                     self.variables = {}
                     self.variables['angfreq'] = angfreq
                     self.variables['ktheta']   = ktheta
+                    self.variables['blocks']   = np.arange(0,NB)
                     self.variables['r']        = r
                     self.variables['theta']    = theta
                     self.variables['y']        = y
@@ -498,10 +502,22 @@ spod:
                     objects = [] 
                     objects.append(self.POD_eigenvalues)
                     objects.append(self.variables)
-                    if compute_eigen_vectors:
-                        objects.append(self.POD_modes)
                     if sort:
                         objects.append(self.sorted_inds)
+
+
+                    if compute_eigen_vectors:
+                        if save_num_modes == None:
+                            objects.append(self.POD_modes)
+                        else:
+                            save_modes = {}
+                            for corr in correlations:
+                                save_modes[corr] = np.zeros((save_num_modes,NR))
+                                for mode in range(numModes_to_store):
+                                    save_modes[corr][mode,:] = POD_modes[corr][:,POD_sorted_inds[corr]['ktheta'][mode],POD_sorted_inds[corr]['angfreq'][mode],POD_sorted_inds[awc][dist]['block'][mode]]
+                            objects.append(save_modes)
+
+
                     with open(savefile, 'wb') as f:
                         for obj in objects:
                             pickle.dump(obj, f)
@@ -511,10 +527,10 @@ spod:
                 with open(loadpklfile, 'rb') as f:
                     self.POD_eigenvalues = pickle.load(f)
                     self.variables = pickle.load(f)
-                    if compute_eigen_vectors:
-                        self.POD_modes = pickle.load(f)
                     if sort:
                         self.sorted_inds = pickle.load(f)
+                    if compute_eigen_vectors:
+                        self.POD_modes = pickle.load(f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
