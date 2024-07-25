@@ -79,7 +79,7 @@ plotcsv:
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
         # Loop through and create plots
-        for plotitem in self.yamldictlist:
+        for plotitemiter , plotitem in enumerate(self.yamldictlist):
             csvfiles = plotitem['csvfiles']
             savefile = plotitem['savefile']
             dpi      = plotitem['dpi']
@@ -126,10 +126,10 @@ plotcsv:
             for a in self.actionlist:
                 action = self.actionlist[a]
                 # Check to make sure required actions are there
-                if action.required and (action.actionname not in self.yamldictlist[0].keys()):
+                if action.required and (action.actionname not in self.yamldictlist[plotitemiter].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[0].keys():
-                    actionitem = action(self, self.yamldictlist[0][action.actionname])
+                if action.actionname in self.yamldictlist[plotitemiter].keys():
+                    actionitem = action(self, self.yamldictlist[plotitemiter][action.actionname])
                     actionitem.execute()
         return
