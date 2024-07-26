@@ -524,13 +524,14 @@ spod:
                             save_modes      = {}
                             save_proj_coeff = {}
                             for corr in correlations:
-                                save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))))
-                                save_proj_coeff[corr] = np.zeros(save_num_modes)
+                                save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))),dtype=complex)
+                                save_proj_coeff[corr] = np.zeros(save_num_modes,dtype=complex)
                                 for mode in range(save_num_modes):
                                     save_modes[corr][mode,:] = self.POD_modes[corr][:,self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode],:]
 
                                     save_proj_coeff[corr][mode] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode]]
                             objects.append(save_modes)
+                            objects.append(save_proj_coeff)
 
 
                     with open(savefile, 'wb') as f:
