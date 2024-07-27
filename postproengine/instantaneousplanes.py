@@ -8,7 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction
-from postproengine import compute_axis1axis2_coords
+from postproengine import compute_axis1axis2_coords, interpolatetemplate
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
@@ -109,9 +109,12 @@ class postpro_instantaneousplanes():
                 timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
                 find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
                 iters = [find_nearest(timevec, t) for t in times]
-            
+
+            self.iters = iters
+
             # Load the plane
             db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True, includeattr=True)
+            self.db = db
 
             # Convert to native axis1/axis2 coordinates if necessary
             if ('a1' in [xaxis, yaxis]) or \
@@ -152,6 +155,15 @@ class postpro_instantaneousplanes():
         return
 
     # --- Inner classes for action list ---
+    @registeraction(actionlist)
+    class interpolate(interpolatetemplate):
+        actionname = 'interpolate'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.interpdb = self.parent.db
+            self.iters    = self.parent.iters
+            return
+
     # This is not needed at the moment, keeping here just in case
     #@registeraction(actionlist)
     class action1():
