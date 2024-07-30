@@ -315,62 +315,6 @@ def compute_axis1axis2_coords(db):
     db['a1'] = avec[:,0].reshape(db['x'].shape)
     db['a2'] = avec[:,1].reshape(db['y'].shape)
     return
-        
-def compute_axis1axis2_coordsOLD(db):
-    """
-    Computes the native axis1 and axis2 coordinate system for a given
-    set of sample planes.
-
-    Note: this assumes db has the origin, axis1/2, and offset definitions
-    """
-
-    # Check to make sure db has everything needed
-    if ('origin' not in db) or \
-       ('axis1' not in db) or \
-       ('axis2' not in db) or \
-       ('axis3' not in db) or \
-       ('offsets') not in db:
-        print('Need to ensure that the sample plane data includes origin, axis1, axis2, axis3, and offset information')
-        return
-
-    # Pull out the coordate definitions
-    axis1  = np.array(db['axis1'])
-    axis2  = np.array(db['axis2'])
-    axis3  = np.array(db['axis3'])
-    origin = np.array(db['origin'])
-    offsets= db['offsets']
-    if not isinstance(offsets,list):
-        offsets = [offsets]
-    
-    # Compute the normals
-    n1 = axis1/np.linalg.norm(axis1)
-    n2 = axis2/np.linalg.norm(axis2)
-    if np.linalg.norm(axis3) > 0.0:
-        n3 = axis3/np.linalg.norm(axis3)
-    else:
-        n3 = axis3
-        
-    db['a1'] = np.full_like(db['x'], 0.0)
-    db['a2'] = np.full_like(db['x'], 0.0)
-    db['a3'] = np.full_like(db['x'], 0.0)    
-    ijk_idx = db['x'].shape
-
-    for k in range(ijk_idx[0]):
-        # Loop through each plane
-        for j in range(ijk_idx[1]):
-            for i in range(ijk_idx[2]):
-                x = db['x'][k, j, i]
-                y = db['y'][k, j, i]
-                z = db['z'][k, j, i]
-                plane_origin = origin + axis3*offsets[k]
-                pt = np.array([x, y, z])
-                a1coord  = np.dot(pt-plane_origin, n1)
-                a2coord  = np.dot(pt-plane_origin, n2)
-                a3coord  = np.dot(pt-plane_origin, n3)
-                db['a1'][k,j,i] = a1coord
-                db['a2'][k,j,i] = a2coord
-                db['a3'][k,j,i] = a3coord                
-    return
 
 def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=None, method='linear'):
     """

@@ -23,3 +23,13 @@ Make instantaneous plots from netcdf sample planes
 ```
 
 ## Actions: 
+```
+  interpolate         : ACTION: Plot rotor averaged planes (Optional)
+    pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
+    pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
+    varnames          : List of variable names to extract. (Required)
+    savefile          : Filename to save the interpolated data (Optional, Default: '')
+    method            : Interpolation method [Choices: linear, nearest, slinear, cubic, quintic, pchip] (Optional, Default: 'linear')
+    iplane            : Which plane to interpolate on (Optional, Default: 0)
+    iters             : Which time iterations to interpolate from (Optional, Default: None)
+```

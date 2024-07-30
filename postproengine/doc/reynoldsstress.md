@@ -36,4 +36,5 @@ reynoldsstress:
     tavg: [20886.5, 21486.5]
     contourplot:
       plotfunc: 'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])'
+
 ```
