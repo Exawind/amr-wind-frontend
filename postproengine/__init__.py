@@ -205,7 +205,7 @@ def print_inputs(subset=[], plist=pluginlist):
 # =====================================================
 # --- ADD REUSABLE CLASSES AND METHODS HERE ---
 # =====================================================
-def convert_pt_axis1axis2_to_xyz(pt, origin, axis1, axis2, axis3, offsets, iplane):
+def convert_pt_axis1axis2_to_xyz(ptlist, origin, axis1, axis2, axis3, offsets, iplane):
     """
     Converts the location of pt given in natural plane (axis1-axis2) coordinates
     to global xyz coordinates
@@ -220,10 +220,12 @@ def convert_pt_axis1axis2_to_xyz(pt, origin, axis1, axis2, axis3, offsets, iplan
         n3 = axis3
     # compute the coordinates in the global XYZ frame
     porigin = origin + n3*offsetlist[iplane]
-    pt_xyz  = porigin + pt[0]*n1 + pt[1]*n2
+    pt_xyz = []
+    for pt in ptlist:
+        pt_xyz.append(porigin + pt[0]*n1 + pt[1]*n2)
     return pt_xyz
 
-def convert_pt_xyz_to_axis1axis2(pt, origin, axis1, axis2, axis3, offsets, iplane):
+def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec):
     """
     Converts the location of pt given in global xyz coordinates to 
     to natural plane (axis1-axis2) coordinates
@@ -238,11 +240,17 @@ def convert_pt_xyz_to_axis1axis2(pt, origin, axis1, axis2, axis3, offsets, iplan
         n3 = axis3/np.linalg.norm(axis3)
     else:
         n3 = axis3
-    # compute the coordinates in the global XYZ frame
-    porigin = origin + n3*offsetlist[iplane]
-    a1 = np.dot(pt-origin, n1)
-    a2 = np.dot(pt-origin, n2)
-    return a1, a2
+
+    R = np.array([n1,n2,n3])
+
+    porigin = np.full_like(ptlist, 0.0)
+    for ipt in range(len(ptlist)):
+        porigin[ipt,:] = origin + n3*offsetlist[iplanevec[ipt]]
+
+    dv = (np.array(ptlist) - np.array(porigin))
+    avec = R@dv.T
+    returnvec = avec.T
+    return returnvec[:,0:2]
 
 def project_pt_to_plane(pt, origin, axis1, axis2, axis3, offsets, iplane):
     """
@@ -270,6 +278,45 @@ def project_pt_to_plane(pt, origin, axis1, axis2, axis3, offsets, iplane):
     return p_proj
 
 def compute_axis1axis2_coords(db):
+    """
+    Computes the native axis1 and axis2 coordinate system for a given
+    set of sample planes.
+
+    Note: this assumes db has the origin, axis1/2, and offset definitions
+    """
+
+    # Check to make sure db has everything needed
+    if ('origin' not in db) or \
+       ('axis1' not in db) or \
+       ('axis2' not in db) or \
+       ('axis3' not in db) or \
+       ('offsets') not in db:
+        print('Need to ensure that the sample plane data includes origin, axis1, axis2, axis3, and offset information')
+        return
+
+    # Pull out the coordate definitions
+    axis1  = np.array(db['axis1'])
+    axis2  = np.array(db['axis2'])
+    axis3  = np.array(db['axis3'])
+    origin = np.array(db['origin'])
+    offsets= db['offsets']
+    if not isinstance(offsets,list):
+        offsets = [offsets]
+
+    # Create the iplane matrices
+    iplanemat = np.full_like(db['x'], 0, dtype=np.int64)
+    for k in range(len(offsets)):
+        iplanemat[k,:,:] = k
+
+    # create list of points
+    xyz_pt    = np.vstack([db['x'].ravel(), db['y'].ravel(), db['z'].ravel()])
+
+    avec = convert_pt_xyz_to_axis1axis2(xyz_pt.T, origin, axis1, axis2, axis3, offsets, iplanemat.ravel())
+    db['a1'] = avec[:,0].reshape(db['x'].shape)
+    db['a2'] = avec[:,1].reshape(db['y'].shape)
+    return
+        
+def compute_axis1axis2_coordsOLD(db):
     """
     Computes the native axis1 and axis2 coordinate system for a given
     set of sample planes.
@@ -356,20 +403,14 @@ def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=N
         if pt_coords=='XYZ':
             # Convert points to a1/a2 coordinate system
             pt_coords_xyz = np.array(ptlist)
-            pt_coords_a1a2 = []
-            for pt in ptlist:
-                a1, a2 = convert_pt_xyz_to_axis1axis2(pt, db['origin'], db['axis1'], db['axis2'],
-                                                      db['axis3'], db['offsets'], iplane)
-                pt_coords_a1a2.append([a1, a2])
-            pt_coords_a1a2 = np.array(pt_coords_a1a2)
+            pt_coords_a1a2 = convert_pt_xyz_to_axis1axis2(ptlist, db['origin'], db['axis1'], db['axis2'],
+                                                          db['axis3'], db['offsets'], [iplane]*len(ptlist))
         else:
             # Already in the a1/a2 coordinate system
             pt_coords_xyz  = []
             pt_coords_a1a2 = np.array(ptlist)
-            for pt in ptlist:
-                ptxyz = convert_pt_axis1axis2_to_xyz(pt, db['origin'], db['axis1'], db['axis2'],
-                                                     db['axis3'], db['offsets'], iplane)
-                pt_coords_xyz.append(ptxyz)
+            pt_coords_xyz = convert_pt_axis1axis2_to_xyz(pt_coords_a1a2, db['origin'], db['axis1'], db['axis2'],
+                                                         db['axis3'], db['offsets'], iplane)
             pt_coords_xyz = np.array(pt_coords_xyz)
         ptswap = np.array(pt_coords_a1a2)[:,[1,0]]
         
