@@ -87,7 +87,7 @@ reynoldsstress:
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
         # Loop through and create plots
-        for plane in self.yamldictlist:
+        for planeiter, plane in enumerate(self.yamldictlist):
             tavg     = plane['tavg']
             ncfile   = plane['ncfile']
             group    = plane['group']
@@ -134,11 +134,11 @@ reynoldsstress:
             for a in self.actionlist:
                 action = self.actionlist[a]
                 # Check to make sure required actions are there
-                if action.required and (action.actionname not in self.yamldictlist[0].keys()):
+                if action.required and (action.actionname not in self.yamldictlist[planeiter].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[0].keys():
-                    actionitem = action(self, self.yamldictlist[0][action.actionname])
+                if action.actionname in self.yamldictlist[planeiter].keys():
+                    actionitem = action(self, self.yamldictlist[planeiter][action.actionname])
                     actionitem.execute()
         return 
 
