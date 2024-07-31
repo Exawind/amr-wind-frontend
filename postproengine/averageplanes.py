@@ -14,6 +14,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from postproengine import interpolatetemplate
 
 """
 Plugin for post processing averaged planes
@@ -305,3 +306,13 @@ avgplanes:
                     plt.savefig(savefname)
             return
 
+    @registeraction(actionlist)
+    class interpolate(interpolatetemplate):
+        """
+        Add the default interpolation template
+        """
+        actionname = 'interpolate'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.interpdb = self.parent.db
+            return

@@ -27,4 +27,5 @@ plotcsv:
     legendopts: {'loc':'upper left'}
     csvfiles:
     - {'file':'T0.csv', 'xcol':'Time', 'ycol':'GenPwr', 'lineopts':{'color':'r', 'lw':2, 'label':'T0'}}
-    ```
+    
+```
