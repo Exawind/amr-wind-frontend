@@ -386,8 +386,8 @@ class interpolatetemplate():
     """
     An interpolation template that can be used by other executors
     """
-    actionname = 'plot'
-    blurb      = 'Plot rotor averaged planes'
+    actionname = 'interpolate'
+    blurb      = 'Interpolate data from an arbitrary set of points'
     required   = False
     actiondefs = [
         {'key':'pointlocationfunction', 'required':True,  'default':'',
