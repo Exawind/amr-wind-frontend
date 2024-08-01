@@ -14,7 +14,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from postproengine import interpolatetemplate
+from postproengine import interpolatetemplate, circavgtemplate
 
 """
 Plugin for post processing averaged planes
@@ -314,5 +314,17 @@ avgplanes:
         actionname = 'interpolate'
         def __init__(self, parent, inputs):
             super().__init__(parent, inputs)
-            self.interpdb = self.parent.db
+            self.interpdb = self.parent.dbavg
             return
+
+    @registeraction(actionlist)
+    class circavg(circavgtemplate):
+        """
+        Add the default circumferential average template
+        """
+        actioname = 'circavg'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.interpdb = self.parent.dbavg
+            return
+        
