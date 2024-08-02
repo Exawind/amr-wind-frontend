@@ -42,6 +42,18 @@ Average netcdf sample planes
     method            : Interpolation method [Choices: linear, nearest, slinear, cubic, quintic, pchip] (Optional, Default: 'linear')
     iplane            : Which plane to interpolate on (Optional, Default: 0)
     iters             : Which time iterations to interpolate from (Optional, Default: None)
+  circavg             : ACTION: Circumferential average data into radial profiles (Optional)
+    centerpoint       : Center point to use for radial averaging (Required)
+    r1                : Inner radius (Required)
+    r2                : Outer radius (Required)
+    Nr                : Number of points in radial direction (Required)
+    pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
+    varnames          : List of variable names to average. (Required)
+    savefile          : Filename to save the radial profiles (Required)
+    iplane            : Which plane(s) to interpolate on (Optional, Default: 0)
+    theta1            : Theta start (Optional, Default: 0.0)
+    theta2            : Theta end (Optional, Default: 6.283185307179586)
+    Ntheta            : Number of points in theta (Optional, Default: 180)
 ```
 
 ## Example

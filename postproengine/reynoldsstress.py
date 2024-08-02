@@ -15,6 +15,7 @@ import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from postproengine import interpolatetemplate, circavgtemplate
 
 """
 Plugin for creating Reynolds stress averages on sample planes
@@ -96,7 +97,7 @@ reynoldsstress:
             varnames = plane['varnames']
 
             # Convert ncfile to list of files if necessary
-            if type(ncfile) is not list:
+            if not isinstance(ncfile, list):
                 filelist = [ncfile]
             else:
                 filelist = ncfile
@@ -279,3 +280,24 @@ reynoldsstress:
             self.plotdb = self.parent.dbReAvg
             return
 
+    @registeraction(actionlist)
+    class interpolate(interpolatetemplate):
+        """
+        Add the default interpolation template
+        """
+        actionname = 'interpolate'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.interpdb = self.parent.dbReAvg
+            return
+
+    @registeraction(actionlist)
+    class circavg(circavgtemplate):
+        """
+        Add the default circumferential average template
+        """
+        actioname = 'circavg'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.interpdb = self.parent.dbReAvg
+            return

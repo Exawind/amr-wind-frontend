@@ -252,7 +252,7 @@ def avgPlaneXR(ncfileinput, timerange,
     Compute the average of ncfile variables
     """
     # make sure input is a list
-    if type(ncfileinput) is not list:
+    if not isinstance(ncfileinput, list):
         ncfilelist = [ncfileinput]
     else:
         ncfilelist = ncfileinput
@@ -502,10 +502,11 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     Calculate the reynolds stresses
     """
     # make sure input is a list
-    if type(ncfileinput) is not list:
+    if not isinstance(ncfileinput, list):
         ncfilelist = [ncfileinput]
     else:
         ncfilelist = ncfileinput
+    print('first ncfilelist ',ncfilelist)
     ncfile=ncfilelist[0]
     eps     = 1.0E-10
     t1      = timerange[0]-eps
@@ -523,7 +524,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     db = {}
     if avgdb is None:
         if verbose: print("Calculating averages")
-        db = avgPlaneXR(ncfileinput, timerange,
+        db = avgPlaneXR(ncfilelist, timerange,
                         extrafuncs=extrafuncs,
                         varnames=varnames,
                         groupname=groupname, verbose=verbose, includeattr=includeattr)
