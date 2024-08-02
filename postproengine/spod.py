@@ -280,6 +280,8 @@ class postpro_spod():
         'help':'Boolean to included sorted wavenumber and frequency indices by eigenvalue', },
         {'key':'save_num_modes', 'required':False,  'default':None,
         'help':'Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR).', },
+        {'key':'cylindrical_velocities', 'required':False,  'default':False,
+        'help':'Boolean to use cylindrical velocity components instead of cartesian. If True U->U_x, V->U_r, W->U_\Theta', },
         
     ]
     example = """
@@ -354,6 +356,7 @@ spod:
             sort                  =  plane ['sort']
             wake_meandering_stats_file = plane['wake_meandering_stats_file']
             save_num_modes        = plane['save_num_modes']
+            cylindrical_velocities= plane['cylindrical_velocities']
 
             if not loadpklfile:
                 #Get all times if not specified 
@@ -390,6 +393,15 @@ spod:
                             print("Error: zcenter - LR negative. Exiting")
                             sys.exit()
                         udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
+
+                if cylindrical_velocities==True:
+                    print("--> Transforming to cylindrical velocity components")
+                    for titer , t in enumerate(tsteps):
+                        v_vel = np.copy(udata_polar[:,:,titer,1])
+                        w_vel = np.copy(udata_polar[:,:,titer,2])
+
+                        udata_polar[:,:,titer,1] = v_vel * np.cos(TT) + w_vel * np.sin(TT)
+                        udata_polar[:,:,titer,2] = -v_vel * np.sin(TT) + w_vel * np.cos(TT)
 
                 Nkt = int(nperseg/2) + 1
                 time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
