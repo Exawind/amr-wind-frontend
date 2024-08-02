@@ -97,7 +97,7 @@ reynoldsstress:
             varnames = plane['varnames']
 
             # Convert ncfile to list of files if necessary
-            if type(ncfile) is not list:
+            if not isinstance(ncfile, list):
                 filelist = [ncfile]
             else:
                 filelist = ncfile
