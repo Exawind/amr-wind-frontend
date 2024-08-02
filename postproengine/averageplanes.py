@@ -22,6 +22,12 @@ Plugin for post processing averaged planes
 See README.md for details on the structure of classes here
 """
 
+def loadpickle(picklefile):
+    pfile          = open(picklefile, 'rb')
+    ds             = pickle.load(pfile)
+    pfile.close()
+    return ds
+
 @registerplugin
 class postpro_averageplanes():
     """
