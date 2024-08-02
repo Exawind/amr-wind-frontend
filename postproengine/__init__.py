@@ -210,7 +210,7 @@ def convert_pt_axis1axis2_to_xyz(ptlist, origin, axis1, axis2, axis3, offsets, i
     Converts the location of pt given in natural plane (axis1-axis2) coordinates
     to global xyz coordinates
     """
-    offsetlist = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
+    offsetlist = [offsets] if not isinstance(offsets, list) else offsets
     # Compute the normals
     n1 = axis1/np.linalg.norm(axis1)
     n2 = axis2/np.linalg.norm(axis2)
@@ -232,7 +232,7 @@ def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, i
 
     Note: assumes that pt lies on the plane given by iplane
     """
-    offsetlist = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets    
+    offsetlist = [offsets] if not isinstance(offsets, list) else offsets    
     # Compute the normals
     n1 = axis1/np.linalg.norm(axis1)
     n2 = axis2/np.linalg.norm(axis2)
@@ -300,7 +300,7 @@ def compute_axis1axis2_coords(db):
     axis3  = np.array(db['axis3'])
     origin = np.array(db['origin'])
     offsets= db['offsets']
-    if (not isinstance(offsets,list)) and (not isinstance(offsets,np.ndarray)):
+    if not isinstance(offsets,list):
         offsets = [offsets]
 
     # Create the iplane matrices
@@ -376,122 +376,62 @@ def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=N
                     dbvar = db[var][iplane,:,:]
                 else:
                     dbvar = db[var][tindex][iplane,:,:]
+                # Interpolate cartesian velocities to arbitrary point
                 interpfunc = RegularGridInterpolator(interpcoords, dbvar, method=method)
                 #Add to the interpdat
                 interpdat[var] = np.append(interpdat[var], interpfunc(ptswap))
     return interpdat
 
-# ------- reusable circumferential avg class ----------
-class circavgtemplate():
+def convert_vel_xyz_to_axis1axis2(db, axis1, axis2, axis):
     """
-    Circumferential average data (create radial profiles)
+    Converts the cartesian velocities in global xyz coordinates to 
+    to natural plane (axis1-axis2) velocity components 
+
     """
-    actionname = 'circavg'
-    blurb      = 'Circumferential average data into radial profiles'
-    required   = False
-    actiondefs = [
-        {'key':'centerpoint', 'required':True,  'default':[0,0],
-         'help':'Center point to use for radial averaging',},
-        {'key':'r1', 'required':True,  'default':0.0,
-         'help':'Inner radius',},
-        {'key':'r2', 'required':True,  'default':0.0,
-         'help':'Outer radius',},
-        {'key':'Nr', 'required':True,  'default':100,
-         'help':'Number of points in radial direction',},
-        {'key':'pointcoordsystem', 'required':True,  'default':'',
-         'help':'Coordinate system for point interpolation.  Options: XYZ, A1A2',},
-        {'key':'varnames', 'required':True,  'default':['velocityx','velocityy','velocityz'],
-         'help':'List of variable names to average.',},
-        {'key':'savefile',  'required':True,  'default':'',
-         'help':'Filename to save the radial profiles', },
-        {'key':'iplane',   'required':False,  'default':0,
-         'help':'Which plane(s) to interpolate on', },
-        {'key':'theta1', 'required':False,  'default':0.0,
-         'help':'Theta start',},
-        {'key':'theta2', 'required':False,  'default':2*np.pi,
-         'help':'Theta end',},
-        {'key':'Ntheta', 'required':False,  'default':180,
-         'help':'Number of points in theta',},
-    ]
 
-    interpdb = None
-    def __init__(self, parent, inputs):
-        self.actiondict = mergedicts(inputs, self.actiondefs)
-        self.parent = parent
-        # Don't forget to initialize interpdb in inherited classes!
-        print('Initialized '+self.actionname+' inside '+parent.name)
-        return
+    # Compute the normals
 
-    def execute(self):
-        print('Executing '+self.actionname)
-        # Get inputs
-        centerpoint_in  = self.actiondict['centerpoint']
-        r1              = self.actiondict['r1']
-        r2              = self.actiondict['r2']
-        Nr              = self.actiondict['Nr']
-        varnames        = self.actiondict['varnames']
-        Ntheta          = self.actiondict['Ntheta']
-        iplanes         = self.actiondict['iplane']
-        pointcoordsystem = self.actiondict['pointcoordsystem']
-        savefile        = self.actiondict['savefile']
-        theta1          = self.actiondict['theta1']
-        theta2          = self.actiondict['theta2']
+    #Is this always a linear/orthogonal transformation? Do we need to worry about forming Jacobians, or will this always work?
+    n1 = axis1/np.linalg.norm(axis1)
+    n2 = axis2/np.linalg.norm(axis2)
+    if np.linalg.norm(axis3) > 0.0:
+        n3 = axis3/np.linalg.norm(axis3)
+    else:
+        n3 = axis3
 
-        # Make sure db has the natural plane coordinates
-        if ('a1' not in self.interpdb) or \
-           ('a2' not in self.interpdb) or \
-           ('a3' not in self.interpdb):
-            compute_axis1axis2_coords(self.interpdb)
+    #TODO: Double check we want column stack here. 
+    R = np.column_stack([n1,n2,n3])
 
-        thetavec = np.linspace(theta1, theta2, Ntheta, endpoint=False)
-        rvec     = np.linspace(r1, r2, Nr)
+    #Creating new dictionaries for velocitya1,velocitya2,velocitya3 for consistency. 
+    #We should have an option to load (all) data as numpy arrays, but I will come back to this. 
+    db['velocitya1'] = {}
+    db['velocitya2'] = {}
+    db['velocitya3'] = {}
+    for timestep in db['timesteps']:
+        #given the ijk_dims information for axis1, axis2, and axis3
+        #the data is read in axis3, axis2, axis1 so that the direction
+        #of offset planes is in the first axis
 
-        # Loop through each plane
-        if not isinstance(iplanes, list): iplanes = [iplanes,]
+        #u,v,w are cartesian velocities as a function of axis3, axis2, axis1.
+        u = np.array(db['velocityx'][timestep])
+        v = np.array(db['velocityy'][timestep])
+        w = np.array(db['velocityz'][timestep])
+        lena3 = u.shape[0]
+        lena2 = u.shape[1]
+        lena1 = u.shape[2]
 
-        for iplane in iplanes:
-            iplane = int(iplane)
-            print('iplane = ',iplane)
-            # Create the holding vectors
-            Rprofiledat = {'r':[]}
+        cartesian_velocity = np.stack((u, v, w), axis=-1)  # Shape: (len(a3), len(a2), len(a1), 3)
 
-            for v in varnames:
-                Rprofiledat[v] = []
+        cartesian_velocity_reshaped = cartesian_velocity.reshape(-1, 3)  # Shape: (len(a3)*len(a2)*len(a1), 3)
 
-            # Transform the centerpoint if necessary
-            ptlist = [centerpoint_in]
-            if pointcoordsystem == 'XYZ':
-                ptlist_a1a2 = convert_pt_xyz_to_axis1axis2(ptlist, self.interpdb['origin'],
-                                                           self.interpdb['axis1'], self.interpdb['axis2'],
-                                                           self.interpdb['axis3'], self.interpdb['offsets'], [iplane]*len(ptlist))
-                center_a1a2 = ptlist_a1a2[0]
-            else:
-                ptlist_xyz = convert_pt_axis1axis2_to_xyz(ptlist, self.interpdb['origin'],
-                                                          self.interpdb['axis1'], self.interpdb['axis2'],
-                                                          self.interpdb['axis3'], self.interpdb['offsets'], [iplane]*len(ptlist))
-                center_a1a2 = centerpoint_in
+        velocity_a1a2a3_reshaped = (R @ velocity_cartesian_reshaped.T)  # Shape: (3,len(a3)*len(a2)*len(a3))
 
-            planeoffset = self.interpdb['offsets'][iplane]
+        velocity_a1a2a3 = (velocity_a1a2a3_reshaped.T).reshape(lena3,lena2,lena1, 3)  # Shape: (len(a3), len(a2), len(a1), 3)
 
-            # Create the circle of averaging points
-            for R in rvec:
-                thetapoints = []
-                for theta in thetavec:
-                    x, y = center_a1a2[0] + R*np.cos(theta), center_a1a2[1] + R*np.sin(theta)
-                    thetapoints.append([x,y])
-                thetapoints = np.array(thetapoints)
-                interpdat = interp_db_pts(self.interpdb, thetapoints, [iplane], varnames, pt_coords='A1A2', timeindex=None, method='linear')
-                Rprofiledat['r'].append(R)
-                for v in varnames:
-                    Rprofiledat[v].append(np.mean(interpdat[v]))
-
-            # Save data to csv file
-            dfcsv = pd.DataFrame()
-            for k, g in Rprofiledat.items():
-                dfcsv[k] = g
-            dfcsv.to_csv(savefile.format(iplane=iplane),index=False,sep=',')
-
-        return
+        db['velocitya1'][timestep] = velocity_a1a2a3[:,:,:,0]
+        db['velocitya2'][timestep] = velocity_a1a2a3[:,:,:,1]
+        db['velocitya3'][timestep] = velocity_a1a2a3[:,:,:,2]
+    return 
 
 # ------- reusable interpolation class ----------------
 class interpolatetemplate():
@@ -713,7 +653,7 @@ path    = os.path.abspath(__file__)
 dirpath = os.path.dirname(path)
 
 # Load all plugins in this directory
-for fname in sorted(os.listdir(dirpath)):
+for fname in os.listdir(dirpath):
     # Load only "real modules"
     if not fname.startswith('.') and \
        not fname.startswith('__') and fname.endswith('.py'):
