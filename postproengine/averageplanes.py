@@ -8,6 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import compute_axis1axis2_coords
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
@@ -90,7 +91,7 @@ avgplanes:
             group    = plane['group']
             loadpkl  = plane['loadpklfile']            
             pklfile  = plane['savepklfile']
-            varnames = plane['varnames']
+            self.varnames = plane['varnames']
             #Get all times if not specified 
             filelist = []
             for fileiter in range(0,len(ncfile)):
@@ -114,8 +115,8 @@ avgplanes:
                 pfile.close()                
             else:
                 # Compute the result
-                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=varnames, groupname=group,
-                                                    includeattr=True, savepklfile=pklfile, verbose=verbose)
+                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=self.varnames, groupname=group,includeattr=True, savepklfile=pklfile, verbose=verbose)
+
             
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -292,9 +293,19 @@ avgplanes:
             title    = self.actiondict['title']
             plotfunc = eval(self.actiondict['plotfunc'])
             if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+            # Convert to native axis1/axis2 coordinates if necessary
+            if ('a1' in [xaxis, yaxis]) or \
+               ('a2' in [xaxis, yaxis]) or \
+               ('a3' in [xaxis, yaxis]):
+                compute_axis1axis2_coords(self.parent.dbavg)
+
             for iplane in iplanes:
                 fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-                plotq = plotfunc(self.parent.dbavg['velocityx_avg'], self.parent.dbavg['velocityy_avg'], self.parent.dbavg['velocityz_avg'])
+                comp1 = self.parent.varnames[0] + '_avg'
+                comp2 = self.parent.varnames[1] + '_avg'
+                comp3 = self.parent.varnames[2] + '_avg'
+                plotq = plotfunc(self.parent.dbavg[comp1], self.parent.dbavg[comp2], self.parent.dbavg[comp3])
                 c=plt.contourf(self.parent.dbavg[xaxis][iplane,:,:], 
                             self.parent.dbavg[yaxis][iplane,:,:], plotq[iplane, :, :], 
                             levels=clevels,cmap='coolwarm', extend='both')

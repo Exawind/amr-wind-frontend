@@ -381,7 +381,43 @@ def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=N
                 interpdat[var] = np.append(interpdat[var], interpfunc(ptswap))
     return interpdat
 
-def convert_vel_xyz_to_axis1axis2(db, axis1, axis2, axis):
+def get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3):
+    """
+    Computes the linear operator from cartesian x,y,z to axis1,axis2,axis3
+
+    """
+
+    n1 = axis1/np.linalg.norm(axis1)
+    n2 = axis2/np.linalg.norm(axis2)
+    if np.linalg.norm(axis3) > 0.0:
+        n3 = axis3/np.linalg.norm(axis3)
+    else:
+        n3 = axis3
+
+    R = np.array([n1,n2,n3])
+    return R
+
+def apply_coordinate_transform(R,u,v,w):
+    """
+    Applies the coordinate transform to velocity components u,v,w
+
+    """
+    lena3 = u.shape[0]
+    lena2 = u.shape[1]
+    lena1 = u.shape[2]
+
+    cartesian_velocity = np.stack((u, v, w), axis=-1)  # Shape: (len(a3), len(a2), len(a1), 3)
+
+    cartesian_velocity_reshaped = cartesian_velocity.reshape(-1, 3)  # Shape: (len(a3)*len(a2)*len(a1), 3)
+
+    velocity_a1a2a3_reshaped = R @ cartesian_velocity_reshaped.T  # Shape: (3,len(a3)*len(a2)*len(a3))
+
+    velocity_a1a2a3 = (velocity_a1a2a3_reshaped.T).reshape(lena3,lena2,lena1, 3)  # Shape: (len(a3), len(a2), len(a1), 3)
+
+    return velocity_a1a2a3[:,:,:,0],velocity_a1a2a3[:,:,:,1],velocity_a1a2a3[:,:,:,2]
+
+
+def convert_vel_xyz_to_axis1axis2(db):
     """
     Converts the cartesian velocities in global xyz coordinates to 
     to natural plane (axis1-axis2) velocity components 
@@ -391,15 +427,10 @@ def convert_vel_xyz_to_axis1axis2(db, axis1, axis2, axis):
     # Compute the normals
 
     #Is this always a linear/orthogonal transformation? Do we need to worry about forming Jacobians, or will this always work?
-    n1 = axis1/np.linalg.norm(axis1)
-    n2 = axis2/np.linalg.norm(axis2)
-    if np.linalg.norm(axis3) > 0.0:
-        n3 = axis3/np.linalg.norm(axis3)
-    else:
-        n3 = axis3
-
-    #TODO: Double check we want column stack here. 
-    R = np.column_stack([n1,n2,n3])
+    axis1 = db['axis1']
+    axis2 = db['axis2']
+    axis3 = db['axis3']
+    R = get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3)
 
     #Creating new dictionaries for velocitya1,velocitya2,velocitya3 for consistency. 
     #We should have an option to load (all) data as numpy arrays, but I will come back to this. 
@@ -415,21 +446,12 @@ def convert_vel_xyz_to_axis1axis2(db, axis1, axis2, axis):
         u = np.array(db['velocityx'][timestep])
         v = np.array(db['velocityy'][timestep])
         w = np.array(db['velocityz'][timestep])
-        lena3 = u.shape[0]
-        lena2 = u.shape[1]
-        lena1 = u.shape[2]
 
-        cartesian_velocity = np.stack((u, v, w), axis=-1)  # Shape: (len(a3), len(a2), len(a1), 3)
+        ua1,ua2,ua3 = apply_coordinate_transform(R,u,v,w)
 
-        cartesian_velocity_reshaped = cartesian_velocity.reshape(-1, 3)  # Shape: (len(a3)*len(a2)*len(a1), 3)
-
-        velocity_a1a2a3_reshaped = (R @ velocity_cartesian_reshaped.T)  # Shape: (3,len(a3)*len(a2)*len(a3))
-
-        velocity_a1a2a3 = (velocity_a1a2a3_reshaped.T).reshape(lena3,lena2,lena1, 3)  # Shape: (len(a3), len(a2), len(a1), 3)
-
-        db['velocitya1'][timestep] = velocity_a1a2a3[:,:,:,0]
-        db['velocitya2'][timestep] = velocity_a1a2a3[:,:,:,1]
-        db['velocitya3'][timestep] = velocity_a1a2a3[:,:,:,2]
+        db['velocitya1'][timestep] = ua1
+        db['velocitya2'][timestep] = ua2
+        db['velocitya3'][timestep] = ua3
     return 
 
 # ------- reusable circumferential avg class ----------
