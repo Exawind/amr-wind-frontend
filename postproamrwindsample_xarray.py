@@ -250,7 +250,7 @@ def avgPlaneXR(ncfileinput, timerange,
                varnames=['velocityx','velocityy','velocityz'],
                savepklfile='',
                groupname=None, verbose=False, includeattr=False, 
-               replacenan=False):
+               replacenan=False,axis_rotation=0):
     """
     Compute the average of ncfile variables
     """
@@ -333,7 +333,7 @@ def avgPlaneXR(ncfileinput, timerange,
                 name = f['name']+suf
                 db[name] /= float(Ncount)
 
-    R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'])
+    R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
     if not np.array_equal(R,np.eye(R.shape[0])):
         db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
     else:
@@ -514,7 +514,7 @@ def ReynoldsStress_PlaneXR_OLD(ncfile, timerange,
 def ReynoldsStress_PlaneXR(ncfileinput, timerange,
                            extrafuncs=[], avgdb = None,
                            varnames=['velocityx','velocityy','velocityz'],
-                           savepklfile='', groupname=None, verbose=False, includeattr=False):
+                           savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
     """
     Calculate the reynolds stresses
     """
@@ -550,7 +550,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         db = avgPlaneXR(ncfilelist, timerange,
                         extrafuncs=extrafuncs,
                         varnames=varnames,
-                        groupname=groupname, verbose=verbose, includeattr=includeattr)
+                        groupname=groupname, verbose=verbose, includeattr=includeattr,axis_rotation=axis_rotation)
     else:
         db.update(avgdb)
 
@@ -574,7 +574,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
                     db[suff] =  np.full_like(zeroarray, 0.0)
 
             if any('velocitya' in v for v in varnames):
-                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'])
+                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             # Loop through and accumulate
             if verbose: print("Calculating reynolds-stress")
             for itime, t in enumerate(timevec):

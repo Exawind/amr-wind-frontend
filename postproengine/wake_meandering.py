@@ -21,7 +21,8 @@ import sys
 
 # Add check for samwich package
 name = 'samwich'
-if (spec := importlib.util.find_spec(name)) is not None:
+spec = importlib.util.find_spec(name)
+if spec is not None:
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
@@ -29,7 +30,6 @@ if (spec := importlib.util.find_spec(name)) is not None:
     from samwich.waketrackers import track
     usesamwich=True
 else:
-    print(f"can't find the {name!r} module")
     usesamwich=False
 
 """

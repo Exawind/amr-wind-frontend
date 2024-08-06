@@ -50,6 +50,8 @@ class postpro_reynoldsstress():
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},                
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate axis for velocitya1,a2,a3 transformation',},                
     ]
     example = """
 reynoldsstress:
@@ -97,6 +99,7 @@ reynoldsstress:
             self.pklfile  = plane['savepklfile']
             meanpkl  = plane['meanpklfile']
             self.varnames = plane['varnames']
+            self.axis_rotation = plane['axis_rotation']
 
             # Get the averaging window
             if tavg==[]:
@@ -125,7 +128,7 @@ reynoldsstress:
                                                               varnames=self.varnames,
                                                               savepklfile=self.pklfile,
                                                               groupname=group,
-                                                              verbose=verbose, includeattr=True)
+                                                              verbose=verbose, includeattr=True,axis_rotation=self.axis_rotation)
             
             # Do any sub-actions required for this task
             for a in self.actionlist:

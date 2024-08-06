@@ -7,7 +7,7 @@ amrwindfedirs = ['../',
                  basepath]
 for x in amrwindfedirs: sys.path.insert(1, x)
 
-from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import registerplugin, mergedicts, registeraction, contourplottemplate
 from postproengine import compute_axis1axis2_coords
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
@@ -54,6 +54,8 @@ class postpro_averageplanes():
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},        
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate axis for velocitya1,a2,a3 transformation',},                
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -92,6 +94,7 @@ avgplanes:
             loadpkl  = plane['loadpklfile']            
             pklfile  = plane['savepklfile']
             self.varnames = plane['varnames']
+            self.axis_rotation = plane['axis_rotation']
             #Get all times if not specified 
             filelist = []
             for fileiter in range(0,len(ncfile)):
@@ -115,7 +118,7 @@ avgplanes:
                 pfile.close()                
             else:
                 # Compute the result
-                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=self.varnames, groupname=group,includeattr=True, savepklfile=pklfile, verbose=verbose)
+                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=self.varnames, groupname=group,includeattr=True, savepklfile=pklfile, verbose=verbose,axis_rotation=self.axis_rotation)
 
             
             # Do any sub-actions required for this task
@@ -250,77 +253,11 @@ avgplanes:
             return
 
     @registeraction(actionlist)
-    class plot():
-        actionname = 'plot'
-        blurb      = 'Plot rotor averaged planes'
-        required   = False
-        actiondefs = [
-        {'key':'dpi',       'required':False,  'default':125,
-         'help':'Figure resolution', },
-        {'key':'figsize',   'required':False,  'default':[12,8],
-         'help':'Figure size (inches)', },
-        {'key':'savefile',  'required':False,  'default':'',
-         'help':'Filename to save the picture', },
-        {'key':'clevels',   'required':False,  'default':'np.linspace(0, 12, 121)',
-         'help':'Color levels (eval expression)',},
-        {'key':'xlabel',    'required':False,  'default':'X [m]',
-         'help':'Label on the X-axis', },
-        {'key':'ylabel',    'required':False,  'default':'Y [m]',
-         'help':'Label on the Y-axis', },
-        {'key':'title',     'required':False,  'default':'',
-         'help':'Title of the plot',},
-        {'key':'plotfunc',  'required':False,  'default':'lambda u, v, w: u',
-         'help':'Function to plot (lambda expression)',},
-        ]
-        
+    class contourplot(contourplottemplate):
+        actionname = 'contourplot'
         def __init__(self, parent, inputs):
-            self.actiondict = mergedicts(inputs, self.actiondefs)
-            self.parent = parent
-            print('Initialized '+self.actionname+' inside '+parent.name)
-            return
-
-        def execute(self):
-            print('Executing '+self.actionname)
-            figsize  = self.actiondict['figsize']
-            xaxis    = self.actiondict['xaxis']
-            yaxis    = self.actiondict['yaxis']
-            dpi      = self.actiondict['dpi']
-            iplanes  = self.actiondict['iplane']
-            savefile = self.actiondict['savefile']
-            xlabel   = self.actiondict['xlabel']
-            ylabel   = self.actiondict['ylabel']
-            clevels  = eval(self.actiondict['clevels'])
-            title    = self.actiondict['title']
-            plotfunc = eval(self.actiondict['plotfunc'])
-            if not isinstance(iplanes, list): iplanes = [iplanes,]
-
-            # Convert to native axis1/axis2 coordinates if necessary
-            if ('a1' in [xaxis, yaxis]) or \
-               ('a2' in [xaxis, yaxis]) or \
-               ('a3' in [xaxis, yaxis]):
-                compute_axis1axis2_coords(self.parent.dbavg)
-
-            for iplane in iplanes:
-                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-                comp1 = self.parent.varnames[0] + '_avg'
-                comp2 = self.parent.varnames[1] + '_avg'
-                comp3 = self.parent.varnames[2] + '_avg'
-                plotq = plotfunc(self.parent.dbavg[comp1], self.parent.dbavg[comp2], self.parent.dbavg[comp3])
-                c=plt.contourf(self.parent.dbavg[xaxis][iplane,:,:], 
-                            self.parent.dbavg[yaxis][iplane,:,:], plotq[iplane, :, :], 
-                            levels=clevels,cmap='coolwarm', extend='both')
-                divider = make_axes_locatable(ax)
-                cax = divider.append_axes("right", size="3%", pad=0.05)
-                cbar=fig.colorbar(c, ax=ax, cax=cax)
-                cbar.ax.tick_params(labelsize=7)
-                ax.set_xlabel(xlabel)
-                ax.set_ylabel(ylabel)
-                ax.axis('scaled')
-                ax.set_title(eval("f'{}'".format(title)))
-
-                if len(savefile)>0:
-                    savefname = savefile.format(iplane=iplane)
-                    plt.savefig(savefname)
+            super().__init__(parent, inputs)
+            self.plotdb = self.parent.dbavg
             return
 
     @registeraction(actionlist)
