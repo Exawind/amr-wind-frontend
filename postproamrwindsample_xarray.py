@@ -13,16 +13,16 @@ nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
 def getFileList(ncfileinput):
     ncfilelist = []
-    if type(ncfileinput) is str:
-        ncfilelist=list(glob.glob(ncfileinput))
-    elif type(ncfileinput) is not list:
+    if isinstance(ncfileinput, str):
+        ncfilelist=list(sorted(glob.glob(ncfileinput)))
+    elif not isinstance(ncfileinput, list):
         for ncfileiter, ncfile in enumerate(ncfileinput):
-            files = glob.glob(ncfile[ncfileiter])
+            files = sorted(glob.glob(ncfile[ncfileiter]))
             for file in files:
                 ncfilelist.append(file)
     else:
         for ncfileiter, ncfile in enumerate(ncfileinput):
-            files = glob.glob(ncfile)
+            files = sorted(glob.glob(ncfile))
             for file in files:
                 ncfilelist.append(file)
 
@@ -252,10 +252,7 @@ def avgPlaneXR(ncfileinput, timerange,
     Compute the average of ncfile variables
     """
     # make sure input is a list
-    if not isinstance(ncfileinput, list):
-        ncfilelist = [ncfileinput]
-    else:
-        ncfilelist = ncfileinput
+    ncfilelist = getFileList(ncfileinput)
     ncfile=ncfilelist[0]
     suf='_avg'
     # Create a fresh db dictionary

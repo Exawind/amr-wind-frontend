@@ -15,6 +15,7 @@ import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import interpolatetemplate, circavgtemplate
+from postproengine import compute_axis1axis2_coords
 
 """
 Plugin for post processing averaged planes
@@ -91,10 +92,13 @@ avgplanes:
             loadpkl  = plane['loadpklfile']            
             pklfile  = plane['savepklfile']
             varnames = plane['varnames']
-            #Get all times if not specified 
-            filelist = []
-            for fileiter in range(0,len(ncfile)):
-                filelist.append(ncfile[fileiter])
+            #Get all times if not specified
+            if isinstance(ncfile, str):
+                filelist = [ncfile]
+            else:
+                filelist = []
+                for fileiter in range(0,len(ncfile)):
+                    filelist.append(ncfile[fileiter])
 
             if tavg==[]:
                 for fileiter, file in enumerate(filelist):
@@ -292,6 +296,13 @@ avgplanes:
             title    = self.actiondict['title']
             plotfunc = eval(self.actiondict['plotfunc'])
             if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+            # Convert to native axis1/axis2 coordinates if necessary
+            if ('a1' in [xaxis, yaxis]) or \
+               ('a2' in [xaxis, yaxis]) or \
+               ('a3' in [xaxis, yaxis]):
+                compute_axis1axis2_coords(self.parent.dbavg)
+            
             for iplane in iplanes:
                 fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
                 plotq = plotfunc(self.parent.dbavg['velocityx_avg'], self.parent.dbavg['velocityy_avg'], self.parent.dbavg['velocityz_avg'])
