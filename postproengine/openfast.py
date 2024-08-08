@@ -28,28 +28,23 @@ def approximate_awc_time_interval(AWC,rotspeed,time,windspeed,diam,st,t1,t2):
     time_interval = t2-t1
     t2_history = []
     t2_temp = t2
+    AWC = AWC.lower()
     for i in range(10): # iterate 10 times to converge
         mask = (time <= t2_temp) & (time  >= t1)
         RotSpeed_Window = rotspeed[mask]
         meanRPM = np.mean(RotSpeed_Window)
         Omega = meanRPM*2*np.pi/60
 
-        if AWC == 'baseline':
+        if 'baseline' in AWC:
             return t2_temp
-
-        elif AWC == 'n0':
+        elif 'side' in AWC or 'up' in AWC or 'cl' in AWC or 'n1p1m' in AWC:
+            period = (2*omega_e / (2*np.pi))**(-1)
+        elif 'pulse' in AWC or 'n0' in AWC:
             period = (omega_e / (2*np.pi))**(-1)
-
-        elif AWC == 'n1p':
-            period = ( (Omega - omega_e) / (2*np.pi))**(-1)
-
-        elif AWC == 'n1m':
+        elif 'helix' in AWC or 'n1m' in AWC:
             period = ( (Omega + omega_e) / (2*np.pi))**(-1)
-
-        elif AWC == 'n1m1p_cl00':
-            period = (2*omega_e / (2*np.pi))**(-1)
-        elif AWC == 'n1m1p_cl90':
-            period = (2*omega_e / (2*np.pi))**(-1)
+        elif 'cc_helix' in AWC or 'n1p' in AWC:
+            period = ( (Omega - omega_e) / (2*np.pi))**(-1)
         else:
             return t2_temp
 

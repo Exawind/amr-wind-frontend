@@ -15,6 +15,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from postproengine import convert_vel_xyz_to_axis1axis2
 
 """
 Plugin for creating instantaneous planar images
@@ -46,6 +47,8 @@ class postpro_instantaneousplanes():
         {'key':'yaxis',    'required':True,  'default':'y',
         'help':'Which axis to use on the ordinate', },
         # --- optional parameters ---
+        {'key':'velocity_type','required':False,  'default':'cartesian',
+        'help':'Which velocity components to consider: cartesian (xyz aligned) or natural (a1a2a3 aligned)', },        
         {'key':'times',    'required':False,  'default':[],
          'help':'Which times to pull from netcdf file (overrides netCDF)', },        
         {'key':'group',   'required':False,  'default':None,
@@ -103,6 +106,7 @@ class postpro_instantaneousplanes():
             savefile = plane['savefile']
             dpi      = plane['dpi']
             figsize  = plane['figsize']
+            velocity_type = str(plane['velocity_type']).lower()
             
             # Get the times instead
             if len(times)>0:
@@ -114,6 +118,11 @@ class postpro_instantaneousplanes():
 
             # Load the plane
             db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True, includeattr=True)
+
+
+            if velocity_type == 'natural': 
+                convert_vel_xyz_to_axis1axis2(db)
+
             self.db = db
 
             # Convert to native axis1/axis2 coordinates if necessary
@@ -121,12 +130,16 @@ class postpro_instantaneousplanes():
                ('a2' in [xaxis, yaxis]) or \
                ('a3' in [xaxis, yaxis]):
                 compute_axis1axis2_coords(db)
+
             
             # Loop through each time instance and plot
             for iplot, i in enumerate(iters):
                 time  = db['times'][iplot]
                 fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-                plotq = plotfunc(db['velocityx'][i], db['velocityy'][i], db['velocityz'][i])
+                if velocity_type == 'natural': 
+                    plotq = plotfunc(db['velocitya1'][i], db['velocitya2'][i], db['velocitya3'][i])
+                else:
+                    plotq = plotfunc(db['velocityx'][i], db['velocityy'][i], db['velocityz'][i])
                 c=plt.contourf(db[xaxis][iplane,:,:], db[yaxis][iplane,:,:], plotq[iplane, :, :], levels=clevels, cmap='coolwarm', extend='both')
                 divider = make_axes_locatable(ax)
                 cax = divider.append_axes("right", size="3%", pad=0.05)
