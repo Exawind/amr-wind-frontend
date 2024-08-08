@@ -32,7 +32,7 @@ def getFileList(ncfileinput):
     return ncfilelist
 
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
-               verbose=0, includeattr=False, gettimes=False,timerange=None):
+               verbose=0, includeattr=False, gettimes=False,timerange=None,axis_rotation=0):
 
     ncfilelist = getFileList(ncfileinput)
 
@@ -40,6 +40,12 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
     db = {}
     for v in varnames: db[v] = {}
     db['timesteps'] = []
+
+    #Apply transformation after computing cartesian average
+    transform=False
+    if varnames == ['velocitya1','velocitya2','velocitya3']:
+        transform = True
+        varnames = ['velocityx','velocityy','velocityz']
 
     timevec = []
     times   = []
@@ -80,6 +86,10 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                 db['x'] = xm
                 db['y'] = ym
                 db['z'] = zm        
+                db['axis1'] = ds.attrs['axis1']
+                db['axis2'] = ds.attrs['axis2']
+                db['axis3'] = ds.attrs['axis3']
+                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             for itime in itimevec:
                 local_ind = np.where(np.isin(times[ncfileiter], timevec[itime]))[0]
                 if itime not in itime_processed and len(local_ind)==1:
@@ -88,9 +98,15 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                     db['timesteps'].append(itime)
                     if gettimes:
                         db['times'].append(float(timevec[itime]))
-                    for v in varnames:
-                        vvar = extractvar(ds, v, local_ind)
-                        db[v][itime] = vvar
+                    if not transform:
+                        for v in varnames:
+                            vvar = extractvar(ds, v, local_ind)
+                            db[v][itime] = vvar
+                    else:
+                        vvarx = extractvar(ds, varnames[0], local_ind)
+                        vvary = extractvar(ds, varnames[1], local_ind)
+                        vvarz = extractvar(ds, varnames[2], local_ind)
+                        db['velocitya1'][itime],db['velocitya2'][itime],db['velocitya3'][itime] = apply_coordinate_transform(R,vvarx,vvary,vvarz)
                     #vx = extractvar(ds, vxvar, itime)
                     #vy = extractvar(ds, vyvar, itime)
                     #vz = extractvar(ds, vzvar, itime)
