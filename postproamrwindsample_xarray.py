@@ -18,11 +18,11 @@ def getFileList(ncfileinput):
     ncfilelist = []
     if type(ncfileinput) is str:
         ncfilelist=list(glob.glob(ncfileinput))
-    elif type(ncfileinput) is not list:
-        for ncfileiter, ncfile in enumerate(ncfileinput):
-            files = glob.glob(ncfile[ncfileiter])
-            for file in files:
-                ncfilelist.append(file)
+    # elif type(ncfileinput) is not list:
+    #     for ncfileiter, ncfile in enumerate(ncfileinput):
+    #         files = glob.glob(ncfile[ncfileiter])
+    #         for file in files:
+    #             ncfilelist.append(file)
     else:
         for ncfileiter, ncfile in enumerate(ncfileinput):
             files = glob.glob(ncfile)
@@ -260,7 +260,9 @@ def avgPlaneXR(ncfileinput, timerange,
     suf='_avg'
 
     #Apply transformation after computing cartesian average
+    transform=False
     if varnames == ['velocitya1','velocitya2','velocitya3']:
+        transform = True
         varnames = ['velocityx','velocityy','velocityz']
 
     # Create a fresh db dictionary
@@ -333,8 +335,9 @@ def avgPlaneXR(ncfileinput, timerange,
                 name = f['name']+suf
                 db[name] /= float(Ncount)
 
-    R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
-    if not np.array_equal(R,np.eye(R.shape[0])):
+    if transform:
+        R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
+        #if not np.array_equal(R,np.eye(R.shape[0])):
         db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
     else:
         db['velocitya1_avg'] = db['velocityx_avg']

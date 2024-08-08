@@ -13,6 +13,7 @@ import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
 import pickle
+import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import interpolatetemplate, circavgtemplate
@@ -118,7 +119,7 @@ avgplanes:
                 pfile.close()                
             else:
                 # Compute the result
-                self.dbavg  = ppsamplexr.avgPlaneXR(filelist, tavg, varnames=self.varnames, groupname=group,includeattr=True, savepklfile=pklfile, verbose=verbose,axis_rotation=self.axis_rotation)
+                self.dbavg  = ppsamplexr.avgPlaneXR(ncfile, tavg, varnames=self.varnames, groupname=group,includeattr=True, savepklfile=pklfile, verbose=verbose,axis_rotation=self.axis_rotation)
 
             
             # Do any sub-actions required for this task
@@ -145,6 +146,8 @@ avgplanes:
             {'key':'zc',       'required':False,  'help':'Center of rotor disk in z',  'default':None},
             {'key':'yc',       'required':False,  'help':'Center of rotor disk in y',  'default':None},
             {'key':'savefile',  'required':False,  'default':None,'help':'csv filename to save results'},
+            {'key':'wake_meandering_stats_file','required':False,  'default':None,
+         'help':'The lateral and vertical wake center will be read from yc_mean and zc_mean columns of this file, overriding yc and zc.', },
         ]
         
         def __init__(self, parent, inputs):
@@ -157,20 +160,34 @@ avgplanes:
             print('Executing '+self.actionname)
             yc = self.actiondict['yc']
             zc = self.actiondict['zc']
+            wake_meandering_stats_file = self.actiondict['wake_meandering_stats_file']
             Radius =  self.actiondict['Diam']/2.0
             iplanes = self.actiondict['iplane']
             savefile = self.actiondict['savefile']
             rotor_avg = {}
             xloc = {}
             if not isinstance(iplanes, list): iplanes = [iplanes,]
-            for iplane in iplanes:
+
+            if not wake_meandering_stats_file == None and not isinstance(wake_meandering_stats_file, list): wake_meandering_stats_file = [wake_meandering_stats_file,]
+            if wake_meandering_stats_file != None and len(wake_meandering_stats_file) != len(iplanes):
+                print("Error: len(wake_meandering_stats_file) != len(iplanes). Exiting.")
+                sys.exit()
+
+
+            for iplaneiter, iplane in enumerate(iplanes):
                 iplane = int(iplane)
                 x = self.parent.dbavg['x'][iplane,0,0]
                 y = self.parent.dbavg['y'][iplane,:,:]
                 z = self.parent.dbavg['z'][iplane,:,:]
                 vel_avg = self.parent.dbavg['velocityx'+'_avg'][iplane,:,:]
-                if yc == None: yc = (y[-1]+y[0])/2.0
-                if zc == None: zc = (z[-1]+z[0])/2.0
+
+                if wake_meandering_stats_file != None:
+                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file[iplaneiter])
+                    yc = wake_meandering_stats['yc_mean'][0]
+                    zc = wake_meandering_stats['zc_mean'][0]
+                else:
+                    if yc == None: yc = (y[-1]+y[0])/2.0
+                    if zc == None: zc = (z[-1]+z[0])/2.0
                 Routside = ((y-yc)**2 + (z-zc)**2) > Radius**2
                 masked_vel = np.ma.array(vel_avg,mask=Routside)
                 rotor_avg[iplane] = masked_vel.mean()
