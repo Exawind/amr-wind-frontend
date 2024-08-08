@@ -10,6 +10,7 @@ Reynolds-Stress average netcdf sample planes
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
+  axis_rotation       : Degrees to rotate axis for velocitya1,a2,a3 transformation (Optional, Default: 0)
 ```
 
 ## Actions: 
@@ -19,6 +20,8 @@ Reynolds-Stress average netcdf sample planes
     yc                : Specified lateral center of wake, yc (Optional, Default: 0)
     zc                : Specified vertical center of wake, zc (Optional, Default: 0)
     wake_center_files : csv files containing time series of wake centers for each iplane. yc and zc will be compute based on mean centers over the specified time interval (Optional, Default: None)
+    yaxis             : Axis for lateral flow direction (y,a1,a2) (Optional, Default: 'y')
+    zaxis             : Axis for vertical flow direction (z,a1,a2) (Optional, Default: 'z')
   turbulent_fluxes    : ACTION: Computes the turbulent fluxes (Optional)
     iplane            : List of iplane values. Default is all planes in ncfile. (Optional, Default: None)
     include_radial    : Boolean to compute radial reynolds shear stress flux. (Optional, Default: None)
@@ -34,6 +37,7 @@ Reynolds-Stress average netcdf sample planes
     ylabel            : Label on the Y-axis (Optional, Default: 'Y [m]')
     title             : Title of the plot (Optional, Default: '')
     plotfunc          : Function to plot (lambda expression) (Optional, Default: 'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])')
+    axis_rotation     : Degrees to rotate a1,a2,a3 axis for plotting. (Optional, Default: 0)
   interpolate         : ACTION: Interpolate data from an arbitrary set of points (Optional)
     pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
     pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
