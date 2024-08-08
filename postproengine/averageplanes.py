@@ -8,7 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction, contourplottemplate
-from postproengine import compute_axis1axis2_coords
+from postproengine import compute_axis1axis2_coords, get_mapping_xyz_to_axis1axis2
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
@@ -62,19 +62,32 @@ class postpro_averageplanes():
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
 avgplanes:
-  - name: avg_smallXYplane
-    ncfile:
-    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_35000.nc
-    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_50000.nc
-    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_65000.nc    
-    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XY_77500.nc
-    tavg: [17800, 18500]
-    plot:
-      plotfunc: 'lambda u, v, w: np.sqrt(u**2 + v**2)'
-      title: 'AVG horizontal velocity'
-      xaxis: x           # Which axis to use on the abscissa 
-      yaxis: y           # Which axis to use on the ordinate 
-      iplane: 1    
+  name: Wake YZ plane
+  ncfile:
+  - /lustre/orion/cfd162/world-shared/lcheung/ALCC_Frontier_WindFarm/farmruns/LowWS_LowTI/ABL_ALM_10x10/rundir_baseline/post_processing/rotor_*.nc
+  tavg: [25400,26000]
+  group: T08_rotor
+  varnames: ['velocitya1','velocitya2','velocitya3']
+  verbose: True
+
+  contourplot:
+    iplane: 6
+    xaxis: 'a1'
+    yaxis: 'a2'
+    xlabel: 'Lateral axis [m]'
+    ylabel: 'Vertical axis [m]'
+    clevels: "121"
+    plotfunc: "lambda db: db['velocitya3_avg']"
+    savefile: 'avg_plane.png'
+
+  rotorAvgVel:
+    iplane: [0,1,2,3,4,5,6,7,8,9,10]
+    Diam: 240
+    yc: 150
+    xaxis: 'a1'
+    yaxis: 'a2'
+    avgfunc: "lambda db: db['velocitya3_avg']"
+    savefile: test.csv
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
@@ -143,9 +156,15 @@ avgplanes:
         actiondefs = [
             {'key':'iplane',   'required':True,  'help':'List of iplane values',  'default':[0,]},
             {'key':'Diam', 'required':True,  'help':'Turbine Diameter',  'default':0},
-            {'key':'zc',       'required':False,  'help':'Center of rotor disk in z',  'default':None},
-            {'key':'yc',       'required':False,  'help':'Center of rotor disk in y',  'default':None},
+            {'key':'xc',       'required':False,  'help':'Center of rotor disk on the xaxis',  'default':None},
+            {'key':'yc',       'required':False,  'help':'Center of rotor disk in the yaxis',  'default':None},
+            {'key':'xaxis',    'required':False,  'default':'y',
+            'help':'Which axis to use on the abscissa', },
+            {'key':'yaxis',    'required':False,  'default':'z',
+            'help':'Which axis to use on the ordinate', },
             {'key':'savefile',  'required':False,  'default':None,'help':'csv filename to save results'},
+            {'key':'avgfunc',  'required':False,  'default':'lambda db: db["velocityx_avg"]',
+            'help':'Function to average (lambda expression)',},
             {'key':'wake_meandering_stats_file','required':False,  'default':None,
          'help':'The lateral and vertical wake center will be read from yc_mean and zc_mean columns of this file, overriding yc and zc.', },
         ]
@@ -156,16 +175,31 @@ avgplanes:
             print('Initialized '+self.actionname+' inside '+parent.name)
             return
 
+        def extract_1d_from_meshgrid(self,Z):
+            # Check along axis 0
+            unique_rows = np.unique(Z, axis=0)
+            if unique_rows.shape[0] == 1:
+                return unique_rows[0]
+
+            # Check along axis 1
+            unique_cols = np.unique(Z, axis=1)
+            if unique_cols.shape[1] == 1:
+                return unique_cols[:, 0]
+
+
         def execute(self):
             print('Executing '+self.actionname)
+            xc = self.actiondict['xc']
             yc = self.actiondict['yc']
-            zc = self.actiondict['zc']
             wake_meandering_stats_file = self.actiondict['wake_meandering_stats_file']
             Radius =  self.actiondict['Diam']/2.0
             iplanes = self.actiondict['iplane']
             savefile = self.actiondict['savefile']
+            xaxis    = self.actiondict['xaxis']
+            yaxis    = self.actiondict['yaxis']
+            avgfunc = eval(self.actiondict['avgfunc'])
             rotor_avg = {}
-            xloc = {}
+            planeloc = {}
             if not isinstance(iplanes, list): iplanes = [iplanes,]
 
             if not wake_meandering_stats_file == None and not isinstance(wake_meandering_stats_file, list): wake_meandering_stats_file = [wake_meandering_stats_file,]
@@ -174,33 +208,56 @@ avgplanes:
                 sys.exit()
 
 
+            # Convert to native axis1/axis2 coordinates if necessary
+            natural_axes = False
+            if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
+                natural_axes = True
+                compute_axis1axis2_coords(self.parent.dbavg,rot=0)
+                R = get_mapping_xyz_to_axis1axis2(self.parent.dbavg['axis1'],self.parent.dbavg['axis2'],self.parent.dbavg['axis3'],rot=0)
+                origin = self.parent.dbavg['origin']
+                origina1a2a3 = R@self.parent.dbavg['origin']
+                offsets = self.parent.dbavg['offsets']
+
             for iplaneiter, iplane in enumerate(iplanes):
                 iplane = int(iplane)
-                x = self.parent.dbavg['x'][iplane,0,0]
-                y = self.parent.dbavg['y'][iplane,:,:]
-                z = self.parent.dbavg['z'][iplane,:,:]
-                vel_avg = self.parent.dbavg['velocityx'+'_avg'][iplane,:,:]
+                if not natural_axes:
+                    plane_loc = self.parent.dbavg['x'][iplane,0,0]
+                else:
+                    plane_loc = origina1a2a3[-1] + offsets[iplane]
+
+                x = self.parent.dbavg[xaxis][iplane,:,:]
+                y = self.parent.dbavg[yaxis][iplane,:,:]
+
+                vel_avg = avgfunc(self.parent.dbavg)[iplane,:,:]
 
                 if wake_meandering_stats_file != None:
                     wake_meandering_stats = pd.read_csv(wake_meandering_stats_file[iplaneiter])
-                    yc = wake_meandering_stats['yc_mean'][0]
-                    zc = wake_meandering_stats['zc_mean'][0]
+                    xc = wake_meandering_stats['yc_mean'][0]
+                    yc = wake_meandering_stats['zc_mean'][0]
                 else:
-                    if yc == None: yc = (y[-1]+y[0])/2.0
-                    if zc == None: zc = (z[-1]+z[0])/2.0
-                Routside = ((y-yc)**2 + (z-zc)**2) > Radius**2
+                    if self.actiondict['xc'] == None: 
+                        grid = self.extract_1d_from_meshgrid(x)
+                        xc = (grid[-1]+grid[0])/2.0
+                    if self.actiondict['yc'] == None: 
+                        grid = self.extract_1d_from_meshgrid(y)
+                        yc = (grid[-1]+grid[0])/2.0
+
+                Routside = ((x-xc)**2 + (y-yc)**2) > Radius**2
                 masked_vel = np.ma.array(vel_avg,mask=Routside)
                 rotor_avg[iplane] = masked_vel.mean()
-                xloc[iplane] = x
-                print("Rotor Average Velocity at x = ",x,": ",rotor_avg[iplane])
+                planeloc[iplane] = plane_loc
+                print("Rotor Average Velocity at x = ",plane_loc,": ",rotor_avg[iplane])
 
             # Write the data to the CSV file
             if not savefile==None:
                 # Write the data to the CSV file
                 with open(savefile, mode='w') as file:
-                    file.write("x_location, rotor_avg_vel\n")  # Write header row
+                    if not natural_axes:
+                        file.write("x_location, rotor_avg_vel\n")  # Write header row
+                    else:
+                        file.write("a3_location, rotor_avg_vel\n")  # Write header row
                     for iplane in iplanes:
-                        file.write("{:.15f}, {:.15f}\n".format(xloc[iplane], rotor_avg[iplane]))
+                        file.write("{:.15f}, {:.15f}\n".format(planeloc[iplane], rotor_avg[iplane]))
             return 
 
     @registeraction(actionlist)
