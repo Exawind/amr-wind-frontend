@@ -232,8 +232,8 @@ avgplanes:
 
                 if wake_meandering_stats_file != None:
                     wake_meandering_stats = pd.read_csv(wake_meandering_stats_file[iplaneiter])
-                    xc = wake_meandering_stats['yc_mean'][0]
-                    yc = wake_meandering_stats['zc_mean'][0]
+                    xc = wake_meandering_stats[xaxis+'c_mean'][0]
+                    yc = wake_meandering_stats[yaxis+'c_mean'][0]
                 else:
                     if self.actiondict['xc'] == None: 
                         grid = self.extract_1d_from_meshgrid(x)

@@ -9,4 +9,5 @@ The following workflows are available:
 - [openfast](openfast.md): Postprocessing of openfast variables
 - [plotcsv](plotcsv.md): Make plots of csv files
 - [reynoldsstress](reynoldsstress.md): Reynolds-Stress average netcdf sample planes
+- [spod](spod.md): Compute SPOD eigenvectors and eigenvalues
 - [wake_meander](wake_meander.md): Compute wake meandering statistics

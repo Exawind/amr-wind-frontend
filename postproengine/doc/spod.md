@@ -8,15 +8,17 @@ Compute SPOD eigenvectors and eigenvalues
   trange              : Which times to average over (Optional, Default: [])
   group               : Which group to pull from netcdf file (Optional, Default: None)
   nperseg             : Number of snapshots per segment to specify number of blocks. (Required)
-  yc                  : Lateral wake center (Required)
-  zc                  : Vertical wake center (Required)
+  xc                  : Wake center on xaxis (Optional, Default: None)
+  yc                  : Wake center on yaxis (Optional, Default: None)
+  xaxis               : Which axis to use on the abscissa (Optional, Default: 'y')
+  yaxis               : Which axis to use on the ordinate (Optional, Default: 'z')
   wake_meandering_stats_file: The lateral and vertical wake center will be read from yc_mean and zc_mean columns of this file, overriding yc and zc. (Optional, Default: None)
   LR_factor           : Factor of blade-radius to define the radial domain extent. (Optional, Default: 1.4)
   NR                  : Number of points in the radial direction. (Optional, Default: 256)
   NTheta              : Number of points in the azimuthal direction. (Optional, Default: 256)
   remove_temporal_mean: Boolean to remove temporal mean from SPOD. (Optional, Default: True)
   remove_azimuthal_mean: Boolean to remove azimuthal mean from SPOD. (Optional, Default: False)
-  iplane              : i-index of plane to postprocess (Optional, Default: 0)
+  iplane              : List of i-index of plane to postprocess (Optional, Default: [0])
   correlations        : List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W  (Optional, Default: ['U'])
   output_dir          : Directory to save results (Optional, Default: './')
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
@@ -24,6 +26,9 @@ Compute SPOD eigenvectors and eigenvalues
   compute_eigen_vectors: Boolean to compute eigenvectors or just eigenvalues (Optional, Default: True)
   sort                : Boolean to included sorted wavenumber and frequency indices by eigenvalue (Optional, Default: True)
   save_num_modes      : Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR). (Optional, Default: None)
+  cylindrical_velocities: Boolean to use cylindrical velocity components instead of cartesian. If True U->U_x, V->U_r, W->U_\Theta (Optional, Default: False)
+  varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
+  verbose             : Print extra information. (Optional, Default: True)
 ```
 
 ## Actions: 
@@ -52,36 +57,45 @@ Compute SPOD eigenvectors and eigenvalues
 ```yaml
 spod:
   name: Wake YZ plane
-  ncfile: ./YZslice_00.50D_456.00s_1556.00s_cl00.nc
-  group: xslice
-  trange: [456.00,1556.50]
+  ncfile: /lustre/orion/cfd162/world-shared/lcheung/ALCC_Frontier_WindFarm/farmruns/LowWS_LowTI/ABL_ALM_10x10/rundir_AWC0/post_processing/rotor_*.nc
+  iplane:
+    - 7
+    - 8
+  group: T00_rotor
+  trange: [25400,26000]
   nperseg: 256
-  diam: 127
-  yc: 375.0
-  zc: 90
-  wake_meandering_stats_file: ./data_converter/wake_meandering_baseline_area_1p4R/wake_meandering/wake_stats_00.50D.csv
+  diam: 240
+  #xc: 480
+  yc: 150
+  NR: 128
+  NTheta: 128
+  LR_factor: 1.2
+  xaxis: 'a1'
+  yaxis: 'a2'
+  varnames: ['velocitya1','velocitya2','velocitya3']
+  wake_meandering_stats_file:
+    - ./T00_wake_meandering/wake_stats_7.csv
+    - ./T00_wake_meandering/wake_stats_8.csv
+  cylindrical_velocities: False
   correlations:
     - U
-    - V
-    - W
-    - U-V-W
-    - V-W
-  output_dir: ./test
-  savepklfile: test.pkl
+  output_dir: ./T00_spod_results/
+  savepklfile: spod_{iplane}.pkl
+  save_num_modes: 100
+  verbose: True
   #loadpklfile: ./test/test.pkl
 
   plot_eigvals:
     num: 11
-    savefile: ./test/test_eigvals.png
+    savefile: ./eigvals_{iplane}.png
     correlations:
       - U
-    Uinf: 6.4
+    Uinf: 6.5
 
   plot_eigmodes:
-    num: 2
-    St: 0.3
-    Uinf: 6.4
-    savefile: ./test/test_eigmode.png
+    num: 1
+    Uinf: 6.5
+    savefile: ./eigmode_{iplane}.png
     correlations:
       - U
     
