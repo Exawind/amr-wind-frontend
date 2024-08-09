@@ -77,6 +77,7 @@ def read_cart_data(ncfile,varnames,group,trange,iplane,xaxis,yaxis):
         origin = db['origin']
         origina1a2a3 = R@db['origin']
         offsets = db['offsets']
+        offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
         xc = origina1a2a3[-1] + offsets[iplane]
     else:
         xc = db['x'][iplane,0,0]

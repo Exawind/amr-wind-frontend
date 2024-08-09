@@ -217,6 +217,7 @@ avgplanes:
                 origin = self.parent.dbavg['origin']
                 origina1a2a3 = R@self.parent.dbavg['origin']
                 offsets = self.parent.dbavg['offsets']
+                offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
 
             for iplaneiter, iplane in enumerate(iplanes):
                 iplane = int(iplane)

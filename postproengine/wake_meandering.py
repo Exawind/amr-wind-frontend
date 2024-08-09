@@ -209,6 +209,7 @@ class postpro_wakemeander():
                 origin = self.db['origin']
                 origina1a2a3 = R@self.db['origin']
                 offsets = self.db['offsets']
+                offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
 
             natural_velocities=False
             if ('velocitya1' in self.varnames) or ('velocitya2' in self.varnames) or ('velocitya3' in self.varnames):
