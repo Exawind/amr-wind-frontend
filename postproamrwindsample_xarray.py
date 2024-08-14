@@ -315,6 +315,8 @@ def avgPlaneXR(ncfileinput, timerange,
                 db['axis1'] = ds.attrs['axis1']
                 db['axis2'] = ds.attrs['axis2']
                 db['axis3'] = ds.attrs['axis3']
+                db['origin'] = ds.attrs['origin']
+                db['offsets'] = ds.attrs['offsets']
             # Set up the initial mean fields
             zeroarray = extractvar(ds, varnames[0], 0)
             for v in varnames:

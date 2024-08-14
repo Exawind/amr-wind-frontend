@@ -150,11 +150,11 @@ reynoldsstress:
         required   = False
         actiondefs = [
                 {'key':'iplane', 'required':False, 'default':None, 'help':'List of iplane values. Default is all planes in ncfile.'},
-                {'key':'yc', 'required':False, 'default':0, 'help':'Specified lateral center of wake, yc'},
-                {'key':'zc', 'required':False, 'default':0, 'help':'Specified vertical center of wake, zc'},
-                {'key':'wake_center_files', 'required':False, 'default':None, 'help':'csv files containing time series of wake centers for each iplane. yc and zc will be compute based on mean centers over the specified time interval'},
-                {'key':'yaxis', 'required':False, 'default':'y', 'help':'Axis for lateral flow direction (y,a1,a2)'},
-                {'key':'zaxis', 'required':False, 'default':'z', 'help':'Axis for vertical flow direction (z,a1,a2)'},
+                {'key':'xc', 'required':False, 'default':0, 'help':'Specified center of the wake on the xaxis, xc'},
+                {'key':'yc', 'required':False, 'default':0, 'help':'Specified center of the wake on the yaxis, yc'},
+                {'key':'wake_meandering_stats_file', 'required':False, 'default':None, 'help':'csv files containing time series of wake centers for each iplane. xc and yc will be compute based on mean centers over the specified time interval'},
+                {'key':'xaxis', 'required':False, 'default':'y', 'help':'Direction to use for the xaxis'},
+                {'key':'yaxis', 'required':False, 'default':'z', 'help':'Direction to use for the yaxis'},
         ]
 
         def __init__(self, parent, inputs):
@@ -164,12 +164,12 @@ reynoldsstress:
             return
 
         def execute(self):
-            yc = self.actiondict['yc']
-            zc = self.actiondict['zc']
+            yc = self.actiondict['xc']
+            zc = self.actiondict['yc']
+            xaxis = self.actiondict['xaxis']
             yaxis = self.actiondict['yaxis']
-            zaxis = self.actiondict['zaxis']
             iplanes = self.actiondict['iplane']
-            wake_center_files = self.actiondict['wake_center_files']
+            wake_center_files = self.actiondict['wake_meandering_stats_file']
 
             if iplanes == None:
                 iplanes = list(range(0,self.parent.dbReAvg['x'].shape[0]))
@@ -201,29 +201,29 @@ reynoldsstress:
 
             for iplaneiter, iplane in enumerate(iplanes):
                 if wake_center_files != None:
-                    df = pd.read_csv(wake_center_files[iplaneiter])
-                    filtered_df = df[(df['t'] >= self.parent.tavg[0]) & (df['t'] <= self.parent.tavg[-1])]
-                    y_center = filtered_df['yc'].mean()
-                    z_center = filtered_df['zc'].mean()
+                    wake_meandering_stats_file = wake_center_files[iplaneiter]
+                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                    y_center = wake_meandering_stats[xaxis + 'c_mean'][0]
+                    z_center = wake_meandering_stats[yaxis + 'c_mean'][0]
                 else:
                     y_center = yc
                     z_center = zc
 
-            # Convert to native axis1/axis2 coordinates if necessary
-            if ('a1' in [yaxis, zaxis]) or ('a2' in [yaxis, zaxis]):
-                compute_axis1axis2_coords(self.parent.dbReAvg)
-                uv_avg  = self.parent.dbReAvg[corr_mapping['velocity'+yaxis]+'ua3_avg'][iplane,:,:]
-                uw_avg  = self.parent.dbReAvg[corr_mapping['velocity'+zaxis]+'ua3_avg'][iplane,:,:]
-            else:
-                uv_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+yaxis]+'_avg'][iplane,:,:]
-                uw_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+zaxis]+'_avg'][iplane,:,:]
+                # Convert to native axis1/axis2 coordinates if necessary
+                if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]):
+                    compute_axis1axis2_coords(self.parent.dbReAvg)
+                    uv_avg  = self.parent.dbReAvg[corr_mapping['velocity'+xaxis]+'ua3_avg'][iplane,:,:]
+                    uw_avg  = self.parent.dbReAvg[corr_mapping['velocity'+yaxis]+'ua3_avg'][iplane,:,:]
+                else:
+                    uv_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+xaxis]+'_avg'][iplane,:,:]
+                    uw_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+yaxis]+'_avg'][iplane,:,:]
 
-            YY = self.parent.dbReAvg[yaxis][iplane,:,:]
-            ZZ = self.parent.dbReAvg[zaxis][iplane,:,:]
+                YY = self.parent.dbReAvg[xaxis][iplane,:,:]
+                ZZ = self.parent.dbReAvg[yaxis][iplane,:,:]
 
-            Theta = np.arctan2(ZZ-z_center,YY-y_center)
+                Theta = np.arctan2(ZZ-z_center,YY-y_center)
 
-            self.parent.dbReAvg['uxur_avg'][iplane,:,:] = uv_avg * np.sin(Theta) + uw_avg * np.cos(Theta)
+                self.parent.dbReAvg['uxur_avg'][iplane,:,:] = uv_avg * np.sin(Theta) + uw_avg * np.cos(Theta)
 
             # Overwrite picklefile
             if len(self.parent.pklfile)>0:

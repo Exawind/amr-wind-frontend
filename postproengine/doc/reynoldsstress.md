@@ -17,11 +17,11 @@ Reynolds-Stress average netcdf sample planes
 ```
   radial_stress       : ACTION: Computes the radial Reynolds shear stress from the Cartesian stresses (Optional)
     iplane            : List of iplane values. Default is all planes in ncfile. (Optional, Default: None)
-    yc                : Specified lateral center of wake, yc (Optional, Default: 0)
-    zc                : Specified vertical center of wake, zc (Optional, Default: 0)
-    wake_center_files : csv files containing time series of wake centers for each iplane. yc and zc will be compute based on mean centers over the specified time interval (Optional, Default: None)
-    yaxis             : Axis for lateral flow direction (y,a1,a2) (Optional, Default: 'y')
-    zaxis             : Axis for vertical flow direction (z,a1,a2) (Optional, Default: 'z')
+    xc                : Specified center of the wake on the xaxis, xc (Optional, Default: 0)
+    yc                : Specified center of the wake on the yaxis, yc (Optional, Default: 0)
+    wake_meandering_stats_file: csv files containing time series of wake centers for each iplane. xc and yc will be compute based on mean centers over the specified time interval (Optional, Default: None)
+    xaxis             : Direction to use for the xaxis (Optional, Default: 'y')
+    yaxis             : Direction to use for the yaxis (Optional, Default: 'z')
   turbulent_fluxes    : ACTION: Computes the turbulent fluxes (Optional)
     iplane            : List of iplane values. Default is all planes in ncfile. (Optional, Default: None)
     include_radial    : Boolean to compute radial reynolds shear stress flux. (Optional, Default: None)
@@ -58,6 +58,7 @@ Reynolds-Stress average netcdf sample planes
     theta1            : Theta start (Optional, Default: 0.0)
     theta2            : Theta end (Optional, Default: 6.283185307179586)
     Ntheta            : Number of points in theta (Optional, Default: 180)
+    wake_meandering_stats_file: For streamwise planes, wake center will be read from columns of these file, overiding centerpoint. (Optional, Default: None)
 ```
 
 ## Example

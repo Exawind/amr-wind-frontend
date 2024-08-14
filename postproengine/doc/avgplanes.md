@@ -63,6 +63,7 @@ Average netcdf sample planes
     theta1            : Theta start (Optional, Default: 0.0)
     theta2            : Theta end (Optional, Default: 6.283185307179586)
     Ntheta            : Number of points in theta (Optional, Default: 180)
+    wake_meandering_stats_file: For streamwise planes, wake center will be read from columns of these file, overiding centerpoint. (Optional, Default: None)
 ```
 
 ## Example

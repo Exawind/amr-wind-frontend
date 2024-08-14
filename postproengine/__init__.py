@@ -490,6 +490,8 @@ class circavgtemplate():
          'help':'Theta end',},
         {'key':'Ntheta', 'required':False,  'default':180,
          'help':'Number of points in theta',},
+        {'key':'wake_meandering_stats_file','required':False,  'default':None,
+         'help':'For streamwise planes, wake center will be read from columns of these file, overiding centerpoint.', },
     ]
 
     interpdb = None
@@ -514,6 +516,7 @@ class circavgtemplate():
         savefile        = self.actiondict['savefile']
         theta1          = self.actiondict['theta1']
         theta2          = self.actiondict['theta2']
+        wake_center_files = self.actiondict['wake_meandering_stats_file']
 
         # Make sure db has the natural plane coordinates
         if ('a1' not in self.interpdb) or \
@@ -526,8 +529,14 @@ class circavgtemplate():
 
         # Loop through each plane
         if not isinstance(iplanes, list): iplanes = [iplanes,]
+        if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
+        self.interpdb['offsets'] = [self.interpdb['offsets']] if (not isinstance(self.interpdb['offsets'], list)) and (not isinstance(self.interpdb['offsets'],np.ndarray)) else self.interpdb['offsets']
 
-        for iplane in iplanes:
+        if wake_center_files != None and len(wake_center_files) != len(iplanes):
+            print("Error: len(wake_center_files) != len(iplanes). Exiting.")
+            sys.exit()
+
+        for iplaneiter, iplane in enumerate(iplanes):
             iplane = int(iplane)
             print('iplane = ',iplane)
             # Create the holding vectors
@@ -537,6 +546,16 @@ class circavgtemplate():
                 Rprofiledat[v] = []
 
             # Transform the centerpoint if necessary
+            if wake_center_files != None:
+                wake_meandering_stats_file = wake_center_files[iplaneiter]
+                wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                if pointcoordsystem == 'XYZ':
+                    centerpoint_in[1] = wake_meandering_stats['yc_mean'][0]
+                    centerpoint_in[2] = wake_meandering_stats['zc_mean'][0]
+                else:
+                    centerpoint_in[0][0] = wake_meandering_stats['a1c_mean'][0]
+                    centerpoint_in[1][1] = wake_meandering_stats['a2c_mean'][0]
+
             ptlist = [centerpoint_in]
             if pointcoordsystem == 'XYZ':
                 ptlist_a1a2 = convert_pt_xyz_to_axis1axis2(ptlist, self.interpdb['origin'],
@@ -546,7 +565,7 @@ class circavgtemplate():
             else:
                 ptlist_xyz = convert_pt_axis1axis2_to_xyz(ptlist, self.interpdb['origin'],
                                                           self.interpdb['axis1'], self.interpdb['axis2'],
-                                                          self.interpdb['axis3'], self.interpdb['offsets'], [iplane]*len(ptlist))
+                                                          self.interpdb['axis3'], self.interpdb['offsets'], iplane*len(ptlist))
                 center_a1a2 = centerpoint_in
 
             planeoffset = self.interpdb['offsets'][iplane]
