@@ -177,21 +177,6 @@ class postpro_dataconverts():
 
             flow_index  = -np.ones(3)
             for i in range(0,3):
-                # string = self.parent.db['axis'+str(i+1)]
-
-                # # Step 1: Remove the brackets
-                # string = string.strip("[]")
-
-                # # Step 2: Split the string into individual components
-                # string_components = string.split()
-
-                # # Step 3: Convert the string components to floats
-                # float_components = [float(component) for component in string_components]
-
-                # # Step 4: Create a NumPy array from the list of floats
-                # self.parent.db['axis' + str(i+1)] = np.array(float_components)
-
-
                 if (sum(self.parent.db['axis'+str(i+1)]) != 0):
                     flow_index[i] = np.nonzero(self.parent.db['axis'+str(i+1)])[0][0]
             for i in range(0,3):

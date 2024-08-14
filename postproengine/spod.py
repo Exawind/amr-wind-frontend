@@ -8,6 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import compute_axis1axis2_coords, get_mapping_xyz_to_axis1axis2
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import pickle
@@ -16,8 +17,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import pandas as pd
 import numpy as np
-import scipy as sp
 import matplotlib
+import scipy as sp
 import matplotlib.pyplot as plt
 from itertools import product
 
@@ -55,66 +56,52 @@ def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=
     #ax.spines['polar'].set_visible(False)
     return im
 
+def extract_1d_from_meshgrid(Z):
+    # Check along axis 0
+    unique_rows = np.unique(Z, axis=0)
+    if unique_rows.shape[0] == 1:
+        return unique_rows[0],1
 
-def read_cart_data(ncfile,group,trange,iplane):
-    udata = {}
-    xc = {}
-    timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-    varnames = ['velocityx','velocityy','velocityz']
-    if trange==[]:
-        # load entire file
-        db = ppsamplexr.getFullPlaneXR(ncfile,len(timevec),timevec[1]-timevec[0],groupname=group)
-        y = np.asarray(db['y'].data)
-        z = np.asarray(db['z'].data)
-        t = np.asarray(np.array(db['times']).data)
-        xc = np.asarray(db['x'].data[iplane])
-        udata = np.zeros((len(t),len(z),len(y),3))
-        udata[:,:,:,0] = np.array(db['velocityx'][:,iplane,:,:])
-        udata[:,:,:,1] = np.array(db['velocityy'][:,iplane,:,:])
-        udata[:,:,:,2] = np.array(db['velocityz'][:,iplane,:,:])
+    # Check along axis 1
+    unique_cols = np.unique(Z, axis=1)
+    if unique_cols.shape[1] == 1:
+        return unique_cols[:, 0],0
+
+
+def read_cart_data(ncfile,varnames,group,trange,iplane,xaxis,yaxis):
+
+    db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+    if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
+        compute_axis1axis2_coords(db,rot=0)
+        R = get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=0)
+        origin = db['origin']
+        origina1a2a3 = R@db['origin']
+        offsets = db['offsets']
+        offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
+        xc = origina1a2a3[-1] + offsets[iplane]
     else:
-        find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-        iters = [find_nearest(timevec, t) for t in trange]
-        iters = np.arange(iters[0],iters[1]+1)
-        db = ppsamplexr.getPlaneXR(ncfile,iters,varnames,groupname=group,verbose=0,includeattr=True,gettimes=True)
+        xc = db['x'][iplane,0,0]
 
-        XX = np.array(db['x'])
-        YY = np.array(db['y'])
-        ZZ = np.array(db['z'])
+    YY = np.array(db[xaxis])
+    ZZ = np.array(db[yaxis])
 
-        flow_index  = -np.ones(3)
-        for i in range(0,3):
-            if (sum(db['axis'+str(i+1)]) != 0):
-                flow_index[i] = np.nonzero(db['axis'+str(i+1)])[0][0]
-        for i in range(0,3):
-            if flow_index[i] == -1:
-                flow_index[i] = 3 - (flow_index[i-1] + flow_index[i-2])
+    y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
+    z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
 
-        streamwise_index = 2-np.where(flow_index == 0)[0][0]
-        lateral_index = 2-np.where(flow_index == 1)[0][0]
-        vertical_index = 2-np.where(flow_index == 2)[0][0]
+    permutation = [0,axisz+1,axisy+1]
+    t = np.asarray(np.array(db['times']).data)
+    udata = np.zeros((len(t),len(z),len(y),3))
+    for i,tstep in enumerate(db['timesteps']):
+        if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
+            ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
+            udata[i,:,:,0] = ordered_data[iplane,:,:]
 
-        slices = [slice(None)] * 3
-        slices[lateral_index] = 0
-        slices[vertical_index] = 0
-        x = XX[tuple(slices)]
+            ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
+            udata[i,:,:,1] = ordered_data[iplane,:,:]
 
-        slices = [slice(None)] * 3
-        slices[streamwise_index] = 0
-        slices[vertical_index] = 0
-        y = YY[tuple(slices)]
-
-        slices = [slice(None)] * 3
-        slices[streamwise_index] = 0
-        slices[lateral_index] = 0
-        z = ZZ[tuple(slices)]
-
-        permutation = [streamwise_index, vertical_index, lateral_index]
-
-        t = np.asarray(np.array(db['times']).data)
-        xc = x[iplane]
-        udata = np.zeros((len(t),len(z),len(y),3))
-        for i,tstep in enumerate(iters):
+            ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
+            udata[i,:,:,2] = ordered_data[iplane,:,:]
+        else:
             ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
             udata[i,:,:,0] = ordered_data[iplane,:,:]
 
@@ -160,7 +147,8 @@ def welch_fft(x,fs=1.0,nperseg=256,return_onesided=True,subtract_mean=True):
     segments = [x[i:i+nperseg] for i in range(0,len(x)-nperseg+1,nperseg-overlap)]
 
     #applying hamming window to each segment 
-    window = sp.signal.get_window('hamming',nperseg)
+    #window = sp.signal.get_window('hamming',nperseg)
+    window = np.hamming(nperseg)
     windowed_segments = [segment * window for segment in segments]
 
     #subtract the mean for each segement and apply the fft 
@@ -248,10 +236,14 @@ class postpro_spod():
          'help':'Which group to pull from netcdf file', },
         {'key':'nperseg',   'required':True,  'default':256,
          'help':'Number of snapshots per segment to specify number of blocks.', },
-        {'key':'yc',   'required':True,  'default':None,
-         'help':'Lateral wake center', },
-        {'key':'zc',   'required':True,  'default':None,
-         'help':'Vertical wake center', },
+        {'key':'xc',   'required':False,  'default':None,
+         'help':'Wake center on xaxis', },
+        {'key':'yc',   'required':False,  'default':None,
+         'help':'Wake center on yaxis', },
+        {'key':'xaxis',    'required':False,  'default':'y',
+        'help':'Which axis to use on the abscissa', },
+        {'key':'yaxis',    'required':False,  'default':'z',
+        'help':'Which axis to use on the ordinate', },
         {'key':'wake_meandering_stats_file','required':False,  'default':None,
          'help':'The lateral and vertical wake center will be read from yc_mean and zc_mean columns of this file, overriding yc and zc.', },
         {'key':'LR_factor',   'required':False,  'default':1.4,
@@ -264,8 +256,8 @@ class postpro_spod():
          'help':'Boolean to remove temporal mean from SPOD.'},
         {'key':'remove_azimuthal_mean',   'required':False,  'default':False,
          'help':'Boolean to remove azimuthal mean from SPOD.'},
-        {'key':'iplane',       'required':False,  'default':0,
-         'help':'i-index of plane to postprocess', },
+        {'key':'iplane',       'required':False,  'default':[0,],
+         'help':'List of i-index of plane to postprocess', },
         {'key':'correlations','required':False,  'default':['U',],
             'help':'List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W ', },
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
@@ -281,41 +273,54 @@ class postpro_spod():
         'help':'Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR).', },
         {'key':'cylindrical_velocities', 'required':False,  'default':False,
         'help':'Boolean to use cylindrical velocity components instead of cartesian. If True U->U_x, V->U_r, W->U_\Theta', },
+        {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
+         'help':'Variables to extract from the netcdf file',},        
+        {'key':'verbose',  'required':False,  'default':True,
+         'help':'Print extra information.',},        
         
     ]
     example = """
 spod:
   name: Wake YZ plane
-  ncfile: ./YZslice_00.50D_456.00s_1556.00s_cl00.nc
-  group: xslice
-  trange: [456.00,1556.50]
+  ncfile: /lustre/orion/cfd162/world-shared/lcheung/ALCC_Frontier_WindFarm/farmruns/LowWS_LowTI/ABL_ALM_10x10/rundir_AWC0/post_processing/rotor_*.nc
+  iplane:
+    - 7
+    - 8
+  group: T00_rotor
+  trange: [25400,26000]
   nperseg: 256
-  diam: 127
-  yc: 375.0
-  zc: 90
-  wake_meandering_stats_file: ./data_converter/wake_meandering_baseline_area_1p4R/wake_meandering/wake_stats_00.50D.csv
+  diam: 240
+  #xc: 480
+  yc: 150
+  NR: 128
+  NTheta: 128
+  LR_factor: 1.2
+  xaxis: 'a1'
+  yaxis: 'a2'
+  varnames: ['velocitya1','velocitya2','velocitya3']
+  wake_meandering_stats_file:
+    - ./T00_wake_meandering/wake_stats_7.csv
+    - ./T00_wake_meandering/wake_stats_8.csv
+  cylindrical_velocities: False
   correlations:
     - U
-    - V
-    - W
-    - U-V-W
-    - V-W
-  output_dir: ./test
-  savepklfile: test.pkl
+  output_dir: ./T00_spod_results/
+  savepklfile: spod_{iplane}.pkl
+  save_num_modes: 100
+  verbose: True
   #loadpklfile: ./test/test.pkl
 
   plot_eigvals:
     num: 11
-    savefile: ./test/test_eigvals.png
+    savefile: ./eigvals_{iplane}.png
     correlations:
       - U
-    Uinf: 6.4
+    Uinf: 6.5
 
   plot_eigmodes:
-    num: 2
-    St: 0.3
-    Uinf: 6.4
-    savefile: ./test/test_eigmode.png
+    num: 1
+    Uinf: 6.5
+    savefile: ./eigmode_{iplane}.png
     correlations:
       - U
     """
@@ -334,7 +339,7 @@ spod:
         print('Running '+self.name)
         # Loop through and create plots
         for planeiter, plane in enumerate(self.yamldictlist):
-            iplane               = plane['iplane']
+            iplanes               = plane['iplane']
             trange                = plane['trange']
             ncfile                = plane['ncfile']
             self.diam             = plane['diam']
@@ -342,234 +347,267 @@ spod:
             LR_factor             = plane['LR_factor']
             NR                    = plane['NR']
             NTheta                = plane['NTheta']
-            ycenter               = plane['yc']
-            zcenter               = plane['zc']
+            ycenter               = plane['xc']
+            zcenter               = plane['yc']
             nperseg               = plane['nperseg']
             correlations          = plane['correlations']
             remove_temporal_mean  = plane['remove_temporal_mean']
             remove_azimuthal_mean = plane['remove_azimuthal_mean']
             savefile              = plane['savepklfile']
             loadpklfile           = plane['loadpklfile']
-            output_dir            = plane ['output_dir']
+            self.output_dir            = plane ['output_dir']
             compute_eigen_vectors = plane ['compute_eigen_vectors']
             sort                  =  plane ['sort']
-            wake_meandering_stats_file = plane['wake_meandering_stats_file']
+            wake_center_files = plane['wake_meandering_stats_file']
             save_num_modes        = plane['save_num_modes']
             cylindrical_velocities= plane['cylindrical_velocities']
+            self.xaxis    = plane['xaxis']
+            self.yaxis    = plane['yaxis']
+            self.varnames = plane['varnames']
+            self.verbose = plane['verbose']
 
-            if not loadpklfile:
-                #Get all times if not specified 
-                if not isinstance(correlations, list): correlations= [correlations,]
 
-                print("--> Reading in cartesian velocities")
-                udata_cart,xc,y,z,times = read_cart_data(ncfile,group,trange,iplane)
-                tsteps = range(len(times))
+            #Get all times if not specified 
+            if not isinstance(iplanes, list): iplanes = [iplanes,]
+            if not isinstance(correlations, list): correlations= [correlations,]
+            if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
+            if wake_center_files != None and len(wake_center_files) != len(iplanes):
+                print("Error: len(wake_center_files) != len(iplanes). Exiting.")
+                sys.exit()
 
-                """
-                Define polar grid 
-                """
-                LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
-                LTheta = 2 * np.pi
-                r = np.linspace(0,LR,NR)
-                theta = np.linspace(0,LTheta,NTheta+1)[0:-1] #periodic grid in theta
-                RR, TT = np.meshgrid(r,theta,indexing='ij')
-                dr = r[1]-r[0]
-                dtheta = theta[1]-theta[0]
-                components = ['velocityx','velocityy','velocityz']
+            for iplaneiter, iplane in enumerate(iplanes):
+                self.iplane = iplane
+                if not loadpklfile:
+                    if self.verbose:
+                        print("--> Reading in velocity data (iplane="+str(iplane)+")")
+                    udata_cart,xc,y,z,times = read_cart_data(ncfile,self.varnames,group,trange,iplane,self.xaxis,self.yaxis)
+                    tsteps = range(len(times))
 
-                print("--> Interpolating cartesian data to polar coordinates")
+                    """
+                    Define polar grid 
+                    """
+                    LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
+                    LTheta = 2 * np.pi
+                    r = np.linspace(0,LR,NR)
+                    theta = np.linspace(0,LTheta,NTheta+1)[0:-1] #periodic grid in theta
+                    RR, TT = np.meshgrid(r,theta,indexing='ij')
+                    dr = r[1]-r[0]
+                    dtheta = theta[1]-theta[0]
+                    components = ['velocityx','velocityy','velocityz']
 
-                if wake_meandering_stats_file != None:
-                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
-                    ycenter = wake_meandering_stats['yc_mean'][0]
-                    zcenter = wake_meandering_stats['zc_mean'][0]
-                    print("--> Read in mean wake centers from ",wake_meandering_stats_file,". yc = ",ycenter,", zc = ",zcenter,".")
+                    if self.verbose:
+                        print("--> Interpolating cartesian data to polar coordinates")
 
-                udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
-                for titer , t in enumerate(tsteps):
-                    for compind in range(len(components)):
-                        if zcenter-LR < 0:
-                            print("Error: zcenter - LR negative. Exiting")
-                            sys.exit()
-                        udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
+                    if wake_center_files != None:
+                        wake_meandering_stats_file = wake_center_files[iplaneiter]
+                        wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                        ycenter = wake_meandering_stats[self.xaxis + 'c_mean'][0]
+                        zcenter = wake_meandering_stats[self.yaxis + 'c_mean'][0]
+                        if self.verbose:
+                            print("--> Read in mean wake centers from ",wake_meandering_stats_file+". "+self.xaxis+"c = "+str(ycenter)+", "+self.yaxis+"c = "+str(zcenter)+".")
+                    else:
+                        if plane['xc'] == None: 
+                            ycenter = (y[-1]+y[0])/2.0
+                            if self.verbose:
+                                print("--> Centering on middle of xaxis: ",ycenter)
+                        if plane['yc'] == None: 
+                            zcenter = (z[-1]+z[0])/2.0
+                            if self.verbose:
+                                print("--> Centering on middle of yaxis: ",zcenter)
 
-                if cylindrical_velocities==True:
-                    print("--> Transforming to cylindrical velocity components")
+                    udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
                     for titer , t in enumerate(tsteps):
-                        v_vel = np.copy(udata_polar[:,:,titer,1])
-                        w_vel = np.copy(udata_polar[:,:,titer,2])
+                        for compind in range(len(components)):
+                            if zcenter-LR < 0:
+                                print("Error: zcenter - LR negative. Exiting")
+                                print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
+                                sys.exit()
+                            udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
 
-                        udata_polar[:,:,titer,1] = v_vel * np.cos(TT) + w_vel * np.sin(TT)
-                        udata_polar[:,:,titer,2] = -v_vel * np.sin(TT) + w_vel * np.cos(TT)
+                    if cylindrical_velocities==True:
+                        if self.verbose:
+                            print("--> Transforming to cylindrical velocity components")
+                        for titer , t in enumerate(tsteps):
+                            v_vel = np.copy(udata_polar[:,:,titer,1])
+                            w_vel = np.copy(udata_polar[:,:,titer,2])
 
-                Nkt = int(nperseg/2) + 1
-                time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
-                dt = times[1]-times[0]
-                w = np.hamming(nperseg)
-                NB = time_segments.shape[0] #number of blocks 
-                LT = time_segments[0][-1]-time_segments[0][0]
-                angfreq = get_angular_wavenumbers(nperseg,LT)
-                angfreq = angfreq[0:Nkt]
+                            udata_polar[:,:,titer,1] = v_vel * np.cos(TT) + w_vel * np.sin(TT)
+                            udata_polar[:,:,titer,2] = -v_vel * np.sin(TT) + w_vel * np.cos(TT)
 
-                print("--> Fourier transforming in time (number of blocks = "+str(NB) + ")")
-                udata_that = np.zeros((NR,NTheta,NB,Nkt,3),dtype=complex)
-                for rind in np.arange(0,len(r)):
-                    for thetaind in np.arange(0,len(theta)):
-                        for compind,comp in enumerate(components):
-                            temp_signal = udata_polar[rind,thetaind,:,compind]
-                            if remove_temporal_mean:
-                                temp_signal = temp_signal - np.mean(temp_signal) #subtract out temporal mean
-                            tfreq , tfft = welch_fft(temp_signal,fs=1/dt,nperseg=nperseg,subtract_mean=remove_azimuthal_mean)
-                            udata_that[rind,thetaind,:,:,compind] = tfft
+                    Nkt = int(nperseg/2) + 1
+                    time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
+                    dt = times[1]-times[0]
+                    w = np.hamming(nperseg)
+                    NB = time_segments.shape[0] #number of blocks 
+                    LT = time_segments[0][-1]-time_segments[0][0]
+                    angfreq = get_angular_wavenumbers(nperseg,LT)
+                    angfreq = angfreq[0:Nkt]
 
-                print("--> Fourier transforming in Theta")
-                NkTheta = int(NTheta)
-                udata_rhat = np.zeros((NR,NkTheta,NB,Nkt,len(components)),dtype=complex)
-                for rind in np.arange(0,len(r)):
-                    for block in np.arange(0,NB):
-                        for ktind in np.arange(0,Nkt):
+                    if self.verbose:
+                        print("--> Fourier transforming in time (number of blocks = "+str(NB) + ")")
+                    udata_that = np.zeros((NR,NTheta,NB,Nkt,3),dtype=complex)
+                    for rind in np.arange(0,len(r)):
+                        for thetaind in np.arange(0,len(theta)):
                             for compind,comp in enumerate(components):
-                                temp_signal = udata_that[rind,:,block,ktind,compind] 
-                                if remove_azimuthal_mean:
-                                    temp_signal = temp_signal - np.mean(temp_signal) 
-                                udata_rhat[rind,:,block,ktind,compind] = np.fft.fft(temp_signal)
+                                temp_signal = udata_polar[rind,thetaind,:,compind]
+                                if remove_temporal_mean:
+                                    temp_signal = temp_signal - np.mean(temp_signal) #subtract out temporal mean
+                                tfreq , tfft = welch_fft(temp_signal,fs=1/dt,nperseg=nperseg,subtract_mean=remove_azimuthal_mean)
+                                udata_that[rind,thetaind,:,:,compind] = tfft
 
-                del udata_that #don't need this anymore 
-                thetafreq = np.fft.fftfreq(NTheta,d=dtheta)
-                ktheta  = get_angular_wavenumbers(NTheta,LTheta,negative=True)
+                    if self.verbose:
+                        print("--> Fourier transforming in Theta")
+                    NkTheta = int(NTheta)
+                    udata_rhat = np.zeros((NR,NkTheta,NB,Nkt,len(components)),dtype=complex)
+                    for rind in np.arange(0,len(r)):
+                        for block in np.arange(0,NB):
+                            for ktind in np.arange(0,Nkt):
+                                for compind,comp in enumerate(components):
+                                    temp_signal = udata_that[rind,:,block,ktind,compind] 
+                                    if remove_azimuthal_mean:
+                                        temp_signal = temp_signal - np.mean(temp_signal) 
+                                    udata_rhat[rind,:,block,ktind,compind] = np.fft.fft(temp_signal)
 
-                """
-                Compute the POD via the SVD for each ktheta and kt of interest
-                """
+                    del udata_that #don't need this anymore 
+                    thetafreq = np.fft.fftfreq(NTheta,d=dtheta)
+                    ktheta  = get_angular_wavenumbers(NTheta,LTheta,negative=True)
 
-                if compute_eigen_vectors:
-                    self.POD_modes       = {corr: 0 for corr in correlations}
-                    self.POD_proj_coeff  = {corr: 0 for corr in correlations}
-                self.POD_eigenvalues = {corr: 0 for corr in correlations}
+                    """
+                    Compute the POD via the SVD for each ktheta and kt of interest
+                    """
 
-                if sort:
-                    self.sorted_inds  = {corr: {} for corr in correlations}
-
-                W1D = form_weighting_matrix_simpsons_rule(r)
-                scaling_factor_k = dt / (sum(np.hamming(nperseg)*NB)) 
-
-                corr_dict = {'U': 0, 'V': 1, 'W': 2}
-                for corr in correlations:
-                    print("--> Computing SPOD for correlations: ",corr)
-                    comp_corr = corr.split('-')
-                    corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
-
-                    W = np.kron(np.eye(len(corr_inds)),W1D)
-                    Wsqrt = np.sqrt(W)
-                    Wsqrtinv = np.zeros_like(Wsqrt)
-                    for i in range(NR*len(corr_inds)):
-                        if (Wsqrt[i,i]==0):
-                            Wsqrtinv[i,i] = 0
-                        else:
-                            Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
                     if compute_eigen_vectors:
-                        self.POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
-                        self.POD_proj_coeff[corr]  = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+                        self.POD_modes       = {corr: 0 for corr in correlations}
+                        self.POD_proj_coeff  = {corr: 0 for corr in correlations}
+                    self.POD_eigenvalues = {corr: 0 for corr in correlations}
 
-                    self.POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+                    if sort:
+                        self.sorted_inds  = {corr: {} for corr in correlations}
 
-                    for ktheta_ind , ktheta_val in enumerate(ktheta):
-                        for tfreq_ind , tfreq_val in enumerate(tfreq):
+                    W1D = form_weighting_matrix_simpsons_rule(r)
+                    scaling_factor_k = dt / (sum(np.hamming(nperseg)*NB)) 
 
-                            POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
-                            for corr_ind_iter , corr_ind in enumerate(corr_inds):
-                                POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
-                            POD_Mat_scaled = np.sqrt(scaling_factor_k) * np.dot(Wsqrt,POD_Mat)
-                            
-                            if compute_eigen_vectors:
-                                lsvd, ssvd, rsvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=True)
-                                eigmodes = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
+                    corr_dict = {'U': 0, 'V': 1, 'W': 2}
+                    for corr in correlations:
+                        if self.verbose:
+                            print("--> Computing SPOD for correlations: ",corr)
+                        comp_corr = corr.split('-')
+                        corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
 
-                                temp  = np.dot(Wsqrtinv,lsvd)
-                                for corr_ind_iter , corr_ind in enumerate(corr_inds):
-                                    eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
-
-                                self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
-                                for block_ind in range(NB):
-                                    self.POD_proj_coeff[corr][ktheta_ind,tfreq_ind,block_ind] += \
-                                            np.dot(np.dot(np.conj(POD_Mat[:,block_ind]).T,W),temp[:,block_ind])
-
+                        W = np.kron(np.eye(len(corr_inds)),W1D)
+                        Wsqrt = np.sqrt(W)
+                        Wsqrtinv = np.zeros_like(Wsqrt)
+                        for i in range(NR*len(corr_inds)):
+                            if (Wsqrt[i,i]==0):
+                                Wsqrtinv[i,i] = 0
                             else:
-                                ssvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=False)
+                                Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
+                        if compute_eigen_vectors:
+                            self.POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
+                            self.POD_proj_coeff[corr]  = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
 
+                        self.POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+
+                        for ktheta_ind , ktheta_val in enumerate(ktheta):
+                            for tfreq_ind , tfreq_val in enumerate(tfreq):
+
+                                POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
+                                for corr_ind_iter , corr_ind in enumerate(corr_inds):
+                                    POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
+                                POD_Mat_scaled = np.sqrt(scaling_factor_k) * np.dot(Wsqrt,POD_Mat)
                                 
-                            eigval = ssvd**2
-                            self.POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
+                                if compute_eigen_vectors:
+                                    lsvd, ssvd, rsvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=True)
+                                    eigmodes = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
 
-                    if sort:
-                        sorted_eigind = np.argsort(np.abs(self.POD_eigenvalues[corr]),axis=None)[::-1]
-                        self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues[corr][:,:,:].shape)
+                                    temp  = np.dot(Wsqrtinv,lsvd)
+                                    for corr_ind_iter , corr_ind in enumerate(corr_inds):
+                                        eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
 
+                                    self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
+                                    for block_ind in range(NB):
+                                        self.POD_proj_coeff[corr][ktheta_ind,tfreq_ind,block_ind] += \
+                                                np.dot(np.dot(np.conj(POD_Mat[:,block_ind]).T,W),temp[:,block_ind])
 
-                if len(savefile)>0:
-                    self.variables = {}
-                    self.variables['angfreq']  = angfreq
-                    self.variables['ktheta']   = ktheta
-                    self.variables['blocks']   = np.arange(0,NB)
-                    self.variables['r']        = r
-                    self.variables['theta']    = theta
-                    self.variables['y']        = y
-                    self.variables['z']        = z
-                    self.variables['x']        = x
-                    if not os.path.exists(output_dir):
-                        os.makedirs(output_dir)
-                    savefile = os.path.join(output_dir, savefile)
-                    print("--> Saving to: ",savefile)
-                    objects = [] 
-                    objects.append(self.POD_eigenvalues)
-                    objects.append(self.variables)
-                    if sort:
-                        objects.append(self.sorted_inds)
+                                else:
+                                    ssvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=False)
+
+                                    
+                                eigval = ssvd**2
+                                self.POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
+
+                        if sort:
+                            sorted_eigind = np.argsort(np.abs(self.POD_eigenvalues[corr]),axis=None)[::-1]
+                            self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues[corr][:,:,:].shape)
 
 
-                    if compute_eigen_vectors:
-                        if save_num_modes == None:
-                            objects.append(self.POD_modes)
-                            objects.append(self.POD_proj_coeff)
-                        else:
-                            save_modes      = {}
-                            save_proj_coeff = {}
-                            for corr in correlations:
-                                save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))),dtype=complex)
-                                save_proj_coeff[corr] = np.zeros(save_num_modes,dtype=complex)
-                                for mode in range(save_num_modes):
-                                    save_modes[corr][mode,:] = self.POD_modes[corr][:,self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode],:]
+                    if len(savefile)>0:
 
-                                    save_proj_coeff[corr][mode] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode]]
-                            objects.append(save_modes)
-                            objects.append(save_proj_coeff)
+                        self.variables = {}
+                        self.variables['angfreq']  = angfreq
+                        self.variables['ktheta']   = ktheta
+                        self.variables['blocks']   = np.arange(0,NB)
+                        self.variables['r']        = r
+                        self.variables['theta']    = theta
+                        self.variables['y']        = y
+                        self.variables['z']        = z
+                        self.variables['x']        = x
+                        if not os.path.exists(self.output_dir):
+                            os.makedirs(self.output_dir)
+                        savefname = savefile.format(iplane=iplane)
+                        savefilename = os.path.join(self.output_dir, savefname)
+                        if self.verbose:
+                            print("--> Saving to: ",savefilename)
+                        objects = [] 
+                        objects.append(self.POD_eigenvalues)
+                        objects.append(self.variables)
+                        if sort:
+                            objects.append(self.sorted_inds)
 
 
-                    with open(savefile, 'wb') as f:
-                        for obj in objects:
-                            pickle.dump(obj, f)
+                        if compute_eigen_vectors:
+                            if save_num_modes == None:
+                                objects.append(self.POD_modes)
+                                objects.append(self.POD_proj_coeff)
+                            else:
+                                save_modes      = {}
+                                save_proj_coeff = {}
+                                for corr in correlations:
+                                    save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))),dtype=complex)
+                                    save_proj_coeff[corr] = np.zeros(save_num_modes,dtype=complex)
+                                    for mode in range(save_num_modes):
+                                        save_modes[corr][mode,:] = self.POD_modes[corr][:,self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode],:]
 
-            if loadpklfile:
-                print("--> Loading from: ",loadpklfile)
-                with open(loadpklfile, 'rb') as f:
-                    self.POD_eigenvalues = pickle.load(f)
-                    self.variables = pickle.load(f)
-                    if sort:
-                        self.sorted_inds = pickle.load(f)
-                    if compute_eigen_vectors:
-                        self.POD_modes      = pickle.load(f)
-                        self.POD_proj_coeff = pickle.load(f)
+                                        save_proj_coeff[corr][mode] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode]]
+                                objects.append(save_modes)
+                                objects.append(save_proj_coeff)
 
-            # Do any sub-actions required for this task
-            for a in self.actionlist:
-                action = self.actionlist[a]
-                # Check to make sure required actions are there
-                if action.required and (action.actionname not in self.yamldictlist[planeiter].keys()):
-                    # This is a problem, stop things
-                    raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[planeiter].keys():
-                    actionitem = action(self, self.yamldictlist[planeiter][action.actionname])
-                    actionitem.execute()
+
+                        with open(savefilename, 'wb') as f:
+                            for obj in objects:
+                                pickle.dump(obj, f)
+
+                if loadpklfile:
+                    print("--> Loading from: ",loadpklfile)
+                    with open(loadpklfile, 'rb') as f:
+                        self.POD_eigenvalues = pickle.load(f)
+                        self.variables = pickle.load(f)
+                        if sort:
+                            self.sorted_inds = pickle.load(f)
+                        if compute_eigen_vectors:
+                            self.POD_modes      = pickle.load(f)
+                            self.POD_proj_coeff = pickle.load(f)
+
+                # Do any sub-actions required for this task for each plane
+                for a in self.actionlist:
+                    action = self.actionlist[a]
+                    # Check to make sure required actions are there
+                    if action.required and (action.actionname not in self.yamldictlist[planeiter].keys()):
+                        # This is a problem, stop things
+                        raise ValueError('Required action %s not present'%action.actionname)
+                    if action.actionname in self.yamldictlist[planeiter].keys():
+                        actionitem = action(self, self.yamldictlist[planeiter][action.actionname])
+                        actionitem.execute()
         return 
 
     @registeraction(actionlist)
@@ -631,10 +669,15 @@ spod:
 
                 ax[1].scatter(np.arange(0,num),self.parent.variables['ktheta'][self.parent.sorted_inds[corr]['ktheta'][0:num]])
                 ax[2].scatter(np.arange(0,num),self.parent.variables['angfreq'][self.parent.sorted_inds[corr]['angfreq'][0:num]]*self.parent.diam/(Uinf * 2 * np.pi))
+                if self.parent.verbose:
+                    print("Leading ktheta: ",self.parent.variables['ktheta'][self.parent.sorted_inds[corr]['ktheta'][0:num]])
+                    print("Leading wD/U2pi: ",self.parent.variables['angfreq'][self.parent.sorted_inds[corr]['angfreq'][0:num]]*self.parent.diam/(Uinf * 2 * np.pi))
 
 
             if len(savefile)>0:
-                plt.savefig(savefile)
+                savefname = savefile.format(iplane=self.parent.iplane)
+                savefilename = os.path.join(self.parent.output_dir, savefname)
+                plt.savefig(savefilename)
 
             return
 
@@ -724,6 +767,8 @@ spod:
                 plot_radial(val,theta,r,cmap='jet',newfig=False,ax=ax)
             
             if len(savefile)>0:
-                plt.savefig(savefile)
+                savefname = savefile.format(iplane=self.parent.iplane)
+                savefilename = os.path.join(self.parent.output_dir, savefname)
+                plt.savefig(savefilename)
 
             return

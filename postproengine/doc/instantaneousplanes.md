@@ -9,6 +9,7 @@ Make instantaneous plots from netcdf sample planes
   iplane              : Which plane to pull from netcdf file (Required)
   xaxis               : Which axis to use on the abscissa (Required)
   yaxis               : Which axis to use on the ordinate (Required)
+  velocity_type       : Which velocity components to consider: cartesian (xyz aligned) or natural (a1a2a3 aligned) (Optional, Default: 'cartesian')
   times               : Which times to pull from netcdf file (overrides netCDF) (Optional, Default: [])
   group               : Which group to pull from netcdf file (Optional, Default: None)
   title               : Title of the plot (Optional, Default: '')
