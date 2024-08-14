@@ -6,6 +6,9 @@ import xarray as xr
 import pickle
 import matplotlib.pyplot as plt
 import glob
+import itertools
+from postproengine import get_mapping_xyz_to_axis1axis2
+from postproengine import apply_coordinate_transform
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
@@ -29,7 +32,7 @@ def getFileList(ncfileinput):
     return ncfilelist
 
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
-               verbose=0, includeattr=False, gettimes=False,timerange=None):
+               verbose=0, includeattr=False, gettimes=False,timerange=None,axis_rotation=0):
 
     ncfilelist = getFileList(ncfileinput)
 
@@ -37,6 +40,12 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
     db = {}
     for v in varnames: db[v] = {}
     db['timesteps'] = []
+
+    #Apply transformation after computing cartesian average
+    transform=False
+    if varnames == ['velocitya1','velocitya2','velocitya3']:
+        transform = True
+        varnames = ['velocityx','velocityy','velocityz']
 
     timevec = []
     times   = []
@@ -77,6 +86,10 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                 db['x'] = xm
                 db['y'] = ym
                 db['z'] = zm        
+                db['axis1'] = ds.attrs['axis1']
+                db['axis2'] = ds.attrs['axis2']
+                db['axis3'] = ds.attrs['axis3']
+                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             for itime in itimevec:
                 local_ind = np.where(np.isin(times[ncfileiter], timevec[itime]))[0]
                 if itime not in itime_processed and len(local_ind)==1:
@@ -85,9 +98,15 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                     db['timesteps'].append(itime)
                     if gettimes:
                         db['times'].append(float(timevec[itime]))
-                    for v in varnames:
-                        vvar = extractvar(ds, v, local_ind)
-                        db[v][itime] = vvar
+                    if not transform:
+                        for v in varnames:
+                            vvar = extractvar(ds, v, local_ind)
+                            db[v][itime] = vvar
+                    else:
+                        vvarx = extractvar(ds, varnames[0], local_ind)
+                        vvary = extractvar(ds, varnames[1], local_ind)
+                        vvarz = extractvar(ds, varnames[2], local_ind)
+                        db['velocitya1'][itime],db['velocitya2'][itime],db['velocitya3'][itime] = apply_coordinate_transform(R,vvarx,vvary,vvarz)
                     #vx = extractvar(ds, vxvar, itime)
                     #vy = extractvar(ds, vyvar, itime)
                     #vz = extractvar(ds, vzvar, itime)
@@ -247,7 +266,7 @@ def avgPlaneXR(ncfileinput, timerange,
                varnames=['velocityx','velocityy','velocityz'],
                savepklfile='',
                groupname=None, verbose=False, includeattr=False, 
-               replacenan=False):
+               replacenan=False,axis_rotation=0):
     """
     Compute the average of ncfile variables
     """
@@ -255,6 +274,13 @@ def avgPlaneXR(ncfileinput, timerange,
     ncfilelist = getFileList(ncfileinput)
     ncfile=ncfilelist[0]
     suf='_avg'
+
+    #Apply transformation after computing cartesian average
+    transform=False
+    if varnames == ['velocitya1','velocitya2','velocitya3']:
+        transform = True
+        varnames = ['velocityx','velocityy','velocityz']
+
     # Create a fresh db dictionary
     db = {}
     eps = 1.0E-10
@@ -286,6 +312,11 @@ def avgPlaneXR(ncfileinput, timerange,
                 db['x'] = xm
                 db['y'] = ym
                 db['z'] = zm
+                db['axis1'] = ds.attrs['axis1']
+                db['axis2'] = ds.attrs['axis2']
+                db['axis3'] = ds.attrs['axis3']
+                db['origin'] = ds.attrs['origin']
+                db['offsets'] = ds.attrs['offsets']
             # Set up the initial mean fields
             zeroarray = extractvar(ds, varnames[0], 0)
             for v in varnames:
@@ -321,6 +352,16 @@ def avgPlaneXR(ncfileinput, timerange,
             for f in extrafuncs:
                 name = f['name']+suf
                 db[name] /= float(Ncount)
+
+    if transform:
+        R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
+        #if not np.array_equal(R,np.eye(R.shape[0])):
+        db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
+    else:
+        db['velocitya1_avg'] = db['velocityx_avg']
+        db['velocitya2_avg'] = db['velocityy_avg']
+        db['velocitya3_avg'] = db['velocityz_avg']
+
     if verbose:
         print("Ncount = %i"%Ncount)
         print()
@@ -494,39 +535,47 @@ def ReynoldsStress_PlaneXR_OLD(ncfile, timerange,
 def ReynoldsStress_PlaneXR(ncfileinput, timerange,
                            extrafuncs=[], avgdb = None,
                            varnames=['velocityx','velocityy','velocityz'],
-                           savepklfile='', groupname=None, verbose=False, includeattr=False):
+                           savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
     """
     Calculate the reynolds stresses
     """
-    # make sure input is a list
-    if not isinstance(ncfileinput, list):
-        ncfilelist = [ncfileinput]
-    else:
-        ncfilelist = ncfileinput
+    ncfilelist = getFileList(ncfileinput)
+
     print('first ncfilelist ',ncfilelist)
     ncfile=ncfilelist[0]
     eps     = 1.0E-10
     t1      = timerange[0]-eps
     t2      = timerange[1]    
     savg = '_avg'
+
+    corr_mapping = {
+        'velocityx': 'u',
+        'velocityy': 'v',
+        'velocityz': 'w',
+        'velocitya1': 'ua1',
+        'velocitya2': 'ua2',
+        'velocitya3': 'ua3'
+    }
+
+    combinations = itertools.combinations_with_replacement(varnames, 2)
+
     corrlist = [
-        # name   variable1   variable2
-        ['uu_avg', 'velocityx', 'velocityx'],
-        ['uv_avg', 'velocityx', 'velocityy'],
-        ['uw_avg', 'velocityx', 'velocityz'],
-        ['vv_avg', 'velocityy', 'velocityy'],
-        ['vw_avg', 'velocityy', 'velocityz'],
-        ['ww_avg', 'velocityz', 'velocityz'],
+        [f"{corr_mapping[var1]}{corr_mapping[var2]}_avg", var1, var2]
+        for var1, var2 in combinations
     ]
+
     db = {}
     if avgdb is None:
         if verbose: print("Calculating averages")
+
         db = avgPlaneXR(ncfilelist, timerange,
                         extrafuncs=extrafuncs,
                         varnames=varnames,
-                        groupname=groupname, verbose=verbose, includeattr=includeattr)
+                        groupname=groupname, verbose=verbose, includeattr=includeattr,axis_rotation=axis_rotation)
     else:
         db.update(avgdb)
+
+
     group   = db['group']
     Ncount = 0    
     for ncfile in ncfilelist:
@@ -538,12 +587,15 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         localNcount = 0
         with xr.open_dataset(ncfile, group=group) as ds:
             reshapeijk = ds.attrs['ijk_dims'][::-1]
-            zeroarray = extractvar(ds, varnames[0], 0)
+            zeroarray = extractvar(ds, 'velocityx', 0)
             # Set up the initial mean fields
             for corr in corrlist:
                 suff = corr[0]
                 if suff not in db:
                     db[suff] =  np.full_like(zeroarray, 0.0)
+
+            if any('velocitya' in v for v in varnames):
+                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             # Loop through and accumulate
             if verbose: print("Calculating reynolds-stress")
             for itime, t in enumerate(timevec):
@@ -551,8 +603,10 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
                     t1 = t
                     if verbose: progress(localNcount+1, Ntotal)
                     vdat = {}
-                    for v in varnames:
+                    for v in ['velocityx','velocityy','velocityz']:
                         vdat[v] = extractvar(ds, v, itime)        
+                    if any('velocitya' in v for v in varnames):
+                        vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
                     for corr in corrlist:
                         name = corr[0]
                         v1   = corr[1]

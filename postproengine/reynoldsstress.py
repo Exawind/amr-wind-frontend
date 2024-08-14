@@ -8,10 +8,12 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction, contourplottemplate
+from postproengine import compute_axis1axis2_coords
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
 import pandas as pd
+import itertools
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -26,7 +28,7 @@ See README.md for details on the structure of classes here
 @registerplugin
 class postpro_reynoldsstress():
     """
-    Postprocess averaged planes
+    Postprocess reynolds stresses 
     """
     # Name of task (this is same as the name in the yaml)
     name      = "reynoldsstress"
@@ -48,6 +50,8 @@ class postpro_reynoldsstress():
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},                
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate axis for velocitya1,a2,a3 transformation',},                
     ]
     example = """
 reynoldsstress:
@@ -94,17 +98,12 @@ reynoldsstress:
             group    = plane['group']
             self.pklfile  = plane['savepklfile']
             meanpkl  = plane['meanpklfile']
-            varnames = plane['varnames']
+            self.varnames = plane['varnames']
+            self.axis_rotation = plane['axis_rotation']
 
-            # Convert ncfile to list of files if necessary
-            if not isinstance(ncfile, list):
-                filelist = [ncfile]
-            else:
-                filelist = ncfile
-                
             # Get the averaging window
             if tavg==[]:
-                for fileiter, file in enumerate(filelist):
+                for fileiter, file in enumerate(ncfile):
                     timevec = ppsample.getVar(ppsample.loadDataset(file), 'time')
                     if fileiter == 0:
                         tavg = [timevec[0].data,timevec[-1].data]
@@ -124,12 +123,12 @@ reynoldsstress:
                 pfile.close()
             
             # Get the reynolds-stress averages
-            self.dbReAvg  = ppsamplexr.ReynoldsStress_PlaneXR(filelist, tavg,
+            self.dbReAvg  = ppsamplexr.ReynoldsStress_PlaneXR(ncfile, tavg,
                                                               avgdb = meandb,
-                                                              varnames=varnames,
+                                                              varnames=self.varnames,
                                                               savepklfile=self.pklfile,
                                                               groupname=group,
-                                                              verbose=verbose, includeattr=True)
+                                                              verbose=verbose, includeattr=True,axis_rotation=self.axis_rotation)
             
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -151,9 +150,11 @@ reynoldsstress:
         required   = False
         actiondefs = [
                 {'key':'iplane', 'required':False, 'default':None, 'help':'List of iplane values. Default is all planes in ncfile.'},
-                {'key':'yc', 'required':False, 'default':0, 'help':'Specified lateral center of wake, yc'},
-                {'key':'zc', 'required':False, 'default':0, 'help':'Specified vertical center of wake, zc'},
-                {'key':'wake_center_files', 'required':False, 'default':None, 'help':'csv files containing time series of wake centers for each iplane. yc and zc will be compute based on mean centers over the specified time interval'},
+                {'key':'xc', 'required':False, 'default':0, 'help':'Specified center of the wake on the xaxis, xc'},
+                {'key':'yc', 'required':False, 'default':0, 'help':'Specified center of the wake on the yaxis, yc'},
+                {'key':'wake_meandering_stats_file', 'required':False, 'default':None, 'help':'csv files containing time series of wake centers for each iplane. xc and yc will be compute based on mean centers over the specified time interval'},
+                {'key':'xaxis', 'required':False, 'default':'y', 'help':'Direction to use for the xaxis'},
+                {'key':'yaxis', 'required':False, 'default':'z', 'help':'Direction to use for the yaxis'},
         ]
 
         def __init__(self, parent, inputs):
@@ -163,10 +164,12 @@ reynoldsstress:
             return
 
         def execute(self):
-            yc = self.actiondict['yc']
-            zc = self.actiondict['zc']
+            yc = self.actiondict['xc']
+            zc = self.actiondict['yc']
+            xaxis = self.actiondict['xaxis']
+            yaxis = self.actiondict['yaxis']
             iplanes = self.actiondict['iplane']
-            wake_center_files = self.actiondict['wake_center_files']
+            wake_center_files = self.actiondict['wake_meandering_stats_file']
 
             if iplanes == None:
                 iplanes = list(range(0,self.parent.dbReAvg['x'].shape[0]))
@@ -178,21 +181,45 @@ reynoldsstress:
                 print("Error: len(wake_center_files) != len(iplanes). Exiting.")
                 sys.exit()
 
-            self.parent.dbReAvg['uxur_avg']    = np.zeros_like(self.parent.dbReAvg['uv_avg'])
+            corr_mapping = {
+                'velocityx': 'u',
+                'velocityy': 'v',
+                'velocityz': 'w',
+                'velocitya1': 'ua1',
+                'velocitya2': 'ua2',
+                'velocitya3': 'ua3'
+            }
+
+            combinations = itertools.combinations_with_replacement(self.parent.varnames, 2)
+
+            corrlist = [
+                [f"{corr_mapping[var1]}{corr_mapping[var2]}_avg", var1, var2]
+                for var1, var2 in combinations
+        ]
+
+            self.parent.dbReAvg['uxur_avg']    = np.zeros_like(self.parent.dbReAvg[corrlist[0][0]])
+
             for iplaneiter, iplane in enumerate(iplanes):
                 if wake_center_files != None:
-                    df = pd.read_csv(wake_center_files[iplaneiter])
-                    filtered_df = df[(df['t'] >= self.parent.tavg[0]) & (df['t'] <= self.parent.tavg[-1])]
-                    y_center = filtered_df['yc'].mean()
-                    z_center = filtered_df['zc'].mean()
+                    wake_meandering_stats_file = wake_center_files[iplaneiter]
+                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                    y_center = wake_meandering_stats[xaxis + 'c_mean'][0]
+                    z_center = wake_meandering_stats[yaxis + 'c_mean'][0]
                 else:
                     y_center = yc
                     z_center = zc
 
-                YY = self.parent.dbReAvg['y'][iplane,:,:]
-                ZZ = self.parent.dbReAvg['z'][iplane,:,:]
-                uv_avg  = self.parent.dbReAvg['uv_avg'][iplane,:,:]
-                uw_avg  = self.parent.dbReAvg['uw_avg'][iplane,:,:]
+                # Convert to native axis1/axis2 coordinates if necessary
+                if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]):
+                    compute_axis1axis2_coords(self.parent.dbReAvg)
+                    uv_avg  = self.parent.dbReAvg[corr_mapping['velocity'+xaxis]+'ua3_avg'][iplane,:,:]
+                    uw_avg  = self.parent.dbReAvg[corr_mapping['velocity'+yaxis]+'ua3_avg'][iplane,:,:]
+                else:
+                    uv_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+xaxis]+'_avg'][iplane,:,:]
+                    uw_avg  = self.parent.dbReAvg['u'+corr_mapping['velocity'+yaxis]+'_avg'][iplane,:,:]
+
+                YY = self.parent.dbReAvg[xaxis][iplane,:,:]
+                ZZ = self.parent.dbReAvg[yaxis][iplane,:,:]
 
                 Theta = np.arctan2(ZZ-z_center,YY-y_center)
 
@@ -227,43 +254,45 @@ reynoldsstress:
             if iplanes == None:
                 iplanes = list(range(0,self.parent.dbReAvg['x'].shape[0]))
 
-            turbulent_transport_list = ['u_avg_uu_avg','u_avg_uv_avg','u_avg_uw_avg',\
-                                        'v_avg_uv_avg','v_avg_vv_avg','v_avg_vw_avg',\
-                                        'w_avg_uw_avg','w_avg_vw_avg','w_avg_ww_avg']
-                                        
+            corr_mapping = {
+                'velocityx': 'u',
+                'velocityy': 'v',
+                'velocityz': 'w',
+                'velocitya1': 'ua1',
+                'velocitya2': 'ua2',
+                'velocitya3': 'ua3'
+            }
+
+            combinations = itertools.combinations_with_replacement(self.parent.varnames, 2)
+
+            corrlist = [
+                f"{corr_mapping[var1]}{corr_mapping[var2]}_avg"
+                for var1, var2 in combinations 
+            ]
+
+            turbulent_transport_list = [
+                [f"{corr_mapping[var1]}_avg_{var2}", var1+"_avg", var2]
+                for var1 in self.parent.varnames for var2 in corrlist
+            ]
+
             if include_radial:
-                self.parent.dbReAvg['ux_avg_uxur_avg'] = np.zeros_like(self.parent.dbReAvg['uv_avg'])
+                self.parent.dbReAvg['ux_avg_uxur_avg'] = np.zeros_like(self.parent.dbReAvg[corrlist[0]])
 
             for term in turbulent_transport_list:
-                self.parent.dbReAvg[term] = np.zeros_like(self.parent.dbReAvg['uv_avg'])
+                self.parent.dbReAvg[term[0]] = np.zeros_like(self.parent.dbReAvg[corrlist[0]])
 
             for iplaneiter, iplane in enumerate(iplanes):
-                u_avg  = self.parent.dbReAvg['velocityx_avg'][iplane,:,:]
-                v_avg  = self.parent.dbReAvg['velocityy_avg'][iplane,:,:]
-                w_avg  = self.parent.dbReAvg['velocityz_avg'][iplane,:,:]
+                for term in turbulent_transport_list:
+                    u_avg  = self.parent.dbReAvg[term[1]][iplane,:,:]
+                    uu_avg = self.parent.dbReAvg[term[2]][iplane,:,:]
 
-                uu_avg  = self.parent.dbReAvg['uu_avg'][iplane,:,:]
-                uv_avg  = self.parent.dbReAvg['uv_avg'][iplane,:,:]
-                uw_avg  = self.parent.dbReAvg['uw_avg'][iplane,:,:]
-
-                vv_avg  = self.parent.dbReAvg['vv_avg'][iplane,:,:]
-                vw_avg  = self.parent.dbReAvg['vw_avg'][iplane,:,:]
-                ww_avg  = self.parent.dbReAvg['ww_avg'][iplane,:,:]
-
-
-                self.parent.dbReAvg['u_avg_uu_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uu_avg'][iplane,:,:]
-                self.parent.dbReAvg['u_avg_uv_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uv_avg'][iplane,:,:]
-                self.parent.dbReAvg['u_avg_uw_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uw_avg'][iplane,:,:]
-
-                self.parent.dbReAvg['v_avg_uv_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['uv_avg'][iplane,:,:]
-                self.parent.dbReAvg['v_avg_vv_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['vv_avg'][iplane,:,:]
-                self.parent.dbReAvg['v_avg_vw_avg'][iplane,:,:] = v_avg * self.parent.dbReAvg['vw_avg'][iplane,:,:]
-
-                self.parent.dbReAvg['w_avg_uw_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['uw_avg'][iplane,:,:]
-                self.parent.dbReAvg['w_avg_vw_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['vw_avg'][iplane,:,:]
-                self.parent.dbReAvg['w_avg_ww_avg'][iplane,:,:] = w_avg * self.parent.dbReAvg['ww_avg'][iplane,:,:]
+                    self.parent.dbReAvg[term[0]][iplane,:,:] = u_avg * uu_avg
 
                 if include_radial:
+                    if 'velocitya3' in self.parent.varnames:
+                        u_avg  = self.parent.dbReAvg['velocitya3_avg'][iplane,:,:]
+                    else:
+                        u_avg  = self.parent.dbReAvg['velocityx_avg'][iplane,:,:]
                     self.parent.dbReAvg['ux_avg_uxur_avg'][iplane,:,:] = u_avg * self.parent.dbReAvg['uxur_avg'][iplane,:,:]
 
             # Overwrite picklefile

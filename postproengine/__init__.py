@@ -225,7 +225,7 @@ def convert_pt_axis1axis2_to_xyz(ptlist, origin, axis1, axis2, axis3, offsets, i
         pt_xyz.append(porigin + pt[0]*n1 + pt[1]*n2)
     return pt_xyz
 
-def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec):
+def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
     """
     Converts the location of pt given in global xyz coordinates to 
     to natural plane (axis1-axis2) coordinates
@@ -234,14 +234,12 @@ def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, i
     """
     offsetlist = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets    
     # Compute the normals
-    n1 = axis1/np.linalg.norm(axis1)
-    n2 = axis2/np.linalg.norm(axis2)
+    R = get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3,rot)
+
     if np.linalg.norm(axis3) > 0.0:
         n3 = axis3/np.linalg.norm(axis3)
     else:
         n3 = axis3
-
-    R = np.array([n1,n2,n3])
 
     porigin = np.full_like(ptlist, 0.0)
     for ipt in range(len(ptlist)):
@@ -277,7 +275,7 @@ def project_pt_to_plane(pt, origin, axis1, axis2, axis3, offsets, iplane):
     p_proj     = pt + v_perp
     return p_proj
 
-def compute_axis1axis2_coords(db):
+def compute_axis1axis2_coords(db,rot=0):
     """
     Computes the native axis1 and axis2 coordinate system for a given
     set of sample planes.
@@ -311,7 +309,7 @@ def compute_axis1axis2_coords(db):
     # create list of points
     xyz_pt    = np.vstack([db['x'].ravel(), db['y'].ravel(), db['z'].ravel()])
 
-    avec = convert_pt_xyz_to_axis1axis2(xyz_pt.T, origin, axis1, axis2, axis3, offsets, iplanemat.ravel())
+    avec = convert_pt_xyz_to_axis1axis2(xyz_pt.T, origin, axis1, axis2, axis3, offsets, iplanemat.ravel(),rot)
     db['a1'] = avec[:,0].reshape(db['x'].shape)
     db['a2'] = avec[:,1].reshape(db['y'].shape)
     return
@@ -381,6 +379,86 @@ def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=N
                 interpdat[var] = np.append(interpdat[var], interpfunc(ptswap))
     return interpdat
 
+def get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3,rot=0):
+    """
+    Computes the linear operator from cartesian x,y,z to axis1,axis2,axis3
+
+    """
+
+    theta = rot * 2 * np.pi/360
+    Rtheta = np.array([
+        [np.cos(theta), -np.sin(theta),0],
+        [np.sin(theta), np.cos(theta),0],
+        [0, 0, 1],
+    ])
+    n1 = axis1/np.linalg.norm(axis1)
+    n2 = axis2/np.linalg.norm(axis2)
+    if np.linalg.norm(axis3) > 0.0:
+        n3 = axis3/np.linalg.norm(axis3)
+    else:
+        n3 = axis3
+
+    R = np.array([n1,n2,n3])
+    R = Rtheta @ R
+    return R
+
+def apply_coordinate_transform(R,u,v,w):
+    """
+    Applies the coordinate transform to velocity components u,v,w
+
+    """
+    lena3 = u.shape[0]
+    lena2 = u.shape[1]
+    lena1 = u.shape[2]
+
+    cartesian_velocity = np.stack((u, v, w), axis=-1)  # Shape: (len(a3), len(a2), len(a1), 3)
+
+    cartesian_velocity_reshaped = cartesian_velocity.reshape(-1, 3)  # Shape: (len(a3)*len(a2)*len(a1), 3)
+
+    velocity_a1a2a3_reshaped = R @ cartesian_velocity_reshaped.T  # Shape: (3,len(a3)*len(a2)*len(a3))
+
+    velocity_a1a2a3 = (velocity_a1a2a3_reshaped.T).reshape(lena3,lena2,lena1, 3)  # Shape: (len(a3), len(a2), len(a1), 3)
+
+    return velocity_a1a2a3[:,:,:,0],velocity_a1a2a3[:,:,:,1],velocity_a1a2a3[:,:,:,2]
+
+
+def convert_vel_xyz_to_axis1axis2(db,rot=0):
+    """
+    Converts the cartesian velocities in global xyz coordinates to 
+    to natural plane (axis1-axis2) velocity components 
+
+    """
+
+    # Compute the normals
+
+    #Is this always a linear/orthogonal transformation? Do we need to worry about forming Jacobians, or will this always work?
+    axis1 = db['axis1']
+    axis2 = db['axis2']
+    axis3 = db['axis3']
+    R = get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3,rot)
+
+    #Creating new dictionaries for velocitya1,velocitya2,velocitya3 for consistency. 
+    #We should have an option to load (all) data as numpy arrays, but I will come back to this. 
+    db['velocitya1'] = {}
+    db['velocitya2'] = {}
+    db['velocitya3'] = {}
+    for timestep in db['timesteps']:
+        #given the ijk_dims information for axis1, axis2, and axis3
+        #the data is read in axis3, axis2, axis1 so that the direction
+        #of offset planes is in the first axis
+
+        #u,v,w are cartesian velocities as a function of axis3, axis2, axis1.
+        u = np.array(db['velocityx'][timestep])
+        v = np.array(db['velocityy'][timestep])
+        w = np.array(db['velocityz'][timestep])
+
+        ua1,ua2,ua3 = apply_coordinate_transform(R,u,v,w)
+
+        db['velocitya1'][timestep] = ua1
+        db['velocitya2'][timestep] = ua2
+        db['velocitya3'][timestep] = ua3
+    return 
+
 # ------- reusable circumferential avg class ----------
 class circavgtemplate():
     """
@@ -412,6 +490,8 @@ class circavgtemplate():
          'help':'Theta end',},
         {'key':'Ntheta', 'required':False,  'default':180,
          'help':'Number of points in theta',},
+        {'key':'wake_meandering_stats_file','required':False,  'default':None,
+         'help':'For streamwise planes, wake center will be read from columns of these file, overiding centerpoint.', },
     ]
 
     interpdb = None
@@ -436,6 +516,7 @@ class circavgtemplate():
         savefile        = self.actiondict['savefile']
         theta1          = self.actiondict['theta1']
         theta2          = self.actiondict['theta2']
+        wake_center_files = self.actiondict['wake_meandering_stats_file']
 
         # Make sure db has the natural plane coordinates
         if ('a1' not in self.interpdb) or \
@@ -448,8 +529,14 @@ class circavgtemplate():
 
         # Loop through each plane
         if not isinstance(iplanes, list): iplanes = [iplanes,]
+        if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
+        self.interpdb['offsets'] = [self.interpdb['offsets']] if (not isinstance(self.interpdb['offsets'], list)) and (not isinstance(self.interpdb['offsets'],np.ndarray)) else self.interpdb['offsets']
 
-        for iplane in iplanes:
+        if wake_center_files != None and len(wake_center_files) != len(iplanes):
+            print("Error: len(wake_center_files) != len(iplanes). Exiting.")
+            sys.exit()
+
+        for iplaneiter, iplane in enumerate(iplanes):
             iplane = int(iplane)
             print('iplane = ',iplane)
             # Create the holding vectors
@@ -459,6 +546,16 @@ class circavgtemplate():
                 Rprofiledat[v] = []
 
             # Transform the centerpoint if necessary
+            if wake_center_files != None:
+                wake_meandering_stats_file = wake_center_files[iplaneiter]
+                wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                if pointcoordsystem == 'XYZ':
+                    centerpoint_in[1] = wake_meandering_stats['yc_mean'][0]
+                    centerpoint_in[2] = wake_meandering_stats['zc_mean'][0]
+                else:
+                    centerpoint_in[0][0] = wake_meandering_stats['a1c_mean'][0]
+                    centerpoint_in[1][1] = wake_meandering_stats['a2c_mean'][0]
+
             ptlist = [centerpoint_in]
             if pointcoordsystem == 'XYZ':
                 ptlist_a1a2 = convert_pt_xyz_to_axis1axis2(ptlist, self.interpdb['origin'],
@@ -468,7 +565,7 @@ class circavgtemplate():
             else:
                 ptlist_xyz = convert_pt_axis1axis2_to_xyz(ptlist, self.interpdb['origin'],
                                                           self.interpdb['axis1'], self.interpdb['axis2'],
-                                                          self.interpdb['axis3'], self.interpdb['offsets'], [iplane]*len(ptlist))
+                                                          self.interpdb['axis3'], self.interpdb['offsets'], iplane*len(ptlist))
                 center_a1a2 = centerpoint_in
 
             planeoffset = self.interpdb['offsets'][iplane]
@@ -589,6 +686,8 @@ class contourplottemplate():
          'help':'Title of the plot',},
         {'key':'plotfunc',  'required':False,  'default':'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])',
          'help':'Function to plot (lambda expression)',},
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},                
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -611,13 +710,14 @@ class contourplottemplate():
         clevels  = eval(self.actiondict['clevels'])
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
+        axis_rotation = self.actiondict['axis_rotation']
         if not isinstance(iplanes, list): iplanes = [iplanes,]
 
         # Convert to native axis1/axis2 coordinates if necessary
         if ('a1' in [xaxis, yaxis]) or \
            ('a2' in [xaxis, yaxis]) or \
            ('a3' in [xaxis, yaxis]):
-            compute_axis1axis2_coords(self.plotdb)
+            compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
         
         for iplane in iplanes:
             fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)

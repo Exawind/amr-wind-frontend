@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import time
 import struct
+from scipy.interpolate import RegularGridInterpolator
 
 """
 Plugin for creating instantaneous planar images
@@ -213,17 +214,25 @@ class postpro_dataconverts():
             permutation = [streamwise_index, lateral_index, vertical_index]
             t = np.array(self.parent.db['times'])
             tsteps = np.array(self.parent.db['timesteps'])
+            uRef = np.ndarray(nt)
             for titer , tval in enumerate(tsteps):
                 ts['u'][0,titer,:,:] = np.transpose(np.array(self.parent.db['velocityx'][tval]),permutation)[iplane,:,:]
                 ts['u'][1,titer,:,:] = np.transpose(np.array(self.parent.db['velocityy'][tval]),permutation)[iplane,:,:]
                 ts['u'][2,titer,:,:] = np.transpose(np.array(self.parent.db['velocityz'][tval]),permutation)[iplane,:,:]
+
+                interpolator = RegularGridInterpolator((y, z), ts['u'][0,titer, :, :])
+                uRef[titer]  = interpolator((yloc, zloc))
+               
 
             ts['t']  = np.round(t,decimals=7)
             ts['y']  = y - np.mean(y) # y always centered on 0
             ts['z']  = z
             ts['ID'] = ID
             ts['zRef'] = zloc
-            ts['uRef'] = float(np.mean(ts['u'][0,:,yind,zind]))
+            #ts['uRef'] = float(np.mean(ts['u'][0,:,yind,zind]))
+            ts['uRef'] = float(np.mean(uRef))
+            print("Reference velocity: ",ts['uRef'])
+
             print("Writing to bts file: ",btsfile)
             bts_write(ts,btsfile)
 
