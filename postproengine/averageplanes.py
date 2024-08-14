@@ -17,6 +17,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import interpolatetemplate, circavgtemplate
+from postproengine import compute_axis1axis2_coords
 
 """
 Plugin for post processing averaged planes
@@ -109,11 +110,15 @@ avgplanes:
             pklfile  = plane['savepklfile']
             self.varnames = plane['varnames']
             self.axis_rotation = plane['axis_rotation']
-            #Get all times if not specified 
-            filelist = []
-            for fileiter in range(0,len(ncfile)):
-                filelist.append(ncfile[fileiter])
 
+            #Get all times if not specified
+            if isinstance(ncfile, str):
+                filelist = [ncfile]
+            else:
+                filelist = []
+                for fileiter in range(0,len(ncfile)):
+                    filelist.append(ncfile[fileiter])
+                    
             if tavg==[]:
                 for fileiter, file in enumerate(filelist):
                     timevec = ppsample.getVar(ppsample.loadDataset(file), 'time')
