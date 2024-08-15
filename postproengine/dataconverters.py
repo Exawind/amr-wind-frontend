@@ -7,6 +7,7 @@ amrwindfedirs = ['../',
                  basepath]
 for x in amrwindfedirs: sys.path.insert(1, x)
 
+# TODO: Fix this import
 naluhelperdir = '/projects/wind_uq/lcheung/naluhelperscripts/'
 sys.path.insert(1, naluhelperdir)
 import plotSamplePlaneGUI as pplane
