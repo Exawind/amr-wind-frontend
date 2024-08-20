@@ -1044,7 +1044,8 @@ class MyApp(tkyg.App, object):
                                               deleteprevious=False)
         return
 
-    def addPostProSamplingObject(self, name, output_freq=None, fields=None):
+    def addPostProSamplingObject(self, name, output_freq=None, fields=None,
+                                 derived_fields=None):
         """
         """
         listbox_postprosetup = self.listboxpopupwindict['listboxpostprosetup']
@@ -1059,6 +1060,8 @@ class MyApp(tkyg.App, object):
             defaultdict['postprocessing_setup_output_frequency'] = output_freq
         if fields is not None:
             defaultdict['postprocessing_setup_fields']           = fields
+        if derived_fields is not None:
+            defaultdict['postprocessing_setup_derived_fields']   = derived_fields
         listbox_postprosetup.populatefromdict({'x':defaultdict},
                                               deleteprevious=False)
         return
