@@ -10,6 +10,8 @@ Make plots of csv files
   savefile            : Filename to save the picture (Optional, Default: '')
   xlabel              : Label on the X-axis (Optional, Default: 'Time [s]')
   ylabel              : Label on the Y-axis (Optional, Default: '')
+  xscale              : Scale on the X-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
+  yscale              : Scale on the Y-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
   title               : Title of the plot (Optional, Default: '')
   legendopts          : Dictionary with legend options (Optional, Default: {})
   postplotfunc        : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
