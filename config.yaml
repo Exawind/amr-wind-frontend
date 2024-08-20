@@ -4064,7 +4064,7 @@ popupwindow:
       label:      Variables
       frame:      postprosetup_samplingframe
       inputtype:  listbox
-      optionlist: [velocity, temperature, tke, actuator_src_term, velocity_mean, temperature_mean]
+      optionlist: [velocity, temperature, tke, pressure, actuator_src_term, velocity_mean, temperature_mean]
       defaultval: velocity
       listboxopt:
         selectmode: multiple
@@ -4072,6 +4072,16 @@ popupwindow:
       outputdef:
         outputprefix: None
         AMR-Wind: fields
+
+    - name:       postprocessing_setup_derived_fields
+      label:      Derived fields
+      frame:      postprosetup_samplingframe
+      inputtype:  str
+      defaultval: 
+      outputdef:
+        outputprefix: None
+        AMR-Wind: derived_fields
+
     # --- Averaging options ---
     - name:       postprocessing_setup_averaging_window
       label:      Averaging window

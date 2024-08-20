@@ -865,6 +865,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     outputto= getdictval(pdict['options'], 'outputto', defaultopt)
     outputfreq = getdictval(pdict['options'], 'outputfreq', defaultopt)
     outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
+    outputderived = getdictval(pdict['options'], 'outputderived', defaultopt)
     if outputvars is not None:
         outputvars = outputvars.split(',')
         #print('outputvars = '+repr(outputvars))
@@ -906,7 +907,8 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
     else:
         self.addPostProSamplingObject(outputto,
                                       output_freq=outputfreq,
-                                      fields=outputvars)
+                                      fields=outputvars,
+                                      derived_fields=outputderived)
         sampledict['sampling_outputto'] = [outputto]
     # --- Create centerline sampling probes --- 
     if probetype == 'centerline':
@@ -1098,6 +1100,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     outputto= getdictval(pdict['options'], 'outputto', defaultopt)
     outputfreq = getdictval(pdict['options'], 'outputfreq', defaultopt)
     outputvars = getdictval(pdict['options'], 'outputvars', defaultopt)
+    outputderived = getdictval(pdict['options'], 'outputderived', defaultopt)
     wholedomain= bool(getdictval(pdict['options'], 'wholedomain', defaultopt))
     if outputvars is not None:
         outputvars = outputvars.split(',')
@@ -1148,7 +1151,8 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     else:
         self.addPostProSamplingObject(outputto,
                                       output_freq=outputfreq,
-                                      fields=outputvars)
+                                      fields=outputvars,
+                                      derived_fields=outputderived)
         sampledict['sampling_outputto'] = [outputto]
 
     # --- Create centerline sampling probes --- 
@@ -1325,6 +1329,7 @@ def sampling_createAllProbes(self, verbose=False):
                   'outputto':None,           # Output to this sampler object
                   'outputfreq':None,         # Output at this frequency
                   'outputvars':None,         # Output these variables
+                  'outputderived':None,      # Output these derived field variables
                   'applyto':'',              # Act only on specific turbs
                   'wholedomain':False        # Create this probe across whole domain
                  }
