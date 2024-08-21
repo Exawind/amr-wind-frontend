@@ -11,18 +11,51 @@ from postproengine import registerplugin, mergedicts, registeraction
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
+import numpy.linalg as linalg
+import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import time
 import struct
+from netCDF4 import Dataset
 from scipy.interpolate import RegularGridInterpolator
+import gzip
 
 """
 Plugin for creating instantaneous planar images
 
 See README.md for details on the structure of classes here
 """
+
+def strdecode(v):
+    if sys.version_info[0] < 3:
+        return v.decode('utf-8')
+    else:
+        try:
+            return str(v, encoding='utf-8')
+        except:
+            return v
+
+def readheader(filename):
+    fname, fext = os.path.splitext(filename)
+    headers=[]
+    # Else just use the one file headers
+    if ((fext == '.gz') or (fext == '.GZ')):
+        with gzip.open(filename) as fp:
+            timestring = fp.readline().strip().split()[1]
+            headerline = str(strdecode(fp.readline()))
+            #print(headerline.replace("#",""))
+            headerstr = headerline.replace("#","").strip().split()
+            headers.extend(headerstr[:])
+    else:
+        with open(filename) as fp:
+            timestring = fp.readline().strip().split()[1]
+            headerstr = fp.readline().replace("#","").strip().split()
+            headers.extend(headerstr[:])
+    time=float(strdecode(timestring).replace(",",""))
+    return time, headers
+
 
 @registerplugin
 class postpro_dataconverts():
@@ -37,10 +70,8 @@ class postpro_dataconverts():
         # -- Execute parameters ----
         {'key':'name',     'required':True,  'default':'',
          'help':'An arbitrary name',},
-        {'key':'ncfile',   'required':True,  'default':'',
+        {'key':'filelist',   'required':True,  'default':'',
         'help':'NetCDF sampling file', },
-        {'key':'group',   'required':False,  'default':None,
-         'help':'Which group to pull from netcdf file', },
         {'key':'trange',    'required':True,  'default':None,
          'help':'Which times to pull from netcdf file, e.g., [tstart,tend]', },        
         
@@ -57,17 +88,13 @@ class postpro_dataconverts():
         return
     
     def execute(self, verbose=False):
+        self.verbose=verbose
         if verbose: print('Running '+self.name)
         # Loop through and create plots
         for planeiter , plane in enumerate(self.yamldictlist):
             #Get all times if not specified 
-            ncfile   = plane['ncfile']
-            times    = plane['trange']
-            group    = plane['group']
-            varnames = ['velocityx', 'velocityy', 'velocityz']
-
-            # Load the plane
-            self.db = ppsamplexr.getPlaneXR(ncfile, [0,1], varnames, groupname=group, verbose=verbose,includeattr=True,gettimes=True,timerange=times)
+            self.filelist= plane['filelist']
+            self.times    = plane['trange']
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
@@ -93,6 +120,8 @@ class postpro_dataconverts():
             {'key':'zhh',       'required':True,  'help':'Hub height location in z',  'default':None},
             {'key':'btsfile',   'required':True,  'default':None,'help':'bts file name to save results'},
             {'key':'ID',        'required':False, 'default':8,'help':'bts file ID. 8="periodic", 7="non-periodic"'},
+            {'key':'group',   'required':False,  'default':None,
+            'help':'Which group to pull from netcdf file', },
         ]
         
         def __init__(self, parent, inputs):
@@ -165,20 +194,26 @@ class postpro_dataconverts():
             print('Executing '+self.actionname)
             ts = {}
 
+
             yloc   = self.actiondict['yhh']
             zloc   = self.actiondict['zhh']
             iplane = self.actiondict['iplane']
             btsfile = self.actiondict['btsfile']
+            group    = self.actiondict['group']
             ID  = self.actiondict['ID']
 
-            XX = np.array(self.parent.db['x'])
-            YY = np.array(self.parent.db['y'])
-            ZZ = np.array(self.parent.db['z'])
+            XX = np.array(self.db['x'])
+            YY = np.array(self.db['y'])
+            ZZ = np.array(self.db['z'])
+            varnames = ['velocityx', 'velocityy', 'velocityz']
+
+            # Load the plane
+            self.db = ppsamplexr.getPlaneXR(self.parent.filelist, [0,1], varnames, groupname=group, verbose=verbose,includeattr=True,gettimes=True,timerange=self.parent.times)
 
             flow_index  = -np.ones(3)
             for i in range(0,3):
-                if (sum(self.parent.db['axis'+str(i+1)]) != 0):
-                    flow_index[i] = np.nonzero(self.parent.db['axis'+str(i+1)])[0][0]
+                if (sum(self.db['axis'+str(i+1)]) != 0):
+                    flow_index[i] = np.nonzero(self.db['axis'+str(i+1)])[0][0]
             for i in range(0,3):
                 if flow_index[i] == -1:
                     flow_index[i] = 3 - (flow_index[i-1] + flow_index[i-2])
@@ -203,7 +238,7 @@ class postpro_dataconverts():
             z = ZZ[tuple(slices)]
 
             xloc = x[iplane]
-            nt = len(self.parent.db['times'])
+            nt = len(self.db['times'])
             ny = len(y)
             nz = len(z)
             xind = np.where(x == xloc)[0]
@@ -212,13 +247,13 @@ class postpro_dataconverts():
 
             ts["u"]          = np.ndarray((3,nt,ny,nz)) 
             permutation = [streamwise_index, lateral_index, vertical_index]
-            t = np.array(self.parent.db['times'])
-            tsteps = np.array(self.parent.db['timesteps'])
+            t = np.array(self.db['times'])
+            tsteps = np.array(self.db['timesteps'])
             uRef = np.ndarray(nt)
             for titer , tval in enumerate(tsteps):
-                ts['u'][0,titer,:,:] = np.transpose(np.array(self.parent.db['velocityx'][tval]),permutation)[iplane,:,:]
-                ts['u'][1,titer,:,:] = np.transpose(np.array(self.parent.db['velocityy'][tval]),permutation)[iplane,:,:]
-                ts['u'][2,titer,:,:] = np.transpose(np.array(self.parent.db['velocityz'][tval]),permutation)[iplane,:,:]
+                ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,:,:]
+                ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,:,:]
+                ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,:,:]
 
                 interpolator = RegularGridInterpolator((y, z), ts['u'][0,titer, :, :])
                 uRef[titer]  = interpolator((yloc, zloc))
@@ -235,6 +270,155 @@ class postpro_dataconverts():
 
             print("Writing to bts file: ",btsfile)
             bts_write(ts,btsfile)
+
+            return 
+
+    # --- Inner classes for action list ---
+    @registeraction(actionlist)
+    class convert_nalu_wind_to_amr_wind():
+        actionname = 'nalu_to_amr'
+        blurb      = 'Converts a list of planes from Nalu-Wind to AMR-Wind'
+        required   = False
+        actiondefs = [
+            {'key':'savefile',  'required':True,  'default':None,'help':'Name of AMR-Wind file'},
+            {'key':'coordfile','required':False, 'default':None,'help':'Nalu-Wind coordinate file'},
+            {'key':'groupname','required':False, 'default':'plane', 'help':'netCDF group name'},
+        ]
+        """
+        convert:
+        name: Wake YZ plane
+        filelist: '/pscratch/kbrown1/GE2.8-127_Stable2_AWCOFF_bugfix/sliceData/YZslice/YZslice_01.00D_*_4.dat.gz'
+        trange: [200,1300]
+
+        nalu_to_amr: 
+            savefile: test.nc
+            coordfile: '/pscratch/kbrown1/GE2.8-127_Stable2_AWCOFF_bugfix/sliceData/YZslice/YZslice_01.00D_coordXYZ.dat.gz'
+        """
+
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            outFile  = self.actiondict['savefile']
+            coordfile = self.actiondict['coordfile']
+            groupname = self.actiondict['groupname']
+
+            filelist = ppsamplexr.getFileList(self.parent.filelist)
+
+            # Load the coordinates
+            if coordfile is None:
+                coorddat = np.loadtxt(filelist[0])[:, :6]
+            else:
+                coorddat = np.loadtxt(coordfile)
+
+            Numk      = int(max(coorddat[:,0]))+1
+            Numj      = int(max(coorddat[:,1]))+1
+            Numi      = int(max(coorddat[:,2]))+1
+
+            # Calculate the origin and plane axes
+            corner    = coorddat[(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+
+            # Compute axis1 and axis2
+            dxrow     = coorddat[(coorddat[:,1]==0)&(coorddat[:,2]==1),:][0][3:6]
+            dyrow     = coorddat[(coorddat[:,1]==1)&(coorddat[:,2]==0),:][0][3:6]
+            dX    = linalg.norm(np.array(dxrow)-np.array(corner))
+            dY    = linalg.norm(np.array(dyrow)-np.array(corner))
+            axis1 = (np.array(dxrow)-np.array(corner))*(Numi - 1)
+            axis2 = (np.array(dyrow)-np.array(corner))*(Numj - 1)
+
+            # Compute axis3 and offsets
+            if Numk > 1:
+                dzrow     = coorddat[(coorddat[:,0]==1)&(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+                axis3     = (np.array(dzrow)-np.array(corner))*(Numk - 1)
+                offsets   = []
+                for ik in range(Numk):
+                    dzoffset = coorddat[(coorddat[:,0]==(ik+1))&(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+                    zoffset  = np.array(dzoffset)-np.array(corner)
+                    offsets.append(linalg.norm(zoffset))
+            else:
+                axis3  = np.cross(axis1, axis2)
+                offsets = [0.0]
+            # Normalize and make them array
+            axis3  = axis3/np.linalg.norm(axis3)
+            offsets = np.array(offsets)
+            dfs = []
+            times = []
+            for i, fname in enumerate(filelist):
+                if self.parent.verbose: ppsamplexr.progress(i+1, len(filelist))
+                time, headers = readheader(fname)
+                times.append(time)
+                df = np.loadtxt(fname)
+                dfs.append(df)
+            if self.parent.verbose: print()
+
+            # Store Nalu data in AMR style plane sampler netcdf
+            times = np.array(times)
+            num_points = len(coorddat)
+            num_time_steps = len(times)
+
+            coordinates = np.zeros((num_points,3))
+            velocityx   = np.zeros((num_time_steps,num_points))
+            velocityy   = np.zeros((num_time_steps,num_points))
+            velocityz   = np.zeros((num_time_steps,num_points))
+
+            # Locate the columns with velocity
+            ivelocityx = headers.index('velocity_probe[0]')
+            ivelocityy = headers.index('velocity_probe[1]')
+            ivelocityz = headers.index('velocity_probe[2]')
+
+            for time_step, df in enumerate(dfs):
+                velocityx[time_step,:] = df[:, ivelocityx]
+                velocityy[time_step,:] = df[:, ivelocityy]
+                velocityz[time_step,:] = df[:, ivelocityz]
+
+            coordinates[:,0] = coorddat[:,3]
+            coordinates[:,1] = coorddat[:,4]
+            coordinates[:,2] = coorddat[:,5]
+
+            # Write out the netcdf file
+            ncFile = Dataset(outFile,'w')
+            ncFile.title="AMR-Wind data from Nalu output"
+            ncFile.createDimension('num_time_steps',num_time_steps)
+            ncFile.createDimension('ndim',3)
+            time_nc = ncFile.createVariable('time', times[0].dtype, ('num_time_steps',))
+            time_nc[:] = times
+
+            AMR_group_name = groupname
+            grp = ncFile.createGroup(AMR_group_name)
+            grp.createDimension('num_points',num_points)
+            coordinates_nc = grp.createVariable('coordinates', coordinates[0,0].dtype, ('num_points','ndim'))
+            velocityx_nc = grp.createVariable('velocityx', velocityx[0,0].dtype, ('num_time_steps','num_points'))
+            velocityy_nc = grp.createVariable('velocityy', velocityy[0,0].dtype, ('num_time_steps','num_points'))
+            velocityz_nc = grp.createVariable('velocityz', velocityz[0,0].dtype, ('num_time_steps','num_points'))
+
+            grp.sampling_type='PlaneSampler'
+
+            grp.ijk_dims=np.array([int(Numi),int(Numj),int(Numk)])
+
+            coordinates_nc[:] = coordinates
+
+            velocityx_nc[:] = velocityx
+            velocityy_nc[:] = velocityy
+            velocityz_nc[:] = velocityz
+
+            grp.origin = corner
+
+            grp.axis1  = axis1
+            grp.axis2  = axis2
+            grp.axis3  = axis3
+
+            grp.offsets = offsets
+
+            if self.parent.verbose:
+                print(ncFile,flush=True)
+                for grp in ncFile.groups.items():
+                    print(grp,flush=True)
+            ncFile.close()
+            if self.parent.verbose:
+                print('wrote '+outFile)
 
             return 
 
