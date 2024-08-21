@@ -48,6 +48,10 @@ class postpro_plotcsv():
          'help':'Label on the X-axis', },
         {'key':'ylabel',    'required':False,  'default':'',
          'help':'Label on the Y-axis', },
+        {'key':'xscale',    'required':False,  'default':'linear',
+         'help':'Scale on the X-axis (options: linear/log/symlog/logit)', },
+        {'key':'yscale',    'required':False,  'default':'linear',
+         'help':'Scale on the Y-axis (options: linear/log/symlog/logit)', },
         {'key':'title',     'required':False,  'default':'',
          'help':'Title of the plot',},
         {'key':'legendopts', 'required':False,  'default':{},
@@ -86,6 +90,8 @@ plotcsv:
             figsize  = plotitem['figsize']
             xlabel   = plotitem['xlabel']
             ylabel   = plotitem['ylabel']
+            xscale   = plotitem['xscale']
+            yscale   = plotitem['yscale']
             title    = plotitem['title']
             legendopts = plotitem['legendopts']
             postplotfunc = plotitem['postplotfunc']
@@ -105,6 +111,8 @@ plotcsv:
             # Set up axes and labels
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
+            ax.set_xscale(xscale)
+            ax.set_yscale(yscale)
             ax.set_title(title)
             ax.legend(**legendopts)
 
