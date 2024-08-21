@@ -4,8 +4,7 @@ Converts netcdf sample planes to different file formats
 ## Inputs: 
 ```
   name                : An arbitrary name (Required)
-  ncfile              : NetCDF sampling file (Required)
-  group               : Which group to pull from netcdf file (Optional, Default: None)
+  filelist            : NetCDF sampling file (Required)
   trange              : Which times to pull from netcdf file, e.g., [tstart,tend] (Required)
 ```
 
@@ -17,4 +16,9 @@ Converts netcdf sample planes to different file formats
     zhh               : Hub height location in z (Required)
     btsfile           : bts file name to save results (Required)
     ID                : bts file ID. 8="periodic", 7="non-periodic" (Optional, Default: 8)
+    group             : Which group to pull from netcdf file (Optional, Default: None)
+  nalu_to_amr         : ACTION: Converts a list of planes from Nalu-Wind to AMR-Wind (Optional)
+    savefile          : Name of AMR-Wind file (Required)
+    coordfile         : Nalu-Wind coordinate file (Optional, Default: None)
+    groupname         : netCDF group name (Optional, Default: 'plane')
 ```

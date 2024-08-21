@@ -7,15 +7,11 @@ amrwindfedirs = ['../',
                  basepath]
 for x in amrwindfedirs: sys.path.insert(1, x)
 
-# TODO: Fix this import
-naluhelperdir = '/projects/wind_uq/lcheung/naluhelperscripts/'
-sys.path.insert(1, naluhelperdir)
-import plotSamplePlaneGUI as pplane
-
 from postproengine import registerplugin, mergedicts, registeraction
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
+import numpy.linalg as linalg
 import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
@@ -24,12 +20,42 @@ import time
 import struct
 from netCDF4 import Dataset
 from scipy.interpolate import RegularGridInterpolator
+import gzip
 
 """
 Plugin for creating instantaneous planar images
 
 See README.md for details on the structure of classes here
 """
+
+def strdecode(v):
+    if sys.version_info[0] < 3:
+        return v.decode('utf-8')
+    else:
+        try:
+            return str(v, encoding='utf-8')
+        except:
+            return v
+
+def readheader(filename):
+    fname, fext = os.path.splitext(filename)
+    headers=[]
+    # Else just use the one file headers
+    if ((fext == '.gz') or (fext == '.GZ')):
+        with gzip.open(filename) as fp:
+            timestring = fp.readline().strip().split()[1]
+            headerline = str(strdecode(fp.readline()))
+            #print(headerline.replace("#",""))
+            headerstr = headerline.replace("#","").strip().split()
+            headers.extend(headerstr[:])
+    else:
+        with open(filename) as fp:
+            timestring = fp.readline().strip().split()[1]
+            headerstr = fp.readline().replace("#","").strip().split()
+            headers.extend(headerstr[:])
+    time=float(strdecode(timestring).replace(",",""))
+    return time, headers
+
 
 @registerplugin
 class postpro_dataconverts():
@@ -62,6 +88,7 @@ class postpro_dataconverts():
         return
     
     def execute(self, verbose=False):
+        self.verbose=verbose
         if verbose: print('Running '+self.name)
         # Loop through and create plots
         for planeiter , plane in enumerate(self.yamldictlist):
@@ -254,9 +281,8 @@ class postpro_dataconverts():
         required   = False
         actiondefs = [
             {'key':'savefile',  'required':True,  'default':None,'help':'Name of AMR-Wind file'},
-            {'key':'dt','required':True, 'default':0,'help':'Timestep in Nalu simulation'},
-            {'key':'dtiter','required':True, 'default':0,'help':'Output frequency of timesteps in Nalu-Wind simulations'},
-            {'key':'coordfile','required':True, 'default':None,'help':'Nalu-Wind coordinate file'},
+            {'key':'coordfile','required':False, 'default':None,'help':'Nalu-Wind coordinate file'},
+            {'key':'groupname','required':False, 'default':'plane', 'help':'netCDF group name'},
         ]
         """
         convert:
@@ -266,8 +292,6 @@ class postpro_dataconverts():
 
         nalu_to_amr: 
             savefile: test.nc
-            dt: 0.02
-            dtiter: 25
             coordfile: '/pscratch/kbrown1/GE2.8-127_Stable2_AWCOFF_bugfix/sliceData/YZslice/YZslice_01.00D_coordXYZ.dat.gz'
         """
 
@@ -279,55 +303,82 @@ class postpro_dataconverts():
 
         def execute(self):
             outFile  = self.actiondict['savefile']
-            dt       = self.actiondict['dt']
-            dtiter   = self.actiondict['dtiter']
             coordfile = self.actiondict['coordfile']
-            istart = self.parent.times[0]/dt
-            iend   = self.parent.times[1]/dt
+            groupname = self.actiondict['groupname']
 
             filelist = ppsamplexr.getFileList(self.parent.filelist)
 
-            alliters  = np.arange(istart, iend+dt, dtiter)
+            # Load the coordinates
+            if coordfile is None:
+                coorddat = np.loadtxt(filelist[0])[:, :6]
+            else:
+                coorddat = np.loadtxt(coordfile)
+
+            Numk      = int(max(coorddat[:,0]))+1
+            Numj      = int(max(coorddat[:,1]))+1
+            Numi      = int(max(coorddat[:,2]))+1
+
+            # Calculate the origin and plane axes
+            corner    = coorddat[(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+
+            # Compute axis1 and axis2
+            dxrow     = coorddat[(coorddat[:,1]==0)&(coorddat[:,2]==1),:][0][3:6]
+            dyrow     = coorddat[(coorddat[:,1]==1)&(coorddat[:,2]==0),:][0][3:6]
+            dX    = linalg.norm(np.array(dxrow)-np.array(corner))
+            dY    = linalg.norm(np.array(dyrow)-np.array(corner))
+            axis1 = (np.array(dxrow)-np.array(corner))*(Numi - 1)
+            axis2 = (np.array(dyrow)-np.array(corner))*(Numj - 1)
+
+            # Compute axis3 and offsets
+            if Numk > 1:
+                dzrow     = coorddat[(coorddat[:,0]==1)&(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+                axis3     = (np.array(dzrow)-np.array(corner))*(Numk - 1)
+                offsets   = []
+                for ik in range(Numk):
+                    dzoffset = coorddat[(coorddat[:,0]==(ik+1))&(coorddat[:,1]==0)&(coorddat[:,2]==0),:][0][3:6]
+                    zoffset  = np.array(dzoffset)-np.array(corner)
+                    offsets.append(linalg.norm(zoffset))
+            else:
+                axis3  = np.cross(axis1, axis2)
+                offsets = [0.0]
+            # Normalize and make them array
+            axis3  = axis3/np.linalg.norm(axis3)
+            offsets = np.array(offsets)
             dfs = []
             times = []
-            for i,iiter in enumerate(alliters):
-                dat, time , header = pplane.loadplanefile(filelist[i],checkcomma=False,coordfile=coordfile)
-                df = pd.DataFrame(np.array(dat),columns=header)
-
-                # Read in the series of Nalu dat files as pandas dataframes 
-                time = iiter*dt
-                times.append(float(time))
+            for i, fname in enumerate(filelist):
+                if self.parent.verbose: ppsamplexr.progress(i+1, len(filelist))
+                time, headers = readheader(fname)
+                times.append(time)
+                df = np.loadtxt(fname)
                 dfs.append(df)
+            if self.parent.verbose: print()
 
             # Store Nalu data in AMR style plane sampler netcdf
             times = np.array(times)
-            num_points = dfs[0].shape[0]
+            num_points = len(coorddat)
             num_time_steps = len(times)
-            keys = dfs[0].keys()
+
             coordinates = np.zeros((num_points,3))
             velocityx   = np.zeros((num_time_steps,num_points))
             velocityy   = np.zeros((num_time_steps,num_points))
             velocityz   = np.zeros((num_time_steps,num_points))
 
+            # Locate the columns with velocity
+            ivelocityx = headers.index('velocity_probe[0]')
+            ivelocityy = headers.index('velocity_probe[1]')
+            ivelocityz = headers.index('velocity_probe[2]')
+
             for time_step, df in enumerate(dfs):
-                velocityx[time_step,:] = df[keys[6]]
-                velocityy[time_step,:] = df[keys[7]]
-                velocityz[time_step,:] = df[keys[8]]
+                velocityx[time_step,:] = df[:, ivelocityx]
+                velocityy[time_step,:] = df[:, ivelocityy]
+                velocityz[time_step,:] = df[:, ivelocityz]
 
-            coordinates[:,0] = dfs[0][keys[3]]
-            coordinates[:,1] = dfs[0][keys[4]]
-            coordinates[:,2] = dfs[0][keys[5]]
-            uniquex = np.unique(coordinates[:,0])
-            uniquey = np.unique(coordinates[:,1])
-            uniquez = np.unique(coordinates[:,2])
-            maxx = max(coordinates[:,0])
-            maxy = max(coordinates[:,1])
-            maxz = max(coordinates[:,2])
+            coordinates[:,0] = coorddat[:,3]
+            coordinates[:,1] = coorddat[:,4]
+            coordinates[:,2] = coorddat[:,5]
 
-            minx = min(coordinates[:,0])
-            miny = min(coordinates[:,1])
-            minz = min(coordinates[:,2])
-
+            # Write out the netcdf file
             ncFile = Dataset(outFile,'w')
             ncFile.title="AMR-Wind data from Nalu output"
             ncFile.createDimension('num_time_steps',num_time_steps)
@@ -335,7 +386,7 @@ class postpro_dataconverts():
             time_nc = ncFile.createVariable('time', times[0].dtype, ('num_time_steps',))
             time_nc[:] = times
 
-            AMR_group_name = 'xslice'
+            AMR_group_name = groupname
             grp = ncFile.createGroup(AMR_group_name)
             grp.createDimension('num_points',num_points)
             coordinates_nc = grp.createVariable('coordinates', coordinates[0,0].dtype, ('num_points','ndim'))
@@ -345,8 +396,7 @@ class postpro_dataconverts():
 
             grp.sampling_type='PlaneSampler'
 
-            #TODO: Check ordering! y,z,x ordering should come from index_i, index_j information
-            grp.ijk_dims=np.array([int(len(uniquey)),int(len(uniquez)),int(len(uniquex))])
+            grp.ijk_dims=np.array([int(Numi),int(Numj),int(Numk)])
 
             coordinates_nc[:] = coordinates
 
@@ -354,18 +404,21 @@ class postpro_dataconverts():
             velocityy_nc[:] = velocityy
             velocityz_nc[:] = velocityz
 
-            grp.origin=np.array([minx,miny,minz])
+            grp.origin = corner
 
-            grp.axis1=np.array([0,maxy-miny,0])
-            grp.axis2=np.array([0,0,maxz-minz])
-            grp.axis3=np.array([1,0,0])
+            grp.axis1  = axis1
+            grp.axis2  = axis2
+            grp.axis3  = axis3
 
-            grp.offsets = 0.0
+            grp.offsets = offsets
 
-            print(ncFile,flush=True)
-            for grp in ncFile.groups.items():
-                print(grp,flush=True)
+            if self.parent.verbose:
+                print(ncFile,flush=True)
+                for grp in ncFile.groups.items():
+                    print(grp,flush=True)
             ncFile.close()
-        
+            if self.parent.verbose:
+                print('wrote '+outFile)
+
             return 
 
