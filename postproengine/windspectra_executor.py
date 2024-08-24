@@ -149,8 +149,8 @@ windspectra:
                 self.Svv_save = self.favg_save*self.Svv_save/self.avgUlong**2
                 self.Sww_save = self.favg_save*self.Sww_save/self.avgUlong**2
                 
-            print(favg)
-            print(Suu_avg)
+            #print(favg)
+            #print(Suu_avg)
 
             # Save data to csv file
             dfcsv = pd.DataFrame()

@@ -108,7 +108,7 @@ def probelocations(s=1):
     def execute(self, verbose=False):
         # Do any task-related here
         if verbose: print('Running '+self.name)
-        for iplane, plane in enumerate(self.yamldictlist):
+        for iplanenum, plane in enumerate(self.yamldictlist):
             # Run any necessary stuff for this task
             ncfile   = plane['ncfile']
             group    = plane['group']
@@ -128,7 +128,7 @@ def probelocations(s=1):
             avgdat, headers = corr.avgNCplaneXR(ncfile, timerange, group, iplane, verbose=verbose)
 
             # Compute the wind direction and WS
-            ws, winddir           = corr.getavgwind(avgdat, headers, iplane)
+            ws, winddir           = corr.getavgwind(avgdat, headers, 0)
             print('WS   = '+repr(ws))
             print('Wdir = '+repr(winddir))
             winddirORIG = winddir + 0.0
@@ -144,7 +144,8 @@ def probelocations(s=1):
                 raise ValueError('len(plistLONG[0])=%i'%len(plistLONG[0]))
             
             # Make the lateral probe list
-            winddir = round(winddirORIG-90.0, 2)
+            winddir = round(winddirORIG+90.0, 2)
+            print(winddir)
             if (winddir>270): s=-1
             else:             s=+1
             startp2     = func(s=s)
@@ -205,8 +206,8 @@ def probelocations(s=1):
                 if action.required and (action.actionname not in yamldict.keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
-                if action.actionname in self.yamldictlist[iplane].keys():
-                    actionitem = action(self, self.yamldictlist[iplane][action.actionname])
+                if action.actionname in self.yamldictlist[iplanenum].keys():
+                    actionitem = action(self, self.yamldictlist[iplanenum][action.actionname])
                     actionitem.execute()
 
         # Done with executor
@@ -233,9 +234,16 @@ def probelocations(s=1):
             savefile  = self.actiondict['savefile']
 
             # Calculate and save the data
-            LONGlengthscale = corr.calclengthscale(self.parent.xi, self.parent.avgRijLong-0.0)
+            try:
+                LONGlengthscale = corr.calclengthscale(self.parent.xi, self.parent.avgRijLong-0.0)
+            except:
+                LONGlengthscale = 0.0
             print('LONG lengthscale = %f'%LONGlengthscale)
-            LATlengthscale = corr.calclengthscale(self.parent.xi, self.parent.avgRijLat)
+
+            try:
+                LATlengthscale = corr.calclengthscale(self.parent.xi, self.parent.avgRijLat)
+            except:
+                LATlengthscale = 0.0
             print('LAT lengthscale  = %f'%LATlengthscale)
             savedict = OrderedDict({'longitudinal':float(LONGlengthscale),
                                     'lateral':float(LATlengthscale)})
