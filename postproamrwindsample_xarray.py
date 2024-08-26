@@ -276,10 +276,19 @@ def avgPlaneXR(ncfileinput, timerange,
     suf='_avg'
 
     #Apply transformation after computing cartesian average
-    transform=False
-    if varnames == ['velocitya1','velocitya2','velocitya3']:
-        transform = True
-        varnames = ['velocityx','velocityy','velocityz']
+    natural_velocity_mapping = {
+        'velocitya1': 'velocityx',
+        'velocitya2': 'velocityy',
+        'velocitya3': 'velocityz'
+    }
+
+    transform = False
+    for viter, v in enumerate(varnames):
+        for key, value in natural_velocity_mapping.items():
+            if key in v:
+                varnames[viter] = value
+                transform = True
+                break  
 
     # Create a fresh db dictionary
     db = {}
@@ -374,6 +383,7 @@ def avgPlaneXR(ncfileinput, timerange,
         dbfile = open(savepklfile, 'wb')
         pickle.dump(db, dbfile, protocol=2)
         dbfile.close()
+
     return db
 
 def MinMaxStd_PlaneXR(ncfile, timerange,
