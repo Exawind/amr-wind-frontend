@@ -234,8 +234,8 @@ class postpro_spod():
             'help':'Which times to average over', }, 
         {'key':'group',   'required':False,  'default':None,
          'help':'Which group to pull from netcdf file', },
-        {'key':'nperseg',   'required':True,  'default':256,
-         'help':'Number of snapshots per segment to specify number of blocks.', },
+        {'key':'nperseg',   'required':False,  'default':None,
+         'help':'Number of snapshots per segment to specify number of blocks. Default is 1 block.', },
         {'key':'xc',   'required':False,  'default':None,
          'help':'Wake center on xaxis', },
         {'key':'yc',   'required':False,  'default':None,
@@ -434,6 +434,9 @@ spod:
                             udata_polar[:,:,titer,1] = v_vel * np.cos(TT) + w_vel * np.sin(TT)
                             udata_polar[:,:,titer,2] = -v_vel * np.sin(TT) + w_vel * np.cos(TT)
 
+                    if nperseg==None:
+                        nperseg = len(times)
+                        print("nperseg: ",nperseg)
                     Nkt = int(nperseg/2) + 1
                     time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
                     dt = times[1]-times[0]
@@ -551,7 +554,9 @@ spod:
                         self.variables['theta']    = theta
                         self.variables['y']        = y
                         self.variables['z']        = z
-                        self.variables['x']        = x
+                        self.variables['x']        = xc
+                        self.variables['ycenter']  = ycenter
+                        self.variables['zcenter']  = zcenter
                         if not os.path.exists(self.output_dir):
                             os.makedirs(self.output_dir)
                         savefname = savefile.format(iplane=iplane)
