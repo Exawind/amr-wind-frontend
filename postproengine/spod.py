@@ -263,7 +263,7 @@ class postpro_spod():
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
         {'key':'savepklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save results', },
-        {'key':'loadpklfile', 'required':False,  'default':'',
+        {'key':'loadpklfile', 'required':False,  'default':None,
         'help':'Name of pickle file to load to perform actions', },
         {'key':'compute_eigen_vectors', 'required':False,  'default':True,
         'help':'Boolean to compute eigenvectors or just eigenvalues', },
@@ -340,7 +340,7 @@ spod:
         # Loop through and create plots
         for planeiter, plane in enumerate(self.yamldictlist):
             iplanes               = plane['iplane']
-            trange                = plane['trange']
+            self.trange           = plane['trange']
             ncfile                = plane['ncfile']
             self.diam             = plane['diam']
             group                 = plane['group']
@@ -349,18 +349,18 @@ spod:
             NTheta                = plane['NTheta']
             ycenter               = plane['xc']
             zcenter               = plane['yc']
-            nperseg               = plane['nperseg']
+            self.nperseg          = plane['nperseg']
             correlations          = plane['correlations']
             remove_temporal_mean  = plane['remove_temporal_mean']
             remove_azimuthal_mean = plane['remove_azimuthal_mean']
             savefile              = plane['savepklfile']
             loadpklfile           = plane['loadpklfile']
-            self.output_dir            = plane ['output_dir']
+            self.output_dir       = plane ['output_dir']
             compute_eigen_vectors = plane ['compute_eigen_vectors']
             sort                  =  plane ['sort']
             wake_center_files = plane['wake_meandering_stats_file']
             save_num_modes        = plane['save_num_modes']
-            cylindrical_velocities= plane['cylindrical_velocities']
+            self.cylindrical_velocities= plane['cylindrical_velocities']
             self.xaxis    = plane['xaxis']
             self.yaxis    = plane['yaxis']
             self.varnames = plane['varnames']
@@ -377,73 +377,73 @@ spod:
 
             for iplaneiter, iplane in enumerate(iplanes):
                 self.iplane = iplane
-                if not loadpklfile:
+                if self.verbose:
+                    print("--> Reading in velocity data (iplane="+str(iplane)+")")
+                udata_cart,xc,y,z,self.times = read_cart_data(ncfile,self.varnames,group,self.trange,iplane,self.xaxis,self.yaxis)
+                tsteps = range(len(self.times))
+
+                """
+                Define polar grid 
+                """
+                LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
+                LTheta = 2 * np.pi
+                r = np.linspace(0,LR,NR)
+                theta = np.linspace(0,LTheta,NTheta+1)[0:-1] #periodic grid in theta
+                self.RR, self.TT = np.meshgrid(r,theta,indexing='ij')
+                dr = r[1]-r[0]
+                dtheta = theta[1]-theta[0]
+                components = ['velocityx','velocityy','velocityz']
+
+                if self.verbose:
+                    print("--> Interpolating cartesian data to polar coordinates")
+
+                if wake_center_files != None:
+                    wake_meandering_stats_file = wake_center_files[iplaneiter]
+                    wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
+                    ycenter = wake_meandering_stats[self.xaxis + 'c_mean'][0]
+                    zcenter = wake_meandering_stats[self.yaxis + 'c_mean'][0]
                     if self.verbose:
-                        print("--> Reading in velocity data (iplane="+str(iplane)+")")
-                    udata_cart,xc,y,z,times = read_cart_data(ncfile,self.varnames,group,trange,iplane,self.xaxis,self.yaxis)
-                    tsteps = range(len(times))
-
-                    """
-                    Define polar grid 
-                    """
-                    LR = (self.diam/2.0)*LR_factor #specify radial extent for POD analysis 
-                    LTheta = 2 * np.pi
-                    r = np.linspace(0,LR,NR)
-                    theta = np.linspace(0,LTheta,NTheta+1)[0:-1] #periodic grid in theta
-                    RR, TT = np.meshgrid(r,theta,indexing='ij')
-                    dr = r[1]-r[0]
-                    dtheta = theta[1]-theta[0]
-                    components = ['velocityx','velocityy','velocityz']
-
-                    if self.verbose:
-                        print("--> Interpolating cartesian data to polar coordinates")
-
-                    if wake_center_files != None:
-                        wake_meandering_stats_file = wake_center_files[iplaneiter]
-                        wake_meandering_stats = pd.read_csv(wake_meandering_stats_file)
-                        ycenter = wake_meandering_stats[self.xaxis + 'c_mean'][0]
-                        zcenter = wake_meandering_stats[self.yaxis + 'c_mean'][0]
+                        print("--> Read in mean wake centers from ",wake_meandering_stats_file+". "+self.xaxis+"c = "+str(ycenter)+", "+self.yaxis+"c = "+str(zcenter)+".")
+                else:
+                    if plane['xc'] == None: 
+                        ycenter = (y[-1]+y[0])/2.0
                         if self.verbose:
-                            print("--> Read in mean wake centers from ",wake_meandering_stats_file+". "+self.xaxis+"c = "+str(ycenter)+", "+self.yaxis+"c = "+str(zcenter)+".")
-                    else:
-                        if plane['xc'] == None: 
-                            ycenter = (y[-1]+y[0])/2.0
-                            if self.verbose:
-                                print("--> Centering on middle of xaxis: ",ycenter)
-                        if plane['yc'] == None: 
-                            zcenter = (z[-1]+z[0])/2.0
-                            if self.verbose:
-                                print("--> Centering on middle of yaxis: ",zcenter)
+                            print("--> Centering on middle of xaxis: ",ycenter)
+                    if plane['yc'] == None: 
+                        zcenter = (z[-1]+z[0])/2.0
+                        if self.verbose:
+                            print("--> Centering on middle of yaxis: ",zcenter)
 
-                    udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
+                self.udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
+                for titer , t in enumerate(tsteps):
+                    for compind in range(len(components)):
+                        if zcenter-LR < 0:
+                            print("Error: zcenter - LR negative. Exiting")
+                            print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
+                            sys.exit()
+                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
+
+                if self.cylindrical_velocities==True:
+                    if self.verbose:
+                        print("--> Transforming to cylindrical velocity components")
                     for titer , t in enumerate(tsteps):
-                        for compind in range(len(components)):
-                            if zcenter-LR < 0:
-                                print("Error: zcenter - LR negative. Exiting")
-                                print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
-                                sys.exit()
-                            udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,RR,TT,ycenter,zcenter)
+                        v_vel = np.copy(self.udata_polar[:,:,titer,1])
+                        w_vel = np.copy(self.udata_polar[:,:,titer,2])
 
-                    if cylindrical_velocities==True:
-                        if self.verbose:
-                            print("--> Transforming to cylindrical velocity components")
-                        for titer , t in enumerate(tsteps):
-                            v_vel = np.copy(udata_polar[:,:,titer,1])
-                            w_vel = np.copy(udata_polar[:,:,titer,2])
+                        self.udata_polar[:,:,titer,1] = v_vel * np.cos(self.TT) + w_vel * np.sin(self.TT)
+                        self.udata_polar[:,:,titer,2] = -v_vel * np.sin(self.TT) + w_vel * np.cos(self.TT)
 
-                            udata_polar[:,:,titer,1] = v_vel * np.cos(TT) + w_vel * np.sin(TT)
-                            udata_polar[:,:,titer,2] = -v_vel * np.sin(TT) + w_vel * np.cos(TT)
-
-                    if nperseg==None:
-                        nperseg = len(times)
-                        print("nperseg: ",nperseg)
-                    Nkt = int(nperseg/2) + 1
-                    time_segments = np.array([times[i:i+nperseg] for i in range(0,len(times)-nperseg+1,nperseg-nperseg//2)])
-                    dt = times[1]-times[0]
-                    w = np.hamming(nperseg)
+                if loadpklfile==None:
+                    if self.nperseg==None:
+                        self.nperseg = len(self.times)
+                        print("nperseg: ",self.nperseg)
+                    Nkt = int(self.nperseg/2) + 1
+                    time_segments = np.array([self.times[i:i+self.nperseg] for i in range(0,len(self.times)-self.nperseg+1,self.nperseg-self.nperseg//2)])
+                    dt = self.times[1]-self.times[0]
+                    w = np.hamming(self.nperseg)
                     NB = time_segments.shape[0] #number of blocks 
                     LT = time_segments[0][-1]-time_segments[0][0]
-                    angfreq = get_angular_wavenumbers(nperseg,LT)
+                    angfreq = get_angular_wavenumbers(self.nperseg,LT)
                     angfreq = angfreq[0:Nkt]
 
                     if self.verbose:
@@ -452,10 +452,10 @@ spod:
                     for rind in np.arange(0,len(r)):
                         for thetaind in np.arange(0,len(theta)):
                             for compind,comp in enumerate(components):
-                                temp_signal = udata_polar[rind,thetaind,:,compind]
+                                temp_signal = self.udata_polar[rind,thetaind,:,compind]
                                 if remove_temporal_mean:
                                     temp_signal = temp_signal - np.mean(temp_signal) #subtract out temporal mean
-                                tfreq , tfft = welch_fft(temp_signal,fs=1/dt,nperseg=nperseg,subtract_mean=remove_azimuthal_mean)
+                                tfreq , tfft = welch_fft(temp_signal,fs=1/dt,nperseg=self.nperseg,subtract_mean=remove_temporal_mean)
                                 udata_that[rind,thetaind,:,:,compind] = tfft
 
                     if self.verbose:
@@ -488,7 +488,7 @@ spod:
                         self.sorted_inds  = {corr: {} for corr in correlations}
 
                     W1D = form_weighting_matrix_simpsons_rule(r)
-                    scaling_factor_k = dt / (sum(np.hamming(nperseg)*NB)) 
+                    scaling_factor_k = dt / (sum(np.hamming(self.nperseg)*NB)) 
 
                     corr_dict = {'U': 0, 'V': 1, 'W': 2}
                     for corr in correlations:
@@ -513,7 +513,6 @@ spod:
 
                         for ktheta_ind , ktheta_val in enumerate(ktheta):
                             for tfreq_ind , tfreq_val in enumerate(tfreq):
-
                                 POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
                                 for corr_ind_iter , corr_ind in enumerate(corr_inds):
                                     POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
@@ -557,6 +556,7 @@ spod:
                         self.variables['x']        = xc
                         self.variables['ycenter']  = ycenter
                         self.variables['zcenter']  = zcenter
+                        self.variables['nperseg']  = self.nperseg
                         if not os.path.exists(self.output_dir):
                             os.makedirs(self.output_dir)
                         savefname = savefile.format(iplane=iplane)
@@ -592,7 +592,7 @@ spod:
                             for obj in objects:
                                 pickle.dump(obj, f)
 
-                if loadpklfile:
+                if loadpklfile!=None:
                     print("--> Loading from: ",loadpklfile)
                     with open(loadpklfile, 'rb') as f:
                         self.POD_eigenvalues = pickle.load(f)
@@ -731,10 +731,17 @@ spod:
             correlations = self.actiondict['correlations']
             if not isinstance(correlations, list): correlations= [correlations,]
 
+            NR      = len(self.parent.variables['r'])
+            NTheta  = len(self.parent.variables['theta'])
+            angfreq = self.parent.variables['angfreq']
+            numSteps = len(self.parent.times)
+            angfreq_full = 2*np.pi*np.fft.rfftfreq(numSteps,self.parent.times[1]-self.parent.times[0])
+
             for corr in correlations:
                 eig_modes = self.parent.POD_modes[corr]
                 shape = self.parent.POD_modes[corr].shape
-                mode_rhat = np.zeros((shape[0],shape[1],shape[2],shape[4]),dtype=complex)
+
+                mode_rhat = np.zeros((NR,NTheta,len(angfreq_full),shape[-1]),dtype=complex) 
 
                 inds = np.arange(numModes)
                 scaling = self.parent.diam/(Uinf * 2 * np.pi)
@@ -757,12 +764,18 @@ spod:
                     ind = int(inds[i])
                     ktheta_ind = self.parent.sorted_inds[corr]['ktheta'][ind]
                     angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][ind]
+                    angfreq_full_ind = np.argmin(abs(angfreq[angfreq_ind] - angfreq_full))
                     block_ind = self.parent.sorted_inds[corr]['block'][ind]
-                    proj_coeff = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
-                    print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
-                    mode_rhat[:,ktheta_ind,angfreq_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
 
-                mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2)
+                    if self.parent.POD_modes[corr].shape[0] != NR: ##loaded save_modes
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ind]
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] += proj_coeff*self.parent.POD_modes[corr][ind]
+                    else:
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
+                        mode_rhat[:,ktheta_ind,angfreq_ful_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+                    print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
+
+                mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)
 
                 #scaling = self.parent.diam/(Uinf * 2 * np.pi)
                 fig,ax = plt.subplots(1,1,sharey=False,sharex=False,figsize=(12,10),subplot_kw={'projection':'polar'})
@@ -775,5 +788,106 @@ spod:
                 savefname = savefile.format(iplane=self.parent.iplane)
                 savefilename = os.path.join(self.parent.output_dir, savefname)
                 plt.savefig(savefilename)
+
+            return
+
+    @registeraction(actionlist)
+    class radial_shear_stress_flux():
+        actionname = 'radial_shear_stress_flux'
+        blurb      = 'Compute radial shear stress flux contribution from streamwise SPOD modes'
+        required   = False
+        actiondefs = [
+        {'key':'num',   'required':False,  'default':1,
+         'help':'Number of eigenvectors to include in reconstruction', },
+        {'key':'savefile',  'required':False,  'default':'',
+         'help':'Filename to save results', },
+        {'key':'correlations','required':False,  'default':['U',],
+         'help':'List of correlations', },
+        ]
+        
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            print('Executing '+self.actionname)
+            numModes = self.actiondict['num']
+            savefile = self.actiondict['savefile']
+            correlations = self.actiondict['correlations']
+            if not isinstance(correlations, list): correlations= [correlations,]
+
+            ### Convert to cylindrical velocity 
+            numSteps = len(self.parent.times)
+            if self.parent.cylindrical_velocities == False:
+                radial_velocity = np.zeros_like(self.parent.udata_polar[:,:,:,1])
+                print("--> Transforming to cylindrical velocity components")
+                for titer in range(0,numSteps):
+                    v_vel = np.copy(self.parent.udata_polar[:,:,titer,1])
+                    w_vel = np.copy(self.parent.udata_polar[:,:,titer,2])
+
+                    #Radial velocity 
+                    radial_velocity[:,:,titer] = v_vel * np.cos(self.parent.TT) + w_vel * np.sin(self.parent.TT)
+
+                    #Azimuthal velocity
+                    #self.parent.udata_polar[:,:,titer,2] = -v_vel * np.sin(self.parent.TT) + w_vel * np.cos(self.parent.TT)
+            else:
+                    radial_velocity = self.parent.udata_polar[:,:,:,1]
+
+
+            ### Compute radial fluctuations
+            NTheta  = len(self.parent.variables['theta'])
+            NR      = len(self.parent.variables['r'])
+            angfreq = self.parent.variables['angfreq']
+            angfreq_full = 2*np.pi*np.fft.rfftfreq(numSteps,self.parent.times[1]-self.parent.times[0])
+
+            db = {corr: {} for corr in correlations}
+
+            ### Compute time averaged streamwise velocity 
+            velocityx_avg  = np.mean(self.parent.udata_polar[:,:,:,0],axis=2)
+
+            ### Compute radial fluctuations
+            velocityr_avg  = np.mean(radial_velocity,axis=2,keepdims=True)
+            velocityr_fluc = radial_velocity - velocityr_avg
+
+            for corr in correlations:
+                print("Working on corr: ",corr)
+                db[corr] = {}
+                eig_modes = self.parent.POD_modes[corr]
+                shape = self.parent.POD_modes[corr].shape
+                for i in range(0,numModes):
+                    print("---> Mode: ",i)
+                    # mode rhat should be the whole length in time 
+                    mode_rhat = np.zeros((NR,NTheta,len(angfreq_full),shape[-1]),dtype=complex) 
+                    ind = int(i)
+                    ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][ind]
+                    angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][ind]
+                    angfreq_full_ind = np.argmin(abs(angfreq[angfreq_ind] - angfreq_full))
+                    block_ind   = self.parent.sorted_inds[corr]['block'][ind]
+
+                    if self.parent.POD_modes[corr].shape[0] != NR: #loaded save_modes
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ind]
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][ind]
+                    else:
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+
+                    mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)
+
+                    velocityx_fluc_mode = mode_r[:,:,:,0] - np.mean(mode_r[:,:,:,0],axis=2,keepdims=True) #mean should already be ~0
+
+                    #radial shear stress 
+                    uxmodeur_avg = np.mean(velocityx_fluc_mode * velocityr_fluc,axis=2)
+
+                    #radial shear stress flux
+                    db[corr][ind ] = velocityx_avg * uxmodeur_avg 
+
+
+            if len(savefile)>0:
+                savefname = savefile.format(iplane=self.parent.iplane)
+                savefilename = os.path.join(self.parent.output_dir, savefname)
+                with open(savefilename, 'wb') as f:
+                    pickle.dump(db, f)
 
             return
