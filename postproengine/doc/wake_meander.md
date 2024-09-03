@@ -7,6 +7,7 @@ Compute wake meandering statistics
   name                : An arbitrary name (Required)
   ncfile              : NetCDF sampling files of cross-flow planes (Required)
   group               : Which group to pull from netcdf file (Optional, Default: None)
+  savepklfile         : Name of pickle file to save wake object (Optional, Default: '')
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
   trange              : Which times to postprocess (Required)
   yhub                : Lateral hub-height center (Optional, Default: None)

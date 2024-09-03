@@ -830,17 +830,16 @@ spod:
                     #Radial velocity 
                     radial_velocity[:,:,titer] = v_vel * np.cos(self.parent.TT) + w_vel * np.sin(self.parent.TT)
 
-                    #Azimuthal velocity
+                    #Azimuthal velocity -- not needed 
                     #self.parent.udata_polar[:,:,titer,2] = -v_vel * np.sin(self.parent.TT) + w_vel * np.cos(self.parent.TT)
             else:
                     radial_velocity = self.parent.udata_polar[:,:,:,1]
 
 
-            ### Compute radial fluctuations
             NTheta  = len(self.parent.variables['theta'])
             NR      = len(self.parent.variables['r'])
-            angfreq = self.parent.variables['angfreq']
-            angfreq_full = 2*np.pi*np.fft.rfftfreq(numSteps,self.parent.times[1]-self.parent.times[0])
+            angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
+            angfreq_full = 2*np.pi*np.fft.rfftfreq(numSteps,self.parent.times[1]-self.parent.times[0]) #angular frequencies for full time window
 
             db = {corr: {} for corr in correlations}
 
@@ -852,38 +851,44 @@ spod:
             velocityr_fluc = radial_velocity - velocityr_avg
 
             for corr in correlations:
-                print("Working on corr: ",corr)
                 db[corr] = {}
-                eig_modes = self.parent.POD_modes[corr]
                 shape = self.parent.POD_modes[corr].shape
+
+                #loop over leading modes in order of eigenvalues
                 for i in range(0,numModes):
-                    print("---> Mode: ",i)
-                    # mode rhat should be the whole length in time 
+
                     mode_rhat = np.zeros((NR,NTheta,len(angfreq_full),shape[-1]),dtype=complex) 
                     ind = int(i)
+
+                    # Get ktheta index, angfreq index, and block index associated with mode number
                     ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][ind]
                     angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][ind]
-                    angfreq_full_ind = np.argmin(abs(angfreq[angfreq_ind] - angfreq_full))
+                    angfreq_full_ind = np.argmin(abs(angfreq[angfreq_ind] - angfreq_full)) #nearest angular frequency in full time window
                     block_ind   = self.parent.sorted_inds[corr]['block'][ind]
 
-                    if self.parent.POD_modes[corr].shape[0] != NR: #loaded save_modes
-                        proj_coeff  = self.parent.POD_proj_coeff[corr][ind]
-                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][ind]
+                    #If reading SPOD results from pkl file with sorted eigenvectors/eigenvalues
+                    if self.parent.POD_modes[corr].shape[0] != NR: 
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ind]                                      #projection of u onto POD mode
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][ind] #reconstruction of fourier mode by the ith POD mode
+
+                    #else, continuing from executor
                     else:
-                        proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
-                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+                        proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind] #projection of u onto POD mode
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] = proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:] #reconstruction of fourier mode by the ith POD mode
 
-                    mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)
+                    #inverse fourier transform in theta and then time. 
+                    mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)  #note, the entire time window is included in the reconstruction, not just a single block. 
 
-                    velocityx_fluc_mode = mode_r[:,:,:,0] - np.mean(mode_r[:,:,:,0],axis=2,keepdims=True) #mean should already be ~0
+                    #Compute streamwise velocity fluctuations of reconstructed flow (note mean should already be 0 here)
+                    velocityx_fluc_mode = mode_r[:,:,:,0] - np.mean(mode_r[:,:,:,0],axis=2,keepdims=True) 
 
-                    #radial shear stress 
+                    #Compute the radial shear stress between reconstructed streamwise velocity and full radial velocity field
                     uxmodeur_avg = np.mean(velocityx_fluc_mode * velocityr_fluc,axis=2)
 
-                    #radial shear stress flux
-                    db[corr][ind ] = velocityx_avg * uxmodeur_avg 
+                    #Compute the radial shear stress flux
+                    db[corr][ind] = velocityx_avg * uxmodeur_avg 
 
-
+            #save the results
             if len(savefile)>0:
                 savefname = savefile.format(iplane=self.parent.iplane)
                 savefilename = os.path.join(self.parent.output_dir, savefname)
