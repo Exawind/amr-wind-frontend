@@ -223,7 +223,7 @@ reynoldsstress:
 
                 Theta = np.arctan2(ZZ-z_center,YY-y_center)
 
-                self.parent.dbReAvg['uxur_avg'][iplane,:,:] = uv_avg * np.sin(Theta) + uw_avg * np.cos(Theta)
+                self.parent.dbReAvg['uxur_avg'][iplane,:,:] = uv_avg * np.cos(Theta) + uw_avg * np.sin(Theta)
 
             # Overwrite picklefile
             if len(self.parent.pklfile)>0:

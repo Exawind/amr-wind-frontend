@@ -366,10 +366,6 @@ def avgPlaneXR(ncfileinput, timerange,
         R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
         #if not np.array_equal(R,np.eye(R.shape[0])):
         db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
-    else:
-        db['velocitya1_avg'] = db['velocityx_avg']
-        db['velocitya2_avg'] = db['velocityy_avg']
-        db['velocitya3_avg'] = db['velocityz_avg']
 
     if verbose:
         print("Ncount = %i"%Ncount)
@@ -578,13 +574,13 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     if avgdb is None:
         if verbose: print("Calculating averages")
 
+        orig_varnames = varnames[:]
         db = avgPlaneXR(ncfilelist, timerange,
                         extrafuncs=extrafuncs,
-                        varnames=varnames,
+                        varnames=orig_varnames,
                         groupname=groupname, verbose=verbose, includeattr=includeattr,axis_rotation=axis_rotation)
     else:
         db.update(avgdb)
-
 
     group   = db['group']
     Ncount = 0    

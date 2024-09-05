@@ -7,7 +7,7 @@ Compute SPOD eigenvectors and eigenvalues
   ncfile              : NetCDF sampling file (Required)
   trange              : Which times to average over (Optional, Default: [])
   group               : Which group to pull from netcdf file (Optional, Default: None)
-  nperseg             : Number of snapshots per segment to specify number of blocks. (Required)
+  nperseg             : Number of snapshots per segment to specify number of blocks. Default is 1 block. (Optional, Default: None)
   xc                  : Wake center on xaxis (Optional, Default: None)
   yc                  : Wake center on yaxis (Optional, Default: None)
   xaxis               : Which axis to use on the abscissa (Optional, Default: 'y')
@@ -22,7 +22,7 @@ Compute SPOD eigenvectors and eigenvalues
   correlations        : List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W  (Optional, Default: ['U'])
   output_dir          : Directory to save results (Optional, Default: './')
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
-  loadpklfile         : Name of pickle file to load to perform actions (Optional, Default: '')
+  loadpklfile         : Name of pickle file to load to perform actions (Optional, Default: None)
   compute_eigen_vectors: Boolean to compute eigenvectors or just eigenvalues (Optional, Default: True)
   sort                : Boolean to included sorted wavenumber and frequency indices by eigenvalue (Optional, Default: True)
   save_num_modes      : Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR). (Optional, Default: None)
@@ -51,6 +51,10 @@ Compute SPOD eigenvectors and eigenvalues
     Uinf              : Velocity for compute strouhal frequency (Optional, Default: 0)
     St                : Plot leading eigenmodes at fixed Strouhal frequency (Optional, Default: None)
     itime             : Time iteration to plot (Optional, Default: 0)
+  radial_shear_stress_flux: ACTION: Compute radial shear stress flux contribution from streamwise SPOD modes (Optional)
+    num               : Number of eigenvectors to include in reconstruction (Optional, Default: 1)
+    savefile          : Filename to save results (Optional, Default: '')
+    correlations      : List of correlations (Optional, Default: ['U'])
 ```
 
 ## Example

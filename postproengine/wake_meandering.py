@@ -80,6 +80,8 @@ class postpro_wakemeander():
         'help':'NetCDF sampling files of cross-flow planes', },
         {'key':'group',   'required':False,  'default':None,
          'help':'Which group to pull from netcdf file', },
+        {'key':'savepklfile', 'required':False,  'default':'',
+        'help':'Name of pickle file to save wake object', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},        
         {'key':'trange',    'required':True,  'default':[0,1],
@@ -188,6 +190,7 @@ class postpro_wakemeander():
             self.varnames = entry['varnames']
             self.output_dir =  entry['output_dir']
             self.axis_rotation = entry['axis_rotation']
+            savepklfile  = entry['savepklfile']
 
             if not isinstance(iplanes, list): iplanes = [iplanes,]
             #Get all times if not specified 
@@ -291,6 +294,11 @@ class postpro_wakemeander():
                     savefname = savefile.format(iplane=self.iplane)
                     savefname = os.path.join(self.output_dir, savefname)
                     self.dfcenters.to_csv(savefname,index=False,sep=',')
+
+                if len(savepklfile)>0:
+                    savefname = os.path.join(self.output_dir, savepklfile)
+                    with open(savefname, 'wb') as f:
+                        pickle.dump(self.wake, f)
 
                 # Do any sub-actions required for this task
                 for a in self.actionlist:
