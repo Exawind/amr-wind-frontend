@@ -130,18 +130,18 @@ def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variabl
             proj_coeff  = POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind] #projection of u onto POD mode
             mode_rhat[:,ktheta_ind,angfreq_ind,:] += proj_coeff*POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:] #reconstruction of fourier mode by the ith POD mode
 
-        #fourier transform in theta 
-        mode_r_that = np.fft.ifft(mode_rhat,axis=1) 
-        
-        mode_r = np.zeros((NR,NTheta,numSteps,shape[-1]),dtype=complex) 
-        if components==None: components = range(mode_r_that.shape[-1])
-        for r in range(mode_r_that.shape[0]):
-            for theta in range(mode_r_that.shape[1]):
-                for comp in components:
-                    Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
-                    Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
-                    t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hann')
-                    mode_r[r,theta,:,comp] = real_signal[:numSteps]
+    #fourier transform in theta 
+    mode_r_that = np.fft.ifft(mode_rhat,axis=1) 
+    mode_r = np.zeros((NR,NTheta,numSteps,shape[-1])) 
+    if components==None: components = range(mode_r_that.shape[-1])
+    for r in range(mode_r_that.shape[0]):
+        for theta in range(mode_r_that.shape[1]):
+            for comp in components:
+                Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
+                Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
+                t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hann')
+                mode_r[r,theta,:,comp] = real_signal[:numSteps]
+
     return mode_r
 
 
@@ -577,13 +577,13 @@ spod:
                 if self.verbose:
                     print("--> Reading in velocity data (iplane="+str(iplane)+")")
                 udata_cart,xc,y,z,self.times = read_cart_data(ncfile,self.varnames,group,self.trange,iplane,self.xaxis,self.yaxis)
-                #file = 'ucart_data.pkl'
-                #with open(file,'wb') as f:
-                #    pickle.dump(udata_cart,f)
-                #    pickle.dump(xc,f)
-                #    pickle.dump(y,f)
-                #    pickle.dump(z,f)
-                #    pickle.dump(self.times,f)
+                file = 'ucart_data.pkl'
+                with open(file,'wb') as f:
+                    pickle.dump(udata_cart,f)
+                    pickle.dump(xc,f)
+                    pickle.dump(y,f)
+                    pickle.dump(z,f)
+                    pickle.dump(self.times,f)
                 #with open(file, 'rb') as f:
                 #    udata_cart = pickle.load(f)
                 #    xc = pickle.load(f)
@@ -1063,10 +1063,10 @@ spod:
             NTheta  = len(self.parent.variables['theta'])
             NR      = len(self.parent.variables['r'])
             angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
-            angfreq_full = 2*np.pi*np.fft.rfftfreq(numSteps,self.parent.times[1]-self.parent.times[0]) #angular frequencies for full time window
 
             db = {corr: {} for corr in correlations}
             db_velxr = {} 
+
             ### Compute time averaged streamwise velocity 
             velocityx_avg  = np.mean(self.parent.udata_polar[:,:,:,0],axis=2)
 
