@@ -393,10 +393,13 @@ def get_mapping_xyz_to_axis1axis2(axis1,axis2,axis3,rot=0):
     ])
     n1 = axis1/np.linalg.norm(axis1)
     n2 = axis2/np.linalg.norm(axis2)
+
     if np.linalg.norm(axis3) > 0.0:
         n3 = axis3/np.linalg.norm(axis3)
     else:
-        n3 = axis3
+        #n3 = axis3
+        n3 = np.cross(n1, n2)
+        n3 /= np.linalg.norm(n3)
 
     R = np.array([n1,n2,n3])
     R = Rtheta @ R
