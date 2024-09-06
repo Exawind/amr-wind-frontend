@@ -55,6 +55,8 @@ Compute SPOD eigenvectors and eigenvalues
     num               : Number of eigenvectors to include in reconstruction (Optional, Default: 1)
     savefile          : Filename to save results (Optional, Default: '')
     correlations      : List of correlations (Optional, Default: ['U'])
+    store_fluc        : Boolean to store fluctuating fields (Optional, Default: False)
+    components        : List of component to include in reconstructions (default is all) (Optional, Default: None)
 ```
 
 ## Example

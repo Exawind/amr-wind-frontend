@@ -57,7 +57,8 @@ class postpro_instantaneousplanes():
          'help':'Title of the plot',},
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},        
-        {'key':'plotfunc',  'required':False,  'default':'lambda u, v, w: np.sqrt(u**2 + v**2)',
+        {'key':'plotfunc',  'required':False,
+         'default':"lambda db,i: np.sqrt(db['velocityx'][i]**2 + db['velocityy'][i]**2)",
          'help':'Function to plot (lambda expression)',},
         {'key':'clevels',   'required':False,  'default':'np.linspace(0, 12, 121)',
          'help':'Color levels (eval expression)',},
@@ -71,7 +72,8 @@ class postpro_instantaneousplanes():
          'help':'Figure size (inches)', },
         {'key':'savefile',  'required':False,  'default':'',
          'help':'Filename to save the picture', },
-        
+        {'key':'postplotfunc', 'required':False,  'default':'',
+         'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
 
@@ -106,6 +108,8 @@ class postpro_instantaneousplanes():
             savefile = plane['savefile']
             dpi      = plane['dpi']
             figsize  = plane['figsize']
+            postplotfunc = plane['postplotfunc']
+
             velocity_type = str(plane['velocity_type']).lower()
             
             # Get the times instead
@@ -136,10 +140,7 @@ class postpro_instantaneousplanes():
             for iplot, i in enumerate(iters):
                 time  = db['times'][iplot]
                 fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-                if velocity_type == 'natural': 
-                    plotq = plotfunc(db['velocitya1'][i], db['velocitya2'][i], db['velocitya3'][i])
-                else:
-                    plotq = plotfunc(db['velocityx'][i], db['velocityy'][i], db['velocityz'][i])
+                plotq = plotfunc(db, i)
                 c=plt.contourf(db[xaxis][iplane,:,:], db[yaxis][iplane,:,:], plotq[iplane, :, :], levels=clevels, cmap='coolwarm', extend='both')
                 divider = make_axes_locatable(ax)
                 cax = divider.append_axes("right", size="3%", pad=0.05)
@@ -150,6 +151,14 @@ class postpro_instantaneousplanes():
                 ax.set_ylabel(ylabel)
                 ax.set_title(eval("f'{}'".format(title)))
                 ax.axis('scaled')
+
+                # Run any post plot functions
+                if len(postplotfunc)>0:
+                    modname = postplotfunc.split('.')[0]
+                    funcname = postplotfunc.split('.')[1]
+                    func = getattr(sys.modules[modname], funcname)
+                    func(fig, ax)
+
                 if len(savefile)>0:
                     savefname = savefile.format(time=time, iplane=iplane)
                     if verbose: print('Saving '+savefname)

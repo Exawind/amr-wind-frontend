@@ -690,7 +690,9 @@ class contourplottemplate():
         {'key':'plotfunc',  'required':False,  'default':'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])',
          'help':'Function to plot (lambda expression)',},
         {'key':'axis_rotation',  'required':False,  'default':0,
-         'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},                
+         'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},
+        {'key':'postplotfunc', 'required':False,  'default':'',
+         'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -714,6 +716,8 @@ class contourplottemplate():
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
         axis_rotation = self.actiondict['axis_rotation']
+        postplotfunc = plotitem['postplotfunc']
+
         if not isinstance(iplanes, list): iplanes = [iplanes,]
 
         # Convert to native axis1/axis2 coordinates if necessary
@@ -736,6 +740,13 @@ class contourplottemplate():
             ax.set_ylabel(ylabel)
             ax.axis('scaled')
             ax.set_title(eval("f'{}'".format(title)))
+
+            # Run any post plot functions
+            if len(postplotfunc)>0:
+                modname = postplotfunc.split('.')[0]
+                funcname = postplotfunc.split('.')[1]
+                func = getattr(sys.modules[modname], funcname)
+                func(fig, ax)
 
             if len(savefile)>0:
                 savefname = savefile.format(iplane=iplane)
