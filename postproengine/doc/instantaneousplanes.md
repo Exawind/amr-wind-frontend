@@ -14,13 +14,14 @@ Make instantaneous plots from netcdf sample planes
   group               : Which group to pull from netcdf file (Optional, Default: None)
   title               : Title of the plot (Optional, Default: '')
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
-  plotfunc            : Function to plot (lambda expression) (Optional, Default: 'lambda u, v, w: np.sqrt(u**2 + v**2)')
+  plotfunc            : Function to plot (lambda expression) (Optional, Default: "lambda db,i: np.sqrt(db['velocityx'][i]**2 + db['velocityy'][i]**2)")
   clevels             : Color levels (eval expression) (Optional, Default: 'np.linspace(0, 12, 121)')
   xlabel              : Label on the X-axis (Optional, Default: 'X [m]')
   ylabel              : Label on the Y-axis (Optional, Default: 'Y [m]')
   dpi                 : Figure resolution (Optional, Default: 125)
   figsize             : Figure size (inches) (Optional, Default: [12, 3])
   savefile            : Filename to save the picture (Optional, Default: '')
+  postplotfunc        : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
 ```
 
 ## Actions: 
