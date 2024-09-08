@@ -244,6 +244,7 @@ instantaneousplanes:
                     savefname = savefile.format(time=time, iplane=iplane)
                     print('Saving '+savefname)
                     plt.savefig(savefname)
+                plt.close()
         
 
     # --- Inner classes for action list ---
@@ -401,3 +402,4 @@ instantaneousplanes:
                     print('Saving '+savefname)
                     plt.savefig(savefname)
 
+                plt.close()
