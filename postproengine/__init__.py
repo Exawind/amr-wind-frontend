@@ -675,6 +675,8 @@ class contourplottemplate():
          'help':'Filename to save the picture', },
         {'key':'clevels',   'required':False,  'default':'41', 
          'help':'Color levels (eval expression)',},
+        {'key':'cmap',   'required':False,  'default':'coolwarm',
+         'help':'Color map name',},
         {'key':'iplane',   'required':False,  'default':0,
          'help':'Which plane to pull from netcdf file', },            
         {'key':'xaxis',    'required':False,  'default':'x',
@@ -708,6 +710,7 @@ class contourplottemplate():
         xaxis    = self.actiondict['xaxis']
         yaxis    = self.actiondict['yaxis']
         dpi      = self.actiondict['dpi']
+        cmap     = self.actiondict['cmap']
         iplanes  = self.actiondict['iplane']
         savefile = self.actiondict['savefile']
         xlabel   = self.actiondict['xlabel']
@@ -731,7 +734,7 @@ class contourplottemplate():
             plotq = plotfunc(self.plotdb)
             c=plt.contourf(self.plotdb[xaxis][iplane,:,:], 
                            self.plotdb[yaxis][iplane,:,:], plotq[iplane, :, :], 
-                           levels=clevels,cmap='coolwarm', extend='both')
+                           levels=clevels,cmap=cmap, extend='both')
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="3%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)

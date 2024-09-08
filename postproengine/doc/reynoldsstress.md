@@ -30,6 +30,7 @@ Reynolds-Stress average netcdf sample planes
     figsize           : Figure size (inches) (Optional, Default: [12, 8])
     savefile          : Filename to save the picture (Optional, Default: '')
     clevels           : Color levels (eval expression) (Optional, Default: '41')
+    cmap              : Color map name (Optional, Default: 'coolwarm')
     iplane            : Which plane to pull from netcdf file (Optional, Default: 0)
     xaxis             : Which axis to use on the abscissa (Optional, Default: 'x')
     yaxis             : Which axis to use on the ordinate (Optional, Default: 'y')
