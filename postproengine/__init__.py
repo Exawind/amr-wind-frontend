@@ -87,7 +87,7 @@ The following workflows are available:
 
 """
     f.write(header)
-    looptasks = plist.keys()
+    looptasks = sorted(plist.keys())
     for task in looptasks:
         executormd = task+'.md'
         blurb      = plist[task].blurb
@@ -152,7 +152,7 @@ def makedocs(rootpath=scriptpath, docdir='doc', docformat='markdown'):
     with open(os.path.join(docpath, 'README.md'), 'w') as f:
         print_readme(f)
 
-    looptasks = pluginlist.keys()
+    looptasks = sorted(pluginlist.keys())
     for task in looptasks:
         mdfile = os.path.join(docpath, pluginlist[task].name+'.md')
         print(mdfile)
@@ -167,7 +167,7 @@ def print_inputs(subset=[], plist=pluginlist):
     if len(subset)>0:
         looptasks = subset
     else:
-        looptasks = plist.keys()
+        looptasks = sorted(plist.keys())
     for task in looptasks:
         # Print out info on each task
         inputdefs = plist[task].inputdefs
