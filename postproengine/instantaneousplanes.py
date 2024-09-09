@@ -242,7 +242,9 @@ instantaneousplanes:
 
                 if len(savefile)>0:
                     savefname = savefile.format(time=time, iplane=iplane)
-                    print('Saving '+savefname)
+                    directory, file_name = os.path.split(savefname)
+                    directory += '/'
+                    os.makedirs(directory, exist_ok=True)
                     plt.savefig(savefname)
                 plt.close()
         
@@ -261,7 +263,7 @@ instantaneousplanes:
     @registeraction(actionlist)
     class animate():
         actionname = 'animate'
-        blurb      = 'Generate animation of range of cross flow planes'
+        blurb      = 'Generate animation from static images of planes'
         required   = False
         actiondefs = [
             {'key':'name', 'required':True,  'help':'Name of video', 'default':'output.mp4'},
@@ -278,8 +280,10 @@ instantaneousplanes:
         def execute(self):
             print('Executing ' + self.actionname)
             video_name = self.actiondict['name']
+            directory, file_name = os.path.split(video_name)
+            directory += '/'
+            os.makedirs(directory, exist_ok=True)
             fps = self.actiondict['fps']
-            #filetype = self.actiondict['filetype']
             imagefilename = self.actiondict['imagefilename']
             try:
                 times = eval(self.actiondict['times'])
@@ -400,6 +404,8 @@ instantaneousplanes:
                 if len(savefile)>0:
                     savefname = savefile.format(time=time, iplane=iplane)
                     print('Saving '+savefname)
+                    directory, file_name = os.path.split(savefname)
+                    directory += '/'
+                    os.makedirs(directory, exist_ok=True)
                     plt.savefig(savefname)
-
                 plt.close()
