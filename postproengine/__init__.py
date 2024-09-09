@@ -695,6 +695,8 @@ class contourplottemplate():
          'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},
         {'key':'postplotfunc', 'required':False,  'default':'',
          'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
+        {'key':'fontsize',    'required':False,  'default':14,
+         'help':'Fontsize for figure'}
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -715,11 +717,12 @@ class contourplottemplate():
         savefile = self.actiondict['savefile']
         xlabel   = self.actiondict['xlabel']
         ylabel   = self.actiondict['ylabel']
+        fontsize = self.actiondict['fontsize']
         clevels  = eval(self.actiondict['clevels'])
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
         axis_rotation = self.actiondict['axis_rotation']
-        postplotfunc = plotitem['postplotfunc']
+        postplotfunc = self.actiondict['postplotfunc']
 
         if not isinstance(iplanes, list): iplanes = [iplanes,]
 
@@ -738,11 +741,12 @@ class contourplottemplate():
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="3%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)
-            cbar.ax.tick_params(labelsize=7)
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
+            cbar.ax.tick_params(labelsize=fontsize)
+            ax.set_xlabel(xlabel,fontsize=fontsize)
+            ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.axis('scaled')
-            ax.set_title(eval("f'{}'".format(title)))
+            ax.set_title(eval("f'{}'".format(title)),fontsize=fontsize)
+            ax.tick_params(axis='both', which='major', labelsize=fontsize) 
 
             # Run any post plot functions
             if len(postplotfunc)>0:
@@ -838,4 +842,3 @@ for fname in sorted(os.listdir(dirpath)):
             load_module(os.path.join(dirpath, fname))
         except Exception:
             traceback.print_exc()
-
