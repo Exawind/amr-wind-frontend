@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import convert_vel_xyz_to_axis1axis2
 import cv2
-import spod
+from postproengine import spod
 
 """
 Plugin for creating instantaneous planar images
@@ -146,10 +146,7 @@ instantaneousplanes:
                 compute_axis1axis2_coords(self.db)
 
             if not self.trange == 'None':
-                timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-                times = self.db['times']
-                find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-                iters = [find_nearest(timevec, t) for t in times]
+                iters = self.db['timesteps']
 
             self.iters = iters
 
@@ -190,6 +187,8 @@ instantaneousplanes:
             'help':'Figure resolution', },
             {'key':'figsize',   'required':False,  'default':[12,3],
             'help':'Figure size (inches)', },
+            {'key':'fontsize',   'required':False,  'default':14,
+            'help':'Fontsize for labels and axis', },
             {'key':'savefile',  'required':False,  'default':'',
             'help':'Filename to save the picture', },
             {'key':'postplotfunc', 'required':False,  'default':'',
@@ -213,6 +212,7 @@ instantaneousplanes:
             savefile = self.actiondict['savefile']
             dpi      = self.actiondict['dpi']
             figsize  = self.actiondict['figsize']
+            fontsize = self.actiondict['fontsize']
             postplotfunc = self.actiondict['postplotfunc']
 
             # Loop through each time instance and plot
@@ -226,11 +226,12 @@ instantaneousplanes:
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("right", size="3%", pad=0.05)
                     cbar=fig.colorbar(c, ax=ax, cax=cax)
-                    cbar.ax.tick_params(labelsize=7)
+                    cbar.ax.tick_params(labelsize=fontsize)
                 
-                ax.set_xlabel(xlabel)
-                ax.set_ylabel(ylabel)
-                ax.set_title(eval("f'{}'".format(title)))
+                ax.set_xlabel(xlabel,fontsize=fontsize)
+                ax.set_ylabel(ylabel,fontsize=fontsize)
+                ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+                ax.set_title(eval("f'{}'".format(title)),fontsize=fontsize)
                 ax.axis('scaled')
 
                 # Run any post plot functions

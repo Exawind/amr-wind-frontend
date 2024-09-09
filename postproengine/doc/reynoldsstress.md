@@ -40,6 +40,7 @@ Reynolds-Stress average netcdf sample planes
     plotfunc          : Function to plot (lambda expression) (Optional, Default: 'lambda db: 0.5*(db["uu_avg"]+db["vv_avg"]+db["ww_avg"])')
     axis_rotation     : Degrees to rotate a1,a2,a3 axis for plotting. (Optional, Default: 0)
     postplotfunc      : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
+    fontsize          : Fontsize for figure (Optional, Default: 14)
   interpolate         : ACTION: Interpolate data from an arbitrary set of points (Optional)
     pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
     pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)

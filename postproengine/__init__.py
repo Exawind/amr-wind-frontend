@@ -698,6 +698,8 @@ class contourplottemplate():
          'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},
         {'key':'postplotfunc', 'required':False,  'default':'',
          'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
+        {'key':'fontsize',    'required':False,  'default':14,
+         'help':'Fontsize for figure'}
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -718,6 +720,7 @@ class contourplottemplate():
         savefile = self.actiondict['savefile']
         xlabel   = self.actiondict['xlabel']
         ylabel   = self.actiondict['ylabel']
+        fontsize = self.actiondict['fontsize']
         clevels  = eval(self.actiondict['clevels'])
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
@@ -741,11 +744,12 @@ class contourplottemplate():
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="3%", pad=0.05)
             cbar=fig.colorbar(c, ax=ax, cax=cax)
-            cbar.ax.tick_params(labelsize=7)
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
+            cbar.ax.tick_params(labelsize=fontsize)
+            ax.set_xlabel(xlabel,fontsize=fontsize)
+            ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.axis('scaled')
-            ax.set_title(eval("f'{}'".format(title)))
+            ax.set_title(eval("f'{}'".format(title)),fontsize=fontsize)
+            ax.tick_params(axis='both', which='major', labelsize=fontsize) 
 
             # Run any post plot functions
             if len(postplotfunc)>0:
@@ -827,88 +831,17 @@ def test():
     driver(yamldict)
     return
 
-def list_python_files(directory):
-    return [fname for fname in os.listdir(directory) if not fname.startswith('.') and \
-                not fname.startswith('__') and fname.endswith('.py')]
-
-def parse_imports(file_path):
-    with open(file_path, 'r') as file:
-        tree = ast.parse(file.read(), filename=file_path)
-    imports = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imports.add(alias.name.split('.')[0])
-        elif isinstance(node, ast.ImportFrom):
-            imports.add(node.module.split('.')[0])
-    return imports
-
-def build_dependency_graph(directory, files):
-    graph = defaultdict(set)
-    module_names = {file[:-3] for file in files}  # Remove .py extension
-    for file in files:
-        file_path = os.path.join(directory, file)
-        imports = parse_imports(file_path)
-        module_name = file[:-3]
-        for imp in imports:
-            if any(imp == f for f in module_names):
-                graph[module_name].add(imp)
-
-    for module_name in module_names:
-        if module_name not in graph:
-            graph[module_name] = set()
-    return graph,module_names
-
-def topological_sort(graph,module_names):
-    in_degree = {u: 0 for u in module_names}
-    for u in graph:
-        for v in graph[u]:
-            in_degree[u] += 1
-    queue = deque([u for u in graph if in_degree[u] == 0])
-
-    sorted_list = []
-
-    while queue:
-        u = queue.popleft()
-        sorted_list.append(u)
-        for v in graph:
-            if not v in sorted_list and not v in queue:
-                for w in graph[v]:
-                    if w == u:
-                        in_degree[v] -= 1
-                if in_degree[v] == 0:
-                    queue.append(v)
-
-    if len(sorted_list) == len(graph):
-        return sorted_list
-    else:
-        raise ValueError("Graph has a cycle, topological sorting not possible")
-
-def import_modules(directory, sorted_modules):
-    for module_name in sorted_modules:
-        module_path = os.path.join(directory, module_name + '.py')
-        spec = importlib.util.spec_from_file_location(module_name, module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        globals()[module_name] = module
-
 # ------------------------------------------------------------------
 # Get current path
 path    = os.path.abspath(__file__)
 dirpath = os.path.dirname(path)
-files = list_python_files(dirpath)
-graph,module_names = build_dependency_graph(dirpath, files)
-sorted_modules = topological_sort(graph,module_names)
-import_modules(dirpath, sorted_modules)
-print("Modules imported in the following order:", sorted_modules)
 
 # Load all plugins in this directory
-#for fname in sorted(os.listdir(dirpath)):
-#    # Load only "real modules"
-#    if not fname.startswith('.') and \
-#       not fname.startswith('__') and fname.endswith('.py'):
-#        try:
-#            load_module(os.path.join(dirpath, fname))
-#        except Exception:
-#            traceback.print_exc()
-
+for fname in sorted(os.listdir(dirpath)):
+    # Load only "real modules"
+    if not fname.startswith('.') and \
+       not fname.startswith('__') and fname.endswith('.py'):
+        try:
+            load_module(os.path.join(dirpath, fname))
+        except Exception:
+            traceback.print_exc()
