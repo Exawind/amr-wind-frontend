@@ -4064,7 +4064,7 @@ popupwindow:
       label:      Variables
       frame:      postprosetup_samplingframe
       inputtype:  listbox
-      optionlist: [velocity, temperature, tke, pressure, actuator_src_term, velocity_mean, temperature_mean]
+      optionlist: [velocity, temperature, tke, p, actuator_src_term, velocity_mean, temperature_mean]
       defaultval: velocity
       listboxopt:
         selectmode: multiple
