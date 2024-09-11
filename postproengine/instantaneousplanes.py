@@ -247,7 +247,6 @@ instantaneousplanes:
                     directory += '/'
                     os.makedirs(directory, exist_ok=True)
                     plt.savefig(savefname)
-                plt.close()
         
 
     # --- Inner classes for action list ---
@@ -409,4 +408,4 @@ instantaneousplanes:
                     directory += '/'
                     os.makedirs(directory, exist_ok=True)
                     plt.savefig(savefname)
-                plt.close()
+
