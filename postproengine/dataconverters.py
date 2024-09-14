@@ -123,6 +123,7 @@ class postpro_dataconverts():
             {'key':'turbine_height','required':False,  'help':'Height of the turbine (if different than zc)',  'default':None},
             {'key':'group',   'required':False,  'default':None,
             'help':'Which group to pull from netcdf file', },
+            {'key':'diam','required':False, 'default':None,'help':'Diameter for computing rotor averaged velocity'},
         ]
         
         def __init__(self, parent, inputs):
@@ -196,6 +197,7 @@ class postpro_dataconverts():
             ts = {}
             yloc   = self.actiondict['yhh']
             zloc   = self.actiondict['zhh']
+            diam   = self.actiondict['diam']
             turbine_height = self.actiondict['turbine_height']
             if turbine_height == None: turbine_height = zloc
             iplane = self.actiondict['iplane']
@@ -254,12 +256,9 @@ class postpro_dataconverts():
                 y_box_ind = np.argmin(abs(y - (y[-1] - y_box_size)))
                 y = y[y_box_ind:] 
 
+
             bot_ind = np.argmin(abs(z-(zloc - turbine_height)))
             z = z[bot_ind:]
-            z -= z[0]
-
-            print("ZHH: ",z[np.argmin(abs(z-zloc))],zloc)
-            print("YHH: ",y[np.argmin(abs(y-yloc))],yloc)
             nt = len(self.db['times'])
             ny = len(y)
             nz = len(z)
@@ -269,14 +268,14 @@ class postpro_dataconverts():
             tsteps = np.array(self.db['timesteps'])
             uRef = np.ndarray(nt)
             for titer , tval in enumerate(tsteps):
-                # ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,:,:]
-                # ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,:,:]
-                # ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,:,:]
-                if y0_dist == min(y0_dist,y1_dist): 
+                if y0_dist == y1_dist: 
+                    ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,:,bot_ind:]
+                    ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,:,bot_ind:]
+                    ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,:,bot_ind:]
+                elif y0_dist == min(y0_dist,y1_dist): 
                     ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
                     ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
                     ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
-
                 else:
                     ts['u'][0,titer,y_box_ind:,bot_ind:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,y_box_ind:,bot_ind:]
                     ts['u'][1,titer,y_box_ind:,bot_ind:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,y_box_ind:,bot_ind:]
@@ -284,8 +283,13 @@ class postpro_dataconverts():
 
                 interpolator = RegularGridInterpolator((y, z), ts['u'][0,titer, :, :])
                 uRef[titer]  = interpolator((yloc, zloc))
-               
 
+            Radius = diam/2.0
+            YY,ZZ = np.meshgrid(y,z,indexing='ij')
+            Routside = ((YY-yloc)**2 + (ZZ-zloc)**2) > Radius**2
+            vel_avg = np.mean(ts['u'][0,:,:,:],axis=0)
+            masked_vel = np.ma.array(vel_avg,mask=Routside)
+            print("Rotor averged velocity: ",masked_vel.mean())
             ts['t']  = np.round(t,decimals=7)
             ts['y']  = y - np.mean(y) # y always centered on 0
             ts['z']  = z
