@@ -184,82 +184,6 @@ def getPlanePtsXR(ncfile, itimevec, ptlist,
                 db[k] = g
     return db
 
-def avgPlaneXR_OLD(ncfile, timerange,
-               extrafuncs=[],
-               varnames=['velocityx','velocityy','velocityz'],
-               savepklfile='',
-               groupname=None, verbose=False, includeattr=False, 
-               replacenan=False):
-    """
-    Compute the average of ncfile variables
-    """
-    suf='_avg'
-    # Create a fresh db dictionary
-    db = {}
-    #for v in varnames: db[v] = {}
-    t1 = timerange[0]
-    t2 = timerange[1]
-    timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-    filtertime=np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
-    Ntotal=len(filtertime[0])
-    db['times'] = []
-    # Now load the ncfile data
-    if groupname is None:
-        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
-        group = groups[0]
-    else:
-        group = groupname
-    db['group'] = group
-    with xr.open_dataset(ncfile, group=group) as ds:
-        reshapeijk = ds.attrs['ijk_dims'][::-1]
-        xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
-        ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
-        zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
-        db['x'] = xm
-        db['y'] = ym
-        db['z'] = zm
-        # Set up the initial mean fields
-        zeroarray = extractvar(ds, varnames[0], 0)
-        for v in varnames:
-            db[v+suf] = np.full_like(zeroarray, 0.0)
-        if len(extrafuncs)>0:
-            for f in extrafuncs:
-                db[f['name']+suf] = np.full_like(zeroarray, 0.0)
-        Ncount = 0
-        # Loop through and accumulate
-        for itime, t in enumerate(timevec):
-            if (t1 <= t) and (t <= t2):
-                if verbose: progress(Ncount+1, Ntotal)
-                db['times'].append(float(t))
-                vdat = {}
-                for v in varnames:
-                    vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
-                    db[v+suf] += vdat[v]
-                if len(extrafuncs)>0:
-                    for f in extrafuncs:
-                        name = f['name']+suf
-                        func = f['func']
-                        db[name] += func(vdat)
-                Ncount += 1
-        # Normalize
-        if Ncount > 0:
-            for v in varnames:
-                db[v+suf] /= float(Ncount)
-            if len(extrafuncs)>0:
-                for f in extrafuncs:
-                    name = f['name']+suf
-                    db[name] /= float(Ncount)
-        if verbose: print()
-        # include attributes
-        if includeattr:
-            for k, g in ds.attrs.items():
-                db[k] = g
-        if len(savepklfile)>0:
-            # Write out the picklefile
-            dbfile = open(savepklfile, 'wb')
-            pickle.dump(db, dbfile, protocol=2)
-            dbfile.close()
-    return db
 
 def avgPlaneXR(ncfileinput, timerange,
                extrafuncs=[],
@@ -382,6 +306,130 @@ def avgPlaneXR(ncfileinput, timerange,
 
     return db
 
+def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
+                    extrafuncs=[],
+                    varnames=['velocityx','velocityy','velocityz'],
+                    savepklfile='',
+                    groupname=None, verbose=False, includeattr=False,
+                    replacenan=False,axis_rotation=0):
+    """
+    Compute the phase average of ncfile variables
+    """
+    # make sure input is a list
+    ncfilelist = getFileList(ncfileinput)
+    ncfile=ncfilelist[0]
+    suf='_avg'
+
+    find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
+
+    #Apply transformation after computing cartesian average
+    natural_velocity_mapping = {
+        'velocitya1': 'velocityx',
+        'velocitya2': 'velocityy',
+        'velocitya3': 'velocityz'
+    }
+
+    transform = False
+    for viter, v in enumerate(varnames):
+        for key, value in natural_velocity_mapping.items():
+            if key in v:
+                varnames[viter] = value
+                transform = True
+                break
+
+    # Create a fresh db dictionary
+    db = {}
+    eps = 1.0E-10
+    tnow = tstart
+    db['times'] = []
+    # Now load the ncfile data
+    if groupname is None:
+        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
+        group = groups[0]
+    else:
+        group = groupname
+    db['group'] = group
+    Ncount = 0
+    for ncfile in ncfilelist:
+        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        filtertime  = np.where((tnow <= np.array(timevec)) & (np.array(timevec) <= tend))
+        Ntotal      = len(filtertime[0])
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+            #print("%f %f"%(t1, t2))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            if 'x' not in ds:
+                reshapeijk = ds.attrs['ijk_dims'][::-1]
+                xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
+                ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
+                zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
+                db['x'] = xm
+                db['y'] = ym
+                db['z'] = zm
+                db['axis1'] = ds.attrs['axis1']
+                db['axis2'] = ds.attrs['axis2']
+                db['axis3'] = ds.attrs['axis3']
+                db['origin'] = ds.attrs['origin']
+                db['offsets'] = ds.attrs['offsets']
+            # Set up the initial mean fields
+            zeroarray = extractvar(ds, varnames[0], 0)
+            for v in varnames:
+                if v+suf not in db:
+                    db[v+suf] = np.full_like(zeroarray, 0.0)
+            if len(extrafuncs)>0:
+                for f in extrafuncs:
+                    if f['name']+suf not in db:
+                        db[f['name']+suf] = np.full_like(zeroarray, 0.0)
+            # Loop through and accumulate
+            while (tnow <= tend) and (tnow <= timevec[-1]):
+                # Find the closest time to tnow
+                iclosest = find_nearest(timevec, tnow)
+                tclosest = timevec[iclosest]
+                if verbose: progress(localNcount+1, Ntotal)
+
+                # Add to db accumulation
+                db['times'].append(float(tclosest))
+                vdat = {}
+                for v in varnames:
+                    vdat[v] = nonan(extractvar(ds, v, iclosest), replacenan)
+                    db[v+suf] += vdat[v]
+                if len(extrafuncs)>0:
+                    for f in extrafuncs:
+                        name = f['name']+suf
+                        func = f['func']
+                        db[name] += func(vdat)
+                # increment counters
+                Ncount += 1
+                localNcount += 1
+                tnow += tperiod
+            print()  # Done with this file
+
+    # Normalize the result
+    if Ncount > 0:
+        for v in varnames:
+            db[v+suf] /= float(Ncount)
+        if len(extrafuncs)>0:
+            for f in extrafuncs:
+                name = f['name']+suf
+                db[name] /= float(Ncount)
+
+    if verbose:
+        print("Ncount = %i"%Ncount)
+        print()
+    # include attributes
+    if includeattr:
+        for k, g in ds.attrs.items():
+            db[k] = g
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
+
+    return db
+
+
 def MinMaxStd_PlaneXR(ncfile, timerange,
                       extrafuncs=[], avgdb = None,
                       varnames=['velocityx','velocityy','velocityz'], savepklfile='',
@@ -471,72 +519,6 @@ def MinMaxStd_PlaneXR(ncfile, timerange,
             dbfile.close()        
     return db
 
-def ReynoldsStress_PlaneXR_OLD(ncfile, timerange,
-                           extrafuncs=[], avgdb = None,
-                           varnames=['velocityx','velocityy','velocityz'],
-                           savepklfile='', groupname=None, verbose=False, includeattr=False):
-    """
-    Calculate the reynolds stresses
-    """
-    savg = '_avg'
-    corrlist = [
-        # name   variable1   variable2
-        ['uu_avg', 'velocityx', 'velocityx'],
-        ['uv_avg', 'velocityx', 'velocityy'],
-        ['uw_avg', 'velocityx', 'velocityz'],
-        ['vv_avg', 'velocityy', 'velocityy'],
-        ['vw_avg', 'velocityy', 'velocityz'],
-        ['ww_avg', 'velocityz', 'velocityz'],
-    ]
-    db = {}
-    if avgdb is None:
-        if verbose: print("Calculating averages")
-        db = avgPlaneXR(ncfile, timerange,
-                        extrafuncs=extrafuncs,
-                        varnames=varnames,
-                        groupname=groupname, verbose=verbose, includeattr=includeattr)
-    else:
-        db.update(avgdb)
-    group   = db['group']
-    timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-    t1      = timerange[0]
-    t2      = timerange[1]
-    Ntotal  = len(db['times'])
-    with xr.open_dataset(ncfile, group=group) as ds:
-        reshapeijk = ds.attrs['ijk_dims'][::-1]
-        zeroarray = extractvar(ds, varnames[0], 0)
-        # Set up the initial mean fields
-        for corr in corrlist:
-            suff = corr[0]
-            db[suff] =  np.full_like(zeroarray, 0.0)
-        Ncount = 0
-        # Loop through and accumulate
-        if verbose: print("Calculating reynolds-stress")
-        for itime, t in enumerate(timevec):
-            if (t1 <= t) and (t <= t2):
-                if verbose: progress(Ncount+1, Ntotal)
-                vdat = {}
-                for v in varnames:
-                    vdat[v] = extractvar(ds, v, itime)        
-                for corr in corrlist:
-                    name = corr[0]
-                    v1   = corr[1]
-                    v2   = corr[2]
-                    # Standard dev
-                    db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
-                Ncount += 1
-        # Normalize and sqrt std dev
-        if Ncount > 0:
-            for corr in corrlist:
-                name = corr[0]
-                db[name] = db[name]/float(Ncount)
-        if verbose: print()
-        if len(savepklfile)>0:
-            # Write out the picklefile
-            dbfile = open(savepklfile, 'wb')
-            pickle.dump(db, dbfile, protocol=2)
-            dbfile.close()
-    return db
 
 def ReynoldsStress_PlaneXR(ncfileinput, timerange,
                            extrafuncs=[], avgdb = None,
