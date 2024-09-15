@@ -144,7 +144,7 @@ avgplanes:
             for a in self.actionlist:
                 action = self.actionlist[a]
                 # Check to make sure required actions are there
-                if action.required and (action.actionname not in self.yamldictlist[0].keys()):
+                if action.required and (action.actionname not in self.yamldictlist[iplane].keys()):
                     # This is a problem, stop things
                     raise ValueError('Required action %s not present'%action.actionname)
                 if action.actionname in self.yamldictlist[iplane].keys():

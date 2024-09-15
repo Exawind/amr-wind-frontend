@@ -318,9 +318,16 @@ def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
     # make sure input is a list
     ncfilelist = getFileList(ncfileinput)
     ncfile=ncfilelist[0]
-    suf='_avg'
+    suf='_phavg'
 
     find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
+    def find_2nearest(a, a0):
+        asort = np.argsort(np.abs(np.array(a)-a0))
+        return asort[0], asort[1]
+        #da = np.array(a)-a0
+        #return np.argpartition(da, 0)[0], np.argpartition(da, 1)[1]
+    def interpfields(t1, t2, v1, v2):
+        return (v2-v1)/(t2-t1)+v1
 
     #Apply transformation after computing cartesian average
     natural_velocity_mapping = {
@@ -384,15 +391,21 @@ def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
             # Loop through and accumulate
             while (tnow <= tend) and (tnow <= timevec[-1]):
                 # Find the closest time to tnow
-                iclosest = find_nearest(timevec, tnow)
-                tclosest = timevec[iclosest]
-                if verbose: progress(localNcount+1, Ntotal)
+                i1, i2   = find_2nearest(timevec, tnow)
+                ti1, ti2 = timevec[i1], timevec[i2]
+                #print(tnow, ti1, ti2)
+                #iclosest = find_nearest(timevec, tnow)
+                #tclosest = timevec[iclosest]
+                if verbose: progress(i1, len(timevec))
 
                 # Add to db accumulation
-                db['times'].append(float(tclosest))
+                db['times'].append(float(tnow))
                 vdat = {}
                 for v in varnames:
-                    vdat[v] = nonan(extractvar(ds, v, iclosest), replacenan)
+                    v1      = nonan(extractvar(ds, v, i1), replacenan)
+                    v2      = nonan(extractvar(ds, v, i2), replacenan)
+                    vdat[v] = interpfields(ti1, ti2, v1, v2)
+                    #vdat[v] = nonan(extractvar(ds, v, iclosest), replacenan)
                     db[v+suf] += vdat[v]
                 if len(extrafuncs)>0:
                     for f in extrafuncs:
@@ -413,6 +426,14 @@ def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
             for f in extrafuncs:
                 name = f['name']+suf
                 db[name] /= float(Ncount)
+
+    if transform:
+        R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
+        #if not np.array_equal(R,np.eye(R.shape[0])):
+        db['velocitya1'+suf], db['velocitya2'+suf], db['velocitya3'+suf] = apply_coordinate_transform(R,
+                                                                                                      db['velocityx'+suf],
+                                                                                                      db['velocityy'+suf],
+                                                                                                      db['velocityz'+suf])
 
     if verbose:
         print("Ncount = %i"%Ncount)
