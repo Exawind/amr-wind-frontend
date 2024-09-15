@@ -74,6 +74,24 @@ class postpro_phaseavgplanes():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```
+  phaseavgplanes:
+  - name: LowWSLowTI Baseline
+    ncfile:
+    - /lustre/orion/cfd162/world-shared/lcheung/AdvancedControlsWakes/Runs/LowWS_LowTI.Frontier/oneturb_7x2/rundir_baseline/post_processing/XZ_*.nc
+    tstart: 17650
+    tend: 18508.895705521474
+    tperiod: 122.6993865030675
+    varnames: ['velocityx', 'velocityy', 'velocityz', 'tke']
+    calcavg: True
+    contourplot:
+      title: Baseline
+      plotfunc: 'lambda db: db["velocityx_phavg"] - db["velocityx_avg"]'   #'lambda db: np.sqrt(db["velocityx_avg"]**2 + db["velocityy_avg"]**2)'
+      xaxis: x         # Which axis to use on the abscissa
+      yaxis: z         # Which axis to use on the ordinate
+      iplane: [0]
+      clevels: 'np.linspace(-1, 1, 101)'
+```
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
