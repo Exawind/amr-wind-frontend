@@ -638,6 +638,66 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         dbfile.close()
     return db
 
+def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
+                                   extrafuncs=[], avgdb = None,
+                                   varnames=['velocityx','velocityy','velocityz'],
+                                   savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
+    """
+    Calculate the phase-averaged reynolds stresses
+    """
+    ncfilelist = getFileList(ncfileinput)
+    ncfile=ncfilelist[0]
+    eps     = 1.0E-10
+    savg = '_phavg'
+
+    corr_mapping = {
+        'velocityx': 'u',
+        'velocityy': 'v',
+        'velocityz': 'w',
+        'velocitya1': 'ua1',
+        'velocitya2': 'ua2',
+        'velocitya3': 'ua3'
+    }
+
+    combinations = itertools.combinations_with_replacement(varnames, 2)
+
+    corrlist = [
+        [f"{corr_mapping[var1]}{corr_mapping[var2]}_phavg", var1, var2]
+        for var1, var2 in combinations
+    ]
+
+    db = {}
+    if avgdb is None:
+        if verbose: print("Calculating averages")
+
+        orig_varnames = varnames[:]
+        db = avgPlaneXR(ncfilelist, timerange,
+                        extrafuncs=extrafuncs,
+                        varnames=orig_varnames,
+                        groupname=groupname, verbose=verbose, includeattr=includeattr,axis_rotation=axis_rotation)
+    else:
+        db.update(avgdb)
+    Ncount = 0
+    tnow = tstart
+    for ncfile in ncfilelist:
+        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        filtertime  = np.where((tnow <= np.array(timevec)) & (np.array(timevec) <= tend))
+        Ntotal      = len(filtertime[0])
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+            #print("%f %f"%(t1, t2))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            reshapeijk = ds.attrs['ijk_dims'][::-1]
+            zeroarray = extractvar(ds, 'velocityx', 0)
+            # Set up the initial mean fields
+            for corr in corrlist:
+                suff = corr[0]
+                if suff not in db:
+                    db[suff] =  np.full_like(zeroarray, 0.0)
+
+    return
+
 def getLineXR(ncfile, itimevec, varnames, groupname=None,
               verbose=0, includeattr=False, gettimes=False):
     # Create a fresh db dictionary
