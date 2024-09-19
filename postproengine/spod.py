@@ -223,9 +223,12 @@ def extract_1d_from_meshgrid(Z):
         return unique_cols[:, 0],0
 
 
-def read_cart_data(ncfile,varnames,group,trange,iplane,xaxis,yaxis):
+def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
 
     db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+    if iplanes == None: iplanes = list(range(len(db['offsets'])))
+    if not isinstance(iplanes, list): iplanes = [iplanes,]
+
     if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
         compute_axis1axis2_coords(db,rot=0)
         R = get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=0)
@@ -233,40 +236,43 @@ def read_cart_data(ncfile,varnames,group,trange,iplane,xaxis,yaxis):
         origina1a2a3 = R@db['origin']
         offsets = db['offsets']
         offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
-        xc = origina1a2a3[-1] + offsets[iplane]
-    else:
-        xc = db['x'][iplane,0,0]
 
+    xc = np.zeros(len(iplanes))
     YY = np.array(db[xaxis])
     ZZ = np.array(db[yaxis])
-
-    y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
-    z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
-
-    permutation = [0,axisz+1,axisy+1]
-    t = np.asarray(np.array(db['times']).data)
-    udata = np.zeros((len(t),len(z),len(y),3))
-    for i,tstep in enumerate(db['timesteps']):
-        if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
-            ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
-            udata[i,:,:,0] = ordered_data[iplane,:,:]
-
-            ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
-            udata[i,:,:,1] = ordered_data[iplane,:,:]
-
-            ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
-            udata[i,:,:,2] = ordered_data[iplane,:,:]
+    for iplaneiter, iplane in enumerate(iplanes):
+        if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
+            xc[iplaneiter] = origina1a2a3[-1] + offsets[iplane]
         else:
-            ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
-            udata[i,:,:,0] = ordered_data[iplane,:,:]
+            xc[iplaneiter] = db['x'][iplane,0,0]
 
-            ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
-            udata[i,:,:,1] = ordered_data[iplane,:,:]
+        y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
+        z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
 
-            ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
-            udata[i,:,:,2] = ordered_data[iplane,:,:]
+        permutation = [0,axisz+1,axisy+1]
+        t = np.asarray(np.array(db['times']).data)
+        udata = np.zeros(len(iplanes),len(t),len(z),len(y),3))
+        for i,tstep in enumerate(db['timesteps']):
+            if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
+                ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
+                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
 
-    return udata , xc, y , z , t 
+                ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
+                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+
+                ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
+                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+            else:
+                ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
+                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
+
+                ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
+                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+
+                ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
+                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+
+    return udata , xc, y , z , t, iplanes 
 
 def interpolate_radial_to_cart(U,rr,theta,YY,ZZ,offsety,offsetz):
     YR = np.sqrt(np.square((YY-offsety)) + np.square((ZZ-offsetz)))
@@ -452,7 +458,7 @@ class postpro_spod():
          'help':'Boolean to remove temporal mean from SPOD.'},
         {'key':'remove_azimuthal_mean',   'required':False,  'default':False,
          'help':'Boolean to remove azimuthal mean from SPOD.'},
-        {'key':'iplane',       'required':False,  'default':[0,],
+        {'key':'iplane',       'required':False,  'default':None,
          'help':'List of i-index of plane to postprocess', },
         {'key':'correlations','required':False,  'default':['U',],
             'help':'List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W ', },
@@ -565,25 +571,26 @@ spod:
 
 
             #Get all times if not specified 
-            if not isinstance(iplanes, list): iplanes = [iplanes,]
+            #if iplanes == None: iplanes = list(range(len(self.db['offsets'])))
+            #if not isinstance(iplanes, list): iplanes = [iplanes,]
             if not isinstance(correlations, list): correlations= [correlations,]
             if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
             if wake_center_files != None and len(wake_center_files) != len(iplanes):
                 print("Error: len(wake_center_files) != len(iplanes). Exiting.")
                 sys.exit()
 
+            if self.verbose:
+                print("--> Reading in velocity data (iplane="+str(iplane)+")")
+            udata_cart,xcs,y,z,self.times,iplanes = read_cart_data(ncfile,self.varnames,group,self.trange,iplanes,self.xaxis,self.yaxis)
             for iplaneiter, iplane in enumerate(iplanes):
                 self.iplane = iplane
-                if self.verbose:
-                    print("--> Reading in velocity data (iplane="+str(iplane)+")")
-                udata_cart,xc,y,z,self.times = read_cart_data(ncfile,self.varnames,group,self.trange,iplane,self.xaxis,self.yaxis)
-                file = 'ucart_data.pkl'
-                with open(file,'wb') as f:
-                    pickle.dump(udata_cart,f)
-                    pickle.dump(xc,f)
-                    pickle.dump(y,f)
-                    pickle.dump(z,f)
-                    pickle.dump(self.times,f)
+                # file = 'ucart_data.pkl'
+                # with open(file,'wb') as f:
+                #     pickle.dump(udata_cart[iplaneiter,:,:,:,:],f)
+                #     pickle.dump(xc[iplaneiter],f)
+                #     pickle.dump(y,f)
+                #     pickle.dump(z,f)
+                #     pickle.dump(self.times,f)
                 #with open(file, 'rb') as f:
                 #    udata_cart = pickle.load(f)
                 #    xc = pickle.load(f)
@@ -632,7 +639,7 @@ spod:
                             print("Error: zcenter - LR negative. Exiting")
                             print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
                             sys.exit()
-                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
+                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplaneiter,titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
 
                 if self.cylindrical_velocities==True:
                     if self.verbose:
@@ -769,7 +776,7 @@ spod:
                         self.variables['theta']    = theta
                         self.variables['y']        = y
                         self.variables['z']        = z
-                        self.variables['x']        = xc
+                        self.variables['x']        = xcs[iplane]
                         self.variables['ycenter']  = ycenter
                         self.variables['zcenter']  = zcenter
                         self.variables['nperseg']  = self.nperseg
