@@ -159,7 +159,7 @@ avgplanes:
         blurb      = 'Computes the rotor averaged velocity'
         required   = False
         actiondefs = [
-            {'key':'iplane',   'required':True,  'help':'List of iplane values',  'default':None},
+            {'key':'iplane',   'required':False,  'help':'List of iplane values',  'default':None},
             {'key':'Diam', 'required':True,  'help':'Turbine Diameter',  'default':0},
             {'key':'xc',       'required':False,  'help':'Center of rotor disk on the xaxis',  'default':None},
             {'key':'yc',       'required':False,  'help':'Center of rotor disk in the yaxis',  'default':None},
