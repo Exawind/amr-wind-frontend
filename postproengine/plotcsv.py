@@ -106,7 +106,6 @@ plotcsv:
                 
                 varnames = [xcol, ycol]
                 self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
-                print(self.df)
                 ax.plot(np.array(self.df[xcol]), np.array(self.df[ycol]), **lineopts)
 
             # Set up axes and labels
