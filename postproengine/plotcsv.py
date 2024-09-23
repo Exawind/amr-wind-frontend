@@ -106,6 +106,7 @@ plotcsv:
                 
                 varnames = [xcol, ycol]
                 self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
+                print(self.df)
                 ax.plot(np.array(self.df[xcol]), np.array(self.df[ycol]), **lineopts)
 
             # Set up axes and labels
@@ -125,7 +126,7 @@ plotcsv:
 
             # Save the figure
             if len(savefile)>0:
-                savefname = savefile.format(time=time, iplane=iplane)
+                savefname = savefile
                 if verbose: print('Saving '+savefname)
                 plt.savefig(savefname)
             

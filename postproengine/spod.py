@@ -251,7 +251,7 @@ def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
 
         permutation = [0,axisz+1,axisy+1]
         t = np.asarray(np.array(db['times']).data)
-        udata = np.zeros(len(iplanes),len(t),len(z),len(y),3))
+        udata = np.zeros((len(iplanes),len(t),len(z),len(y),3))
         for i,tstep in enumerate(db['timesteps']):
             if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
                 ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
@@ -552,7 +552,6 @@ spod:
             ycenter               = plane['xc']
             zcenter               = plane['yc']
             self.nperseg          = plane['nperseg']
-            self.overlap = self.nperseg//2
             correlations          = plane['correlations']
             remove_temporal_mean  = plane['remove_temporal_mean']
             remove_azimuthal_mean = plane['remove_azimuthal_mean']
@@ -580,9 +579,10 @@ spod:
                 sys.exit()
 
             if self.verbose:
-                print("--> Reading in velocity data (iplane="+str(iplane)+")")
+                print("--> Reading in velocity data")
             udata_cart,xcs,y,z,self.times,iplanes = read_cart_data(ncfile,self.varnames,group,self.trange,iplanes,self.xaxis,self.yaxis)
             for iplaneiter, iplane in enumerate(iplanes):
+                print("--> Working on iplane: ",iplane," of ",iplanes)
                 self.iplane = iplane
                 # file = 'ucart_data.pkl'
                 # with open(file,'wb') as f:
@@ -655,6 +655,7 @@ spod:
                     if self.nperseg==None:
                         self.nperseg = len(self.times)
                         print("nperseg: ",self.nperseg)
+                    self.overlap = self.nperseg//2
                     Nkt = int(self.nperseg/2) + 1
                     dt = self.times[1]-self.times[0]
                     #time_segments = np.array([self.times[i:i+self.nperseg] for i in range(0,len(self.times)-self.nperseg+1,self.nperseg-self.nperseg//2)])
@@ -780,6 +781,7 @@ spod:
                         self.variables['ycenter']  = ycenter
                         self.variables['zcenter']  = zcenter
                         self.variables['nperseg']  = self.nperseg
+                        self.variables['noverlap'] = self.overlap
                         self.variables['times']    = self.times
                         if not os.path.exists(self.output_dir):
                             os.makedirs(self.output_dir)
