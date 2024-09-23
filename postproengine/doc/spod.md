@@ -18,7 +18,7 @@ Compute SPOD eigenvectors and eigenvalues
   NTheta              : Number of points in the azimuthal direction. (Optional, Default: 256)
   remove_temporal_mean: Boolean to remove temporal mean from SPOD. (Optional, Default: True)
   remove_azimuthal_mean: Boolean to remove azimuthal mean from SPOD. (Optional, Default: False)
-  iplane              : List of i-index of plane to postprocess (Optional, Default: [0])
+  iplane              : List of i-index of plane to postprocess (Optional, Default: None)
   correlations        : List of correlations to include in SPOD. Separate U,V,W components with dash. Examples: U-V-W, U,V,W,V-W  (Optional, Default: ['U'])
   output_dir          : Directory to save results (Optional, Default: './')
   savepklfile         : Name of pickle file to save results (Optional, Default: '')

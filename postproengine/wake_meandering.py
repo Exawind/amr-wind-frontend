@@ -45,6 +45,7 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighted_center=True,args=Non
     y_grid_center = (datadict['y'][-1,0] + datadict['y'][0,0])/2.0 
     datadict['z'] = np.copy(ZZ[:,:].T)
     datadict['u'] = u[:,:,:,0]
+    print("-> y grid center: ",y_grid_center)
 
     wakedata = PlanarData(datadict)
     wake = track(wakedata.sliceI(),method=method,verbose=True)
@@ -72,7 +73,7 @@ class postpro_wakemeander():
     blurb     = "Compute wake meandering statistics"
     inputdefs = [
         # -- Execute parameters ----
-        {'key':'iplane',       'required':False,  'default':[0,],
+        {'key':'iplane',       'required':False,  'default':None,
          'help':'i-index of planes to postprocess', },
         {'key':'name',     'required':True,  'default':'',
          'help':'An arbitrary name',},
@@ -192,7 +193,6 @@ class postpro_wakemeander():
             self.axis_rotation = entry['axis_rotation']
             savepklfile  = entry['savepklfile']
 
-            if not isinstance(iplanes, list): iplanes = [iplanes,]
             #Get all times if not specified 
             filelist = []
             for fileiter in range(0,len(ncfile)):
@@ -201,6 +201,9 @@ class postpro_wakemeander():
             udata = {}
             xc = {}
             self.db = ppsamplexr.getPlaneXR(ncfile,[0,1],self.varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+
+            if iplanes == None: iplanes = list(range(len(self.db['offsets'])))
+            if not isinstance(iplanes, list): iplanes = [iplanes,]
 
             # Convert to native axis1/axis2 coordinates if necessary
             self.natural_axes = False
@@ -296,6 +299,7 @@ class postpro_wakemeander():
                     self.dfcenters.to_csv(savefname,index=False,sep=',')
 
                 if len(savepklfile)>0:
+                    savepklfile = savepklfile.format(iplane=self.iplane)
                     savefname = os.path.join(self.output_dir, savepklfile)
                     with open(savefname, 'wb') as f:
                         pickle.dump(self.wake, f)
