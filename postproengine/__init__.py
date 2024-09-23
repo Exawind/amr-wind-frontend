@@ -463,6 +463,15 @@ def convert_vel_xyz_to_axis1axis2(db,rot=0):
         db['velocitya3'][timestep] = ua3
     return 
 
+def extract_1d_from_meshgrid(Z):
+    unique_rows = np.unique(Z, axis=0)
+    if unique_rows.shape[0] == 1:
+        return unique_rows[0],1
+
+    unique_cols = np.unique(Z, axis=1)
+    if unique_cols.shape[1] == 1:
+        return unique_cols[:, 0],0
+
 # ------- reusable circumferential avg class ----------
 class circavgtemplate():
     """
@@ -813,6 +822,108 @@ class contourplottemplate():
                 savefname = savefile.format(iplane=iplane)
                 plt.savefig(savefname)
         return
+
+# ------- reusable circumferential avg class ----------
+class doubleintegraltemplate():
+    """
+    Compute the double integral of quantity
+    """
+    actionname = 'double_integral'
+    blurb      = 'Compute double integral of a quantity over a plane'
+    required   = False
+    actiondefs = [
+        {'key':'savefile',  'required':False,  'default':None,
+         'help':'Filename to save the radial profiles', },
+        {'key':'iplane',   'required':False,  'default':None,
+         'help':'Which plane to pull from netcdf file', },            
+        {'key':'xaxis',    'required':True,  'default':'',
+         'help':'Which axis to use on the abscissa', },
+        {'key':'yaxis',    'required':True,  'default':'',
+         'help':'Which axis to use on the ordinate', },            
+        {'key':'xrange',    'required':False,  'default':None,
+         'help':'Range of data to integrate on abscissa, e.g., [xmin,xmax]', },
+        {'key':'yrange',    'required':False,  'default':None,
+         'help':'Range of data to integrate on ordinate, e.g., [ymin,ymax]', },
+        {'key':'intfunc',  'required':True,  'default':'lambda db: (db["velocityx"])',
+         'help':'Function to integrate (lambda expression)',},
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate a1,a2,a3 axis for integrating.',},
+    ]
+
+    intdb = None
+    def __init__(self, parent, inputs):
+        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.parent = parent
+        # Don't forget to initialize intdb in inherited classes!
+        print('Initialized '+self.actionname+' inside '+parent.name)
+        return
+
+    def execute(self):
+        print('Executing '+self.actionname)
+        # Get inputs
+        intfunc = eval(self.actiondict['intfunc'])
+        iplanes  = self.actiondict['iplane']
+        xaxis    = self.actiondict['xaxis']
+        yaxis    = self.actiondict['yaxis']
+        xrange   = self.actiondict['xrange']
+        yrange   = self.actiondict['yrange']
+        axis_rotation = self.actiondict['axis_rotation']
+        savefile        = self.actiondict['savefile']
+
+        if iplanes == None: iplanes = list(range(len(self.intdb['offsets'])))
+        if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+        # Convert to native axis1/axis2 coordinates if necessary
+        if ('a1' in [xaxis, yaxis]) or \
+           ('a2' in [xaxis, yaxis]) or \
+           ('a3' in [xaxis, yaxis]):
+            compute_axis1axis2_coords(self.intdb,rot=axis_rotation)
+
+        # get plane locations 
+        R = get_mapping_xyz_to_axis1axis2(self.intdb['axis1'],self.intdb['axis2'],self.intdb['axis3'],rot=axis_rotation)
+        origin = self.intdb['origin']
+        origina1a2a3 = R@self.intdb['origin']
+        offsets = self.intdb['offsets']
+        offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
+
+        intq = intfunc(self.intdb)
+        # Define the columns
+        columns = ['iplane', 'plane_loc', 'integral']
+        dfintegral = pd.DataFrame(columns=columns)
+        data = []
+        for iplaneiter, iplane in enumerate(iplanes):
+            iplane = int(iplane)
+            plane_point = origina1a2a3[-1] + offsets[iplane]
+
+            XX = np.array(self.intdb[xaxis])
+            YY = np.array(self.intdb[yaxis])
+            x,axisx = extract_1d_from_meshgrid(XX[iplane,:,:])
+            y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
+            if xrange is not None:
+                maskx =  (x >= xrange[0])  & (x <= xrange[-1])
+            else:
+                maskx =  (x >= x[0])  & (x <= x[-1])
+
+            if yrange is not None:
+                masky =  (y >= yrange[0])  & (y <= yrange[-1])
+            else:
+                masky =  (y >= y[0])  & (y <= y[-1])
+
+            #integral = np.trapz(np.trapz(intq[iplane,:,:], x=y, axis=axisy),x=x,axis=0)
+            permutation = [0,axisx+1,axisy+1]
+            intq_T = np.transpose(intq,permutation)[iplane,:,:]
+            intq_T = intq_T[maskx,:]
+            intq_T = intq_T[:,masky]
+            integral = np.trapz(np.trapz(intq_T, x=y[masky],axis=1),x=x[maskx],axis=0)
+            data.append({'iplane':iplane,'plane_loc':plane_point,'integral':integral})
+
+        dfintegral = pd.DataFrame(data)
+        if savefile is not None:
+            dfintegral.to_csv(savefile,index=False,sep=',')
+
+        return
+
+
 
 # =====================================================
 

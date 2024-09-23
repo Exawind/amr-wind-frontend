@@ -16,7 +16,7 @@ import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from postproengine import interpolatetemplate, circavgtemplate
+from postproengine import interpolatetemplate, circavgtemplate, doubleintegraltemplate  
 from postproengine import compute_axis1axis2_coords
 
 """
@@ -362,5 +362,13 @@ avgplanes:
         def __init__(self, parent, inputs):
             super().__init__(parent, inputs)
             self.interpdb = self.parent.dbavg
+            return
+
+    @registeraction(actionlist)
+    class doubleintegral(doubleintegraltemplate):
+        actionname = 'double_integral'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.intdb = self.parent.dbavg
             return
         
