@@ -8,6 +8,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
+import re
 from scipy.interpolate import RegularGridInterpolator
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
@@ -657,7 +658,7 @@ class interpolatetemplate():
             
         return
 
-    
+
 # ------- reusable contour plot class -----------------
 class contourplottemplate():
     """
@@ -705,7 +706,12 @@ class contourplottemplate():
          'help':'Name/number of figure to create plot in'},
         {'key':'axesnumfunc',    'required':False,  'default':None,
          'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
-
+        {'key':'cbar',   'required':False,  'default':True,
+        'help':'Boolean to include colorbar',},
+        {'key':'cbar_label',   'required':False,  'default':None,
+        'help':'Label for colorbar',},
+        {'key':'cbar_nticks', 'required':False,  'default':None,
+        'help':'Number of ticks to include on colorbar',},
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -728,6 +734,9 @@ class contourplottemplate():
         ylabel   = self.actiondict['ylabel']
         fontsize = self.actiondict['fontsize']
         clevels  = eval(self.actiondict['clevels'])
+        cbar_inc = self.actiondict['cbar']
+        cbar_label = self.actiondict['cbar_label']
+        cbar_nticks = self.actiondict['cbar_nticks']
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
         xscalef  = eval(self.actiondict['xscalefunc'])
@@ -758,14 +767,39 @@ class contourplottemplate():
                                 yscalef(self.plotdb[yaxis][iplane,:,:]),
                                 plotq[iplane, :, :], 
                                 levels=clevels,cmap=cmap, extend='both')
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="3%", pad=0.05)
-            cbar=fig.colorbar(c, ax=ax, cax=cax)
-            cbar.ax.tick_params(labelsize=fontsize)
+            if cbar_inc:
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", size="3%", pad=0.05)
+                cbar=fig.colorbar(c, ax=ax, cax=cax)
+                cbar.ax.tick_params(labelsize=fontsize)
+                if cbar_label is not None:
+                    cbar.set_label(cbar_label,fontsize=fontsize)
+
+                if cbar_nticks is not None:
+                    levels = c.levels
+                    # Define the number of intervals
+                    min_tick = levels[0]
+                    max_tick = levels[-1]
+                    new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                    cbar.set_ticks(new_ticks)
+
             if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
             if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.axis('scaled')
-            ax.set_title(eval("rf'{}'".format(title)),fontsize=fontsize)
+
+            # SET TITLE
+            parts = re.split(r'(\$.*?\$)', title)
+            evaluated_parts = []
+            for part in parts:
+                if part.startswith('$') and part.endswith('$'):
+                    # This part is inside LaTeX math mode, leave it as is
+                    evaluated_parts.append(part)
+                else:
+                    # This part is outside LaTeX math mode, evaluate it
+                    evaluated_parts.append(eval(f"rf'{part}'"))
+            title = ''.join(evaluated_parts)
+            ax.set_title(title,fontsize=fontsize)
+
             ax.tick_params(axis='both', which='major', labelsize=fontsize) 
 
             # Run any post plot functions

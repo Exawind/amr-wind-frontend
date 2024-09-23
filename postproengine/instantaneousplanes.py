@@ -179,6 +179,10 @@ instantaneousplanes:
             'help':'Color map name',},
             {'key':'cbar',   'required':False,  'default':True,
             'help':'Boolean to include colorbar',},
+            {'key':'cbar_label',   'required':False,  'default':None,
+            'help':'Label for colorbar',},
+            {'key':'cbar_nticks', 'required':False,  'default':None,
+            'help':'Number of ticks to include on colorbar',},
             {'key':'xlabel',    'required':False,  'default':'X [m]',
             'help':'Label on the X-axis', },
             {'key':'ylabel',    'required':False,  'default':'Y [m]',
@@ -216,6 +220,8 @@ instantaneousplanes:
             clevels  = eval(self.actiondict['clevels'])
             cmap     = self.actiondict['cmap']
             cbar_inc = self.actiondict['cbar']
+            cbar_nticks = self.actiondict['cbar_nticks']
+            cbar_label = self.actiondict['cbar_label']
             xlabel   = self.actiondict['xlabel']
             ylabel   = self.actiondict['ylabel']
             savefile = self.actiondict['savefile']
@@ -248,10 +254,32 @@ instantaneousplanes:
                     cax = divider.append_axes("right", size="3%", pad=0.05)
                     cbar=fig.colorbar(c, ax=ax, cax=cax)
                     cbar.ax.tick_params(labelsize=fontsize)
+                    if cbar_label is not None:
+                        cbar.set_label(cbar_label,fontsize=fontsize)
+
+                    if cbar_nticks is not None:
+                        levels = c.levels
+                        # Define the number of intervals
+                        min_tick = levels[0]
+                        max_tick = levels[-1]
+                        new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                        cbar.set_ticks(new_ticks)
+
                 if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
                 if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
                 ax.tick_params(axis='both', which='major', labelsize=fontsize) 
-                ax.set_title(eval("rf'{}'".format(title)),fontsize=fontsize)
+                # SET TITLE
+                parts = re.split(r'(\$.*?\$)', title)
+                evaluated_parts = []
+                for part in parts:
+                    if part.startswith('$') and part.endswith('$'):
+                        # This part is inside LaTeX math mode, leave it as is
+                        evaluated_parts.append(part)
+                    else:
+                        # This part is outside LaTeX math mode, evaluate it
+                        evaluated_parts.append(eval(f"rf'{part}'"))
+                title = ''.join(evaluated_parts)
+                ax.set_title(title,fontsize=fontsize)
                 ax.axis('scaled')
 
                 # Run any post plot functions
