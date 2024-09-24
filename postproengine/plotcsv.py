@@ -125,7 +125,7 @@ plotcsv:
 
             # Save the figure
             if len(savefile)>0:
-                savefname = savefile.format(time=time, iplane=iplane)
+                savefname = savefile
                 if verbose: print('Saving '+savefname)
                 plt.savefig(savefname)
             

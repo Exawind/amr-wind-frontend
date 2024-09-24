@@ -3,7 +3,7 @@
 Compute wake meandering statistics
 ## Inputs: 
 ```
-  iplane              : i-index of planes to postprocess (Optional, Default: [0])
+  iplane              : i-index of planes to postprocess (Optional, Default: None)
   name                : An arbitrary name (Required)
   ncfile              : NetCDF sampling files of cross-flow planes (Required)
   group               : Which group to pull from netcdf file (Optional, Default: None)

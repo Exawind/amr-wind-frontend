@@ -8,6 +8,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
+import re
 from scipy.interpolate import RegularGridInterpolator
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
@@ -657,7 +658,7 @@ class interpolatetemplate():
             
         return
 
-    
+
 # ------- reusable contour plot class -----------------
 class contourplottemplate():
     """
@@ -693,10 +694,24 @@ class contourplottemplate():
          'help':'Function to plot (lambda expression)',},
         {'key':'axis_rotation',  'required':False,  'default':0,
          'help':'Degrees to rotate a1,a2,a3 axis for plotting.',},
+        {'key':'xscalefunc',  'required':False,  'default':'lambda x: x',
+         'help':'Function to scale the x-axis (lambda expression)',},
+        {'key':'yscalefunc',  'required':False,  'default':'lambda y: y',
+         'help':'Function to scale the y-axis (lambda expression)',},
         {'key':'postplotfunc', 'required':False,  'default':'',
          'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
         {'key':'fontsize',    'required':False,  'default':14,
-         'help':'Fontsize for figure'}
+         'help':'Fontsize for figure'},
+        {'key':'figname',    'required':False,  'default':None,
+         'help':'Name/number of figure to create plot in'},
+        {'key':'axesnumfunc',    'required':False,  'default':None,
+         'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
+        {'key':'cbar',   'required':False,  'default':True,
+        'help':'Boolean to include colorbar',},
+        {'key':'cbar_label',   'required':False,  'default':None,
+        'help':'Label for colorbar',},
+        {'key':'cbar_nticks', 'required':False,  'default':None,
+        'help':'Number of ticks to include on colorbar',},
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -719,10 +734,17 @@ class contourplottemplate():
         ylabel   = self.actiondict['ylabel']
         fontsize = self.actiondict['fontsize']
         clevels  = eval(self.actiondict['clevels'])
+        cbar_inc = self.actiondict['cbar']
+        cbar_label = self.actiondict['cbar_label']
+        cbar_nticks = self.actiondict['cbar_nticks']
         title    = self.actiondict['title']
         plotfunc = eval(self.actiondict['plotfunc'])
+        xscalef  = eval(self.actiondict['xscalefunc'])
+        yscalef  = eval(self.actiondict['yscalefunc'])
         axis_rotation = self.actiondict['axis_rotation']
         postplotfunc = self.actiondict['postplotfunc']
+        figname  = self.actiondict['figname']
+        axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
 
         if not isinstance(iplanes, list): iplanes = [iplanes,]
 
@@ -733,19 +755,51 @@ class contourplottemplate():
             compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
         
         for iplane in iplanes:
-            fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
+            if (figname is not None) and (axesnumf is not None):
+                fig     = plt.figure(figname)
+                allaxes = fig.get_axes()
+                iax     = axesnumf(iplane)
+                ax      = allaxes[iax]
+            else:
+                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
             plotq = plotfunc(self.plotdb)
-            c=plt.contourf(self.plotdb[xaxis][iplane,:,:], 
-                           self.plotdb[yaxis][iplane,:,:], plotq[iplane, :, :], 
-                           levels=clevels,cmap=cmap, extend='both')
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="3%", pad=0.05)
-            cbar=fig.colorbar(c, ax=ax, cax=cax)
-            cbar.ax.tick_params(labelsize=fontsize)
-            ax.set_xlabel(xlabel,fontsize=fontsize)
-            ax.set_ylabel(ylabel,fontsize=fontsize)
+            c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
+                                yscalef(self.plotdb[yaxis][iplane,:,:]),
+                                plotq[iplane, :, :], 
+                                levels=clevels,cmap=cmap, extend='both')
+            if cbar_inc:
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", size="3%", pad=0.05)
+                cbar=fig.colorbar(c, ax=ax, cax=cax)
+                cbar.ax.tick_params(labelsize=fontsize)
+                if cbar_label is not None:
+                    cbar.set_label(cbar_label,fontsize=fontsize)
+
+                if cbar_nticks is not None:
+                    levels = c.levels
+                    # Define the number of intervals
+                    min_tick = levels[0]
+                    max_tick = levels[-1]
+                    new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                    cbar.set_ticks(new_ticks)
+
+            if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
+            if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.axis('scaled')
-            ax.set_title(eval("f'{}'".format(title)),fontsize=fontsize)
+
+            # SET TITLE
+            parts = re.split(r'(\$.*?\$)', title)
+            evaluated_parts = []
+            for part in parts:
+                if part.startswith('$') and part.endswith('$'):
+                    # This part is inside LaTeX math mode, leave it as is
+                    evaluated_parts.append(part)
+                else:
+                    # This part is outside LaTeX math mode, evaluate it
+                    evaluated_parts.append(eval(f"rf'{part}'"))
+            title = ''.join(evaluated_parts)
+            ax.set_title(title,fontsize=fontsize)
+
             ax.tick_params(axis='both', which='major', labelsize=fontsize) 
 
             # Run any post plot functions

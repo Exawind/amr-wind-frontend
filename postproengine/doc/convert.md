@@ -18,6 +18,7 @@ Converts netcdf sample planes to different file formats
     ID                : bts file ID. 8="periodic", 7="non-periodic" (Optional, Default: 8)
     turbine_height    : Height of the turbine (if different than zc) (Optional, Default: None)
     group             : Which group to pull from netcdf file (Optional, Default: None)
+    diam              : Diameter for computing rotor averaged velocity (Optional, Default: None)
   nalu_to_amr         : ACTION: Converts a list of planes from Nalu-Wind to AMR-Wind (Optional)
     savefile          : Name of AMR-Wind file (Required)
     coordfile         : Nalu-Wind coordinate file (Optional, Default: None)

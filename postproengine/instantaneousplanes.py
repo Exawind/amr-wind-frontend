@@ -179,6 +179,10 @@ instantaneousplanes:
             'help':'Color map name',},
             {'key':'cbar',   'required':False,  'default':True,
             'help':'Boolean to include colorbar',},
+            {'key':'cbar_label',   'required':False,  'default':None,
+            'help':'Label for colorbar',},
+            {'key':'cbar_nticks', 'required':False,  'default':None,
+            'help':'Number of ticks to include on colorbar',},
             {'key':'xlabel',    'required':False,  'default':'X [m]',
             'help':'Label on the X-axis', },
             {'key':'ylabel',    'required':False,  'default':'Y [m]',
@@ -193,6 +197,15 @@ instantaneousplanes:
             'help':'Filename to save the picture', },
             {'key':'postplotfunc', 'required':False,  'default':'',
             'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
+            {'key':'xscalefunc',  'required':False,  'default':'lambda x: x',
+             'help':'Function to scale the x-axis (lambda expression)',},
+            {'key':'yscalefunc',  'required':False,  'default':'lambda y: y',
+             'help':'Function to scale the y-axis (lambda expression)',},
+            {'key':'figname',    'required':False,  'default':None,
+             'help':'Name/number of figure to create plot in'},
+            {'key':'axesnumfunc',    'required':False,  'default':None,
+             'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
+
         ]
         def __init__(self, parent, inputs):
             self.actiondict = mergedicts(inputs, self.actiondefs)
@@ -207,6 +220,8 @@ instantaneousplanes:
             clevels  = eval(self.actiondict['clevels'])
             cmap     = self.actiondict['cmap']
             cbar_inc = self.actiondict['cbar']
+            cbar_nticks = self.actiondict['cbar_nticks']
+            cbar_label = self.actiondict['cbar_label']
             xlabel   = self.actiondict['xlabel']
             ylabel   = self.actiondict['ylabel']
             savefile = self.actiondict['savefile']
@@ -214,24 +229,57 @@ instantaneousplanes:
             figsize  = self.actiondict['figsize']
             fontsize = self.actiondict['fontsize']
             postplotfunc = self.actiondict['postplotfunc']
+            xscalef  = eval(self.actiondict['xscalefunc'])
+            yscalef  = eval(self.actiondict['yscalefunc'])
+            figname  = self.actiondict['figname']
+            axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
 
             # Loop through each time instance and plot
             iplane = self.parent.iplane
             for iplot, i in enumerate(self.parent.iters):
                 time  = self.parent.db['times'][iplot]
-                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
+                if (figname is not None) and (axesnumf is not None):
+                    fig     = plt.figure(figname)
+                    allaxes = fig.get_axes()
+                    iax     = axesnumf(iplane)
+                    ax      = allaxes[iax]
+                else:
+                    fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
                 plotq = plotfunc(self.parent.db, i)
-                c=plt.contourf(self.parent.db[self.parent.xaxis][iplane,:,:], self.parent.db[self.parent.yaxis][iplane,:,:], plotq[iplane, :, :], levels=clevels, cmap=cmap, extend='both')
+                c = ax.contourf(xscalef(self.parent.db[self.parent.xaxis][iplane,:,:]),
+                                yscalef(self.parent.db[self.parent.yaxis][iplane,:,:]),
+                                plotq[iplane, :, :], levels=clevels, cmap=cmap, extend='both')
                 if cbar_inc:
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("right", size="3%", pad=0.05)
                     cbar=fig.colorbar(c, ax=ax, cax=cax)
                     cbar.ax.tick_params(labelsize=fontsize)
-                
-                ax.set_xlabel(xlabel,fontsize=fontsize)
-                ax.set_ylabel(ylabel,fontsize=fontsize)
+                    if cbar_label is not None:
+                        cbar.set_label(cbar_label,fontsize=fontsize)
+
+                    if cbar_nticks is not None:
+                        levels = c.levels
+                        # Define the number of intervals
+                        min_tick = levels[0]
+                        max_tick = levels[-1]
+                        new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                        cbar.set_ticks(new_ticks)
+
+                if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
+                if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
                 ax.tick_params(axis='both', which='major', labelsize=fontsize) 
-                ax.set_title(eval("f'{}'".format(title)),fontsize=fontsize)
+                # SET TITLE
+                parts = re.split(r'(\$.*?\$)', title)
+                evaluated_parts = []
+                for part in parts:
+                    if part.startswith('$') and part.endswith('$'):
+                        # This part is inside LaTeX math mode, leave it as is
+                        evaluated_parts.append(part)
+                    else:
+                        # This part is outside LaTeX math mode, evaluate it
+                        evaluated_parts.append(eval(f"rf'{part}'"))
+                title = ''.join(evaluated_parts)
+                ax.set_title(title,fontsize=fontsize)
                 ax.axis('scaled')
 
                 # Run any post plot functions
