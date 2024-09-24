@@ -74,6 +74,15 @@ Average netcdf sample planes
     theta2            : Theta end (Optional, Default: 6.283185307179586)
     Ntheta            : Number of points in theta (Optional, Default: 180)
     wake_meandering_stats_file: For streamwise planes, wake center will be read from columns of these file, overiding centerpoint. (Optional, Default: None)
+  double_integral     : ACTION: Compute double integral of a quantity over a plane (Optional)
+    savefile          : Filename to save the radial profiles (Optional, Default: None)
+    iplane            : Which plane to pull from netcdf file (Optional, Default: None)
+    xaxis             : Which axis to use on the abscissa (Required)
+    yaxis             : Which axis to use on the ordinate (Required)
+    xrange            : Range of data to integrate on abscissa, e.g., [xmin,xmax] (Optional, Default: None)
+    yrange            : Range of data to integrate on ordinate, e.g., [ymin,ymax] (Optional, Default: None)
+    intfunc           : Function to integrate (lambda expression) (Required)
+    axis_rotation     : Degrees to rotate a1,a2,a3 axis for integrating. (Optional, Default: 0)
 ```
 
 ## Example
