@@ -648,7 +648,8 @@ def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
     ncfilelist = getFileList(ncfileinput)
     ncfile=ncfilelist[0]
     eps     = 1.0E-10
-    savg = '_phavg'
+    tavg = '_avg'
+    pavg = '_phavg'
 
     corr_mapping = {
         'velocityx': 'u',
@@ -662,7 +663,7 @@ def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
     combinations = itertools.combinations_with_replacement(varnames, 2)
 
     corrlist = [
-        [f"{corr_mapping[var1]}{corr_mapping[var2]}_phavg", var1, var2]
+        [f"{corr_mapping[var1]}{corr_mapping[var2]}{pavg}", var1, var2]
         for var1, var2 in combinations
     ]
 
@@ -695,6 +696,34 @@ def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
                 suff = corr[0]
                 if suff not in db:
                     db[suff] =  np.full_like(zeroarray, 0.0)
+            if any('velocitya' in v for v in varnames):
+                R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
+            # Loop through and accumulate
+            if verbose: print("Calculating reynolds-stress")
+            while (tnow <= tend) and (tnow <= timevec[-1]):
+                # Find the closest time to tnow
+                i1, i2   = find_2nearest(timevec, tnow)
+                ti1, ti2 = timevec[i1], timevec[i2]
+                #print(tnow, ti1, ti2)
+                #iclosest = find_nearest(timevec, tnow)
+                #tclosest = timevec[iclosest]
+                if verbose: progress(i1, len(timevec))
+
+                # Add to db accumulation
+                db['times'].append(float(tnow))
+                vdat = {}
+                for v in varnames:
+                    v1      = nonan(extractvar(ds, v, i1), replacenan)
+                    v2      = nonan(extractvar(ds, v, i2), replacenan)
+                    vdat[v] = interpfields(ti1, ti2, v1, v2)
+                    if any('velocitya' in v for v in varnames):
+                        vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
+                    for corr in corrlist:
+                        name = corr[0]
+                        v1   = corr[1]
+                        v2   = corr[2]
+                        # Standard dev
+                        db[name] += (vdat[v1]-db[v1+tavg])*(vdat[v2]-db[v2+tavg])
 
     return
 
