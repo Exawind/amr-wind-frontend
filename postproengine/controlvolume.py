@@ -23,9 +23,7 @@ from collections import defaultdict
 from matplotlib.patches import Circle
 from mpl_toolkits.mplot3d import Axes3D  
 import matplotlib.ticker as ticker
-from scipy.interpolate import RegularGridInterpolator
 import math
-
 
 """
 Plugin for post processing control volumes
@@ -64,6 +62,8 @@ class postpro_controlvolume():
         {'key':'rht_rs_file','required':True,'default':'','help':'rht rs pkl file',},
         {'key':'x_avg_files','required':True,'default':'','help':'x avg pkl files',},
         {'key':'x_rs_files','required':True,'default':'','help':'x rs pkl files',},
+        {'key':'savepklfile', 'required':False,  'default':'',
+        'help':'Name of pickle file to save results', },
 
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -157,60 +157,11 @@ controlvolume:
         integral = np.trapz(np.trapz(np.trapz(val, x=zgrid,axis=2),x=ygrid,axis=1),x=xgrid,axis=0)
         return integral
 
-    def doubleIntegral_old(self,dd3,qoi,dim0,dim1,dimc,dim0_index,dim1_index,dimc_index):
-
-        # setup inputs
-        if dim0=='y' and dim1=='z':
-            axis0 = 2
-            axis1 = 1
-            axisc = 0
-            x0 = dd3[dim0][dimc_index,0,dim0_index]
-            x1 = dd3[dim1][dimc_index,dim1_index,0]
-            values = dd3[qoi][dimc_index,dim1_index,dim0_index]
-        if dim0=='x' and dim1=='y':
-            axis0 = 0
-            axis1 = 2
-            axisc = 1
-            x0 = dd3[dim0][dim0_index,dimc_index,0]
-            x1 = dd3[dim1][0,dimc_index,dim1_index]
-            values = dd3[qoi][dim0_index,dimc_index,dim1_index]
-        if dim0=='x' and dim1=='z':
-            axis0 = 0
-            axis1 = 1
-            axisc = 2
-            x0 = dd3[dim0][dim0_index,0,dimc_index]
-            x1 = dd3[dim1][0,dim1_index,dimc_index]
-            values = dd3[qoi][dim0_index,dim1_index,dimc_index]
-
-        # adjust axes specifiers if the index of the desired axis was changed by reducing values to a single dimc_index
-        if axis0>axisc:
-            axis0 = axis0-1
-        if axis1>axisc:
-            axis1 = axis1-1
-
-        # adjust axes specifiers for the fact that np.trapz reduces array dimension by 1
-        if axis0<axis1:
-            axis1 = axis1-1
-
-        # do integral
-        if values.size == 0: # this occurs if one dimension has zero width
-            outerintegral = 0 
-        else:
-            innerintegral = np.trapz(values, x=x0, axis=axis0)
-            outerintegral = np.trapz(innerintegral, x=x1, axis=axis1)
-
-        return outerintegral
-
-
-
     def Merge(self,dict1, dict2):
         res = {**dict1, **dict2}
         return res
 
     def load_avg_rs_files(self,avg_file,rs_file,axis,boxCenter,boxDimensions):
-        """
-        Load data avg and rs data
-        """
 
         dd2_avg, axis_info = self.loadpkl(avg_file)
         dd2_rs, _  = self.loadpkl(rs_file)
@@ -297,6 +248,7 @@ controlvolume:
             boxDimensions*=diam
             #varnames = plane['varnames']            
             body_force = np.asarray(plane['body_force'])
+            savepklfile = plane['savepklfile']
 
             rot_time_period = -(2.0 * 2.0*np.pi / 0.007524699)*Uinf 
             coriolis_factor = 2.0 * 2.0*np.pi / rot_time_period
@@ -683,6 +635,14 @@ controlvolume:
             self.df_out = df_out
             self.Uinf = Uinf
             self.boxDimensions=boxDimensions
+
+            if len(savepklfile)>0:
+                directory, file_name = os.path.split(savepklfile)
+                os.makedirs(directory, exist_ok=True)
+
+                with open(savepklfile, 'wb') as f:
+                    pickle.dump(df_in, f)
+                    pickle.dump(df_out, f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
