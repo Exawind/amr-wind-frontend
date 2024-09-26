@@ -48,7 +48,8 @@ class postpro_controlvolume():
 
         {'key':'inflow_velocity_XYZ','required':True,'default':None,'help':'Inflow velocity from incflo.velocity setting in AMR-Wind (XYZ coordinates)',},
         {'key':'diam','required':True,'default':None,'help':'Turbine diameter',},
-        {'key':'box_center_XYZ','required':True,'default':None,'help':'Center of control volume (XYZ coordinates)',},
+        {'key':'box_center_XYZ','required':False,'default':None,'help':'Center of control volume (XYZ coordinates)',},
+        {'key':'box_fr_center_XYZ','required':False,'default':None,'help':'Center of control volume on front face (XYZ coordinates)',},
         {'key':'rho','required':True,'default':1.25,'help':'Density',},
         {'key':'latitude','required':True,'default':0,'help':'Latitude',},
         {'key':'body_force_XYZ','required':True,'default':None,'help':'Body force from AMR-Wind input file (XYZ coordinates)',},
@@ -75,15 +76,18 @@ class postpro_controlvolume():
     example = """
 controlvolume:
   name: Streamwise CV
-  Uinf: 9.03
+  inflow_velocity_XYZ: [9.03,0,0]
   diam: 240
+  latitude: 39.55
   box_center_XYZ: [3000.0,1000.0,150.0]
+  #box_fr_center_XYZ: [2280.0,1000.0,150.0]
   streamwise_box_size: 6
   lateral_box_size: 1
   vertical_box_size: 1
   rho: 1.2456
   body_force_XYZ: [0.00014295185866400572, 0.0008354682029301641, 0.0]
   varnames: ['velocitya1','velocitya2','velocitya3']
+  #varnames: ['velocityx','velocityy','velocityz']
 
   bot_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XY.pkl'
   bot_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XY.pkl'
@@ -108,7 +112,7 @@ controlvolume:
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake3.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake4.pkl'
 
-  table:
+  print_table:
 
   plot_totals:
     savefile: 'test_cv_total_a1a2a3.png'
@@ -303,7 +307,6 @@ controlvolume:
             latitude = plane['latitude']
             #axis = plane['axis']
 
-            boxCenter_XYZ = np.asarray(plane['box_center_XYZ'])
             streamwise_box_size = plane['streamwise_box_size']
             lateral_box_size = plane['lateral_box_size']
             vertical_box_size = plane['vertical_box_size']
@@ -312,6 +315,15 @@ controlvolume:
             varnames = plane['varnames']            
             body_force_XYZ = np.asarray(plane['body_force_XYZ'])
             savepklfile = plane['savepklfile']
+
+            boxCenter_XYZ = np.asarray(plane['box_center_XYZ'])
+            if None in boxCenter_XYZ:
+                boxFrCenter_XYZ = np.asarray(plane['box_fr_center_XYZ'])
+                if None in boxFrCenter_XYZ:
+                    print("Error: Must specify box center coordinates...exiting")
+                    sys.exit()
+                boxCenter_XYZ = boxFrCenter_XYZ
+                boxCenter_XYZ[0] = boxFrCenter_XYZ[0] + boxDimensions[0]/2.0
 
             corr_mapping = {
                 'velocityx': 'u',
@@ -805,7 +817,7 @@ controlvolume:
     # --- Inner classes for action list ---
     @registeraction(actionlist)
     class print_table():
-        actionname = 'table'
+        actionname = 'print_table'
         blurb      = 'Print table of results from control volume analysis'
         required   = False
         actiondefs = [
