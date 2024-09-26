@@ -46,10 +46,11 @@ class postpro_controlvolume():
         {'key':'name',     'required':True,  'default':'',
          'help':'An arbitrary name',},
 
-        {'key':'Uinf','required':True,'default':None,'help':'U inflow',},
+        {'key':'inflow_velocity_XYZ','required':True,'default':None,'help':'Inflow velocity from incflo.velocity setting in AMR-Wind (XYZ coordinates)',},
         {'key':'diam','required':True,'default':None,'help':'Turbine diameter',},
         {'key':'box_center_XYZ','required':True,'default':None,'help':'Center of control volume (XYZ coordinates)',},
         {'key':'rho','required':True,'default':1.25,'help':'Density',},
+        {'key':'latitude','required':True,'default':0,'help':'Latitude',},
         {'key':'body_force_XYZ','required':True,'default':None,'help':'Body force from AMR-Wind input file (XYZ coordinates)',},
         {'key':'streamwise_box_size','required':True,'default':None,'help':'Streamwise dimension of control volume in turbine diameters ',},
         {'key':'lateral_box_size','required':True,'default':None,'help':'Lateral dimension of control volume in turbine diameters ',},
@@ -64,8 +65,8 @@ class postpro_controlvolume():
         {'key':'lft_rs_file','required':True,'default':'','help':'lft rs pkl file',},
         {'key':'rht_avg_file','required':True,'default':'','help':'rht avg pkl file',},
         {'key':'rht_rs_file','required':True,'default':'','help':'rht rs pkl file',},
-        {'key':'x_avg_files','required':True,'default':'','help':'x avg pkl files',},
-        {'key':'x_rs_files','required':True,'default':'','help':'x rs pkl files',},
+        {'key':'streamwise_avg_files','required':True,'default':'','help':'streamwise avg pkl files',},
+        {'key':'streamwise_rs_files','required':True,'default':'','help':'streamwise rs pkl files',},
         {'key':'savepklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save results', },
 
@@ -96,12 +97,12 @@ controlvolume:
   rht_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XZr.pkl'
   rht_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XZr.pkl'
 
-  x_avg_files:
+  streamwise_avg_files:
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake1.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake2.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake3.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake4.pkl'
-  x_rs_files:
+  streamwise_rs_files:
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake1.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake2.pkl'
     - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake3.pkl'
@@ -207,14 +208,14 @@ controlvolume:
                 #dd3[key] = np.squeeze(dd3[key][indicesWithinRange,:,:])
         return dd3
 
-    def crop_data(self,dd2,axis,axis_info,boxCenter_XYZ,boxDimensions):
-
-        #box center rotated to streamwise, vertical, lateral axis
+    def rotate_data(self,quant,axis,axis_info):
         axis_number1 = re.search(r'\d+', axis[0]).group()
         axis_number2 = re.search(r'\d+', axis[1]).group()
         axis_number3 = re.search(r'\d+', axis[2]).group()
         R = get_mapping_xyz_to_axis1axis2(axis_info['axis'+axis_number1],axis_info['axis'+axis_number2],axis_info['axis'+axis_number3],rot=0)
-        boxCenter= R@boxCenter_XYZ
+        return R@quant
+
+    def crop_data(self,dd2,axis,axis_info,boxCenter,boxDimensions):
 
         indicesStreamnormal = (dd2[axis[0]]>=boxCenter[0]-boxDimensions[0]/2) & (dd2[axis[0]]<=boxCenter[0]+boxDimensions[0]/2) & (dd2[axis[1]]>=boxCenter[1]-boxDimensions[1]/2) & (dd2[axis[1]]<=boxCenter[1]+boxDimensions[1]/2) & (dd2[axis[2]]>=boxCenter[2]-boxDimensions[2]/2) & (dd2[axis[2]]<=boxCenter[2]+boxDimensions[2]/2)
         indicesStreamnormal_dim = np.where(indicesStreamnormal)
@@ -226,6 +227,9 @@ controlvolume:
                 temp = dd2[key][indicesStreamnormal]
                 dd3[key] = np.reshape(temp,(len(set(indicesStreamnormal_dim[0])),len(set(indicesStreamnormal_dim[1])),len(set(indicesStreamnormal_dim[2]))))
 
+        axis_number1 = re.search(r'\d+', axis[0]).group()
+        axis_number2 = re.search(r'\d+', axis[1]).group()
+        axis_number3 = re.search(r'\d+', axis[2]).group()
         axis3_label = 'a3'
         if int(axis_number1) == 3: 
             axis3_ind   = 0
@@ -250,7 +254,7 @@ controlvolume:
             if int(axis_number3) == 3: 
                 dd2[key] = dd2[key][:,:,indices_dd2]
 
-        return dd2,dd3,boxCenter
+        return dd2,dd3
 
     def are_aligned(self,v1, v2):
         return np.all(np.cross(v1, v2) == 0)
@@ -293,26 +297,21 @@ controlvolume:
         if verbose: print('Running '+self.name)
         # Loop through and create plots
         for iplane, plane in enumerate(self.yamldictlist):
-            Uinf = plane['Uinf']
+            inflow_velocity_XYZ = np.asarray(plane['inflow_velocity_XYZ'])
             diam = plane['diam']
             rho = plane['rho']
+            latitude = plane['latitude']
             #axis = plane['axis']
 
-            box_center_XYZ = plane['box_center_XYZ']
+            boxCenter_XYZ = np.asarray(plane['box_center_XYZ'])
             streamwise_box_size = plane['streamwise_box_size']
             lateral_box_size = plane['lateral_box_size']
             vertical_box_size = plane['vertical_box_size']
             boxDimensions = np.asarray([streamwise_box_size,vertical_box_size,lateral_box_size])
             boxDimensions*=diam
             varnames = plane['varnames']            
-            body_force = np.asarray(plane['body_force_XYZ'])
+            body_force_XYZ = np.asarray(plane['body_force_XYZ'])
             savepklfile = plane['savepklfile']
-
-            rot_time_period = -(2.0 * 2.0*np.pi / 0.007524699)*Uinf 
-            coriolis_factor = 2.0 * 2.0*np.pi / rot_time_period
-
-            #boxCenter = [center_position[0]+boxDimensions[0]/2, center_position[1], center_position[2]]
-            boxCenter = box_center_XYZ
 
             corr_mapping = {
                 'velocityx': 'u',
@@ -325,13 +324,13 @@ controlvolume:
 
             axis_labels = ['a1','a2','a3'] 
 
-            print("Loading YZ planes...",end='',flush=True)
-            x_avg_files   = plane['x_avg_files']            
-            x_rs_files    = plane['x_rs_files']            
+            print("Loading streamwise flow planes...",end='',flush=True)
+            x_avg_files   = plane['streamwise_avg_files']            
+            x_rs_files    = plane['streamwise_rs_files']            
             dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis_labels)
             print("Done")
 
-            print("Loading XY planes...",end='',flush=True)
+            print("Loading vertical flow planes...",end='',flush=True)
             bot_avg_file = plane['bot_avg_file']
             bot_rs_file  = plane['bot_rs_file']
             bot_iplane   = 0 #domain will get cropped so this is always 0
@@ -343,7 +342,7 @@ controlvolume:
             dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis_labels)
             print("Done")
 
-            print("Loading XZ planes...",end='',flush=True)
+            print("Loading lateral flow planes...",end='',flush=True)
             lft_avg_file = plane['lft_avg_file']            
             lft_rs_file  = plane['lft_rs_file']            
             lft_iplane   = 0 #domain will get cropped so this is always 0
@@ -404,13 +403,48 @@ controlvolume:
 
             permutation = (streamwise_ind_YZ,vertical_ind_YZ,lateral_ind_YZ)
             dd2_YZ_coarse = self.permute_data(dd2_YZ_coarse,permutation)
+
+            body_force_YZ = self.rotate_data(body_force_XYZ,axis_YZ,axis_info_YZ)
+            body_force_XZ = self.rotate_data(body_force_XYZ,axis_XZ,axis_info_XZ)
+            body_force_XY = self.rotate_data(body_force_XYZ,axis_XY,axis_info_XY)
+
+            inflow_velocity_YZ = self.rotate_data(inflow_velocity_XYZ,axis_YZ,axis_info_YZ)
+            inflow_velocity_XZ = self.rotate_data(inflow_velocity_XYZ,axis_XZ,axis_info_XZ)
+            inflow_velocity_XY = self.rotate_data(inflow_velocity_XYZ,axis_XY,axis_info_XY)
+
+            #See: https://github.com/Exawind/amr-wind/blob/f336699e709f4c4c4255adea3c86d2203a3ddd54/amr-wind/equation_systems/icns/source_terms/CoriolisForcing.cpp
+            rot_time_period = 86164.091
+            omega = 2 * np.pi / rot_time_period
+            corfac = 2.0 * omega
+            rad_latitude = latitude * (np.pi/180)
+            sinphi = np.sin(rad_latitude)
+            cosphi = np.sin(rad_latitude)
+
+            #check if inflow velocity is horizontal
+            if inflow_velocity_XYZ[2] == 0:
+                fac = 0.0
+            else:
+                fac = 1.0
+                print("Warning: Vertical coriolis forces may not be accounted for")
+
+            ax = corfac * (inflow_velocity_XYZ[1] * fac * inflow_velocity_XYZ[2] * cosphi)
+            ay = -corfac * inflow_velocity_XYZ[0] * sinphi
+            az = fac * corfac * inflow_velocity_XYZ[0] * cosphi
+            coriolis_forcing_XYZ = np.array([ax,ay,az]) 
+            coriolis_forcing_YZ = self.rotate_data(coriolis_forcing_XYZ,axis_YZ,axis_info_YZ)
+            coriolis_forcing_XZ = self.rotate_data(coriolis_forcing_XYZ,axis_XZ,axis_info_XZ)
+            coriolis_forcing_XY = self.rotate_data(coriolis_forcing_XYZ,axis_XY,axis_info_XY)
+
+            boxCenter_YZ = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
+            boxCenter_XZ = self.rotate_data(boxCenter_XYZ,axis_XZ,axis_info_XZ)
+            boxCenter_XY = self.rotate_data(boxCenter_XYZ,axis_XY,axis_info_XY)
             print("Done")
 
             #crop data
             print("Crop data to control volume...",end='',flush=True)
-            dd2_YZ_coarse,dd3_YZ_coarse, boxCenter_YZ = self.crop_data(dd2_YZ_coarse,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
-            dd2_XY,dd3_XY,boxCenter_XY = self.crop_data(dd2_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
-            dd2_XZ,dd3_XZ,boxCenter_XZ = self.crop_data(dd2_XZ,axis_XZ,axis_info_XZ,boxCenter,boxDimensions)
+            dd2_YZ_coarse,dd3_YZ_coarse = self.crop_data(dd2_YZ_coarse,axis_YZ,axis_info_YZ,boxCenter_YZ,boxDimensions)
+            dd2_XY,dd3_XY = self.crop_data(dd2_XY,axis_XY,axis_info_XY,boxCenter_XY,boxDimensions)
+            dd2_XZ,dd3_XZ = self.crop_data(dd2_XZ,axis_XZ,axis_info_XZ,boxCenter_XZ,boxDimensions)
             print("Done")
 
             print("Interpolating YZ data in x...",end='',flush=True)
@@ -493,7 +527,7 @@ controlvolume:
 
             # calculate useful parameters
             print("Calculating remaining transport terms...",end='',flush=True)
-            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-boxCenter_YZ[0]
+            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-(boxCenter_YZ[0]-boxDimensions[0]/2.0)
             numStreamPos = len(streamPos)
             minStreamPosIncrement = np.min(np.diff(streamPos))
 
@@ -508,8 +542,8 @@ controlvolume:
             dd3_XY['u_avg_squared_w_avg'] = dd3_XY[streamwise_velocity_label+'_avg']**2*dd3_XY[vertical_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XY['P_x'] = -dd3_XY[streamwise_streamwise_label + '_avg']*dd3_XY['grad_velocity0_derived_avg'] - dd3_XY[streamwise_lateral_label+'_avg']*dd3_XY['grad_velocity1_derived_avg'] - dd3_XY[streamwise_vertical_label + '_avg']*dd3_XY['grad_velocity2_derived_avg'] # units of m^3/s^3 (ordering of gradients from AMR from 0-8 is dudx dudy dudz dvdx dvdy dvz dwdx dwdy dwdz)
             dd3_XY['1_over_rho_u_avg_dp_dx_avg'] = (1/rho)*dd3_XY[streamwise_velocity_label+'_avg']*dd3_XY['grad_px_derived_avg'] # units of m^2/s^3
-            dd3_XY['coriolis_x'] = -coriolis_factor*dd3_XY[lateral_velocity_label+'_avg']*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3
-            dd3_XY['body_force'] = body_force[0]*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
+            dd3_XY['coriolis_x'] = coriolis_forcing_XY[2]*dd3_XY[lateral_velocity_label+'_avg']*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3
+            dd3_XY['body_force'] = body_force_XY[0]*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_XZ 
             lateral_velocity_label = 'velocity' + lateral_label_XZ 
@@ -522,8 +556,8 @@ controlvolume:
             dd3_XZ['u_avg_squared_w_avg'] = dd3_XZ[streamwise_velocity_label+'_avg']**2*dd3_XZ[vertical_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XZ['P_x'] = -dd3_XZ[streamwise_streamwise_label + '_avg']*dd3_XZ['grad_velocity0_derived_avg'] - dd3_XZ[streamwise_lateral_label+'_avg']*dd3_XZ['grad_velocity1_derived_avg'] - dd3_XZ[streamwise_vertical_label + '_avg']*dd3_XZ['grad_velocity2_derived_avg'] # units of m^3/s^3 (ordering of gradients from AMR from 0-8 is dudx dudy dudz dvdx dvdy dvz dwdx dwdy dwdz)
             dd3_XZ['1_over_rho_u_avg_dp_dx_avg'] = (1/rho)*dd3_XZ[streamwise_velocity_label+'_avg']*dd3_XZ['grad_px_derived_avg'] # units of m^2/s^3
-            dd3_XZ['coriolis_x'] = -coriolis_factor*dd3_XZ[lateral_velocity_label+'_avg']*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3
-            dd3_XZ['body_force'] = body_force[0]*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
+            dd3_XZ['coriolis_x'] = coriolis_forcing_XZ[2]*dd3_XZ[lateral_velocity_label+'_avg']*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3
+            dd3_XZ['body_force'] = body_force_XZ[0]*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_YZ 
             lateral_velocity_label = 'velocity' + lateral_label_YZ 
@@ -536,9 +570,8 @@ controlvolume:
             dd3_YZ['u_avg_squared_w_avg'] = dd3_YZ[streamwise_velocity_label+'_avg']**2*dd3_YZ[vertical_velocity_label+'_avg'] # units of m^3/s^3
             dd3_YZ['P_x'] = -dd3_YZ[streamwise_streamwise_label + '_avg']*dd3_YZ['grad_velocity0_derived_avg'] - dd3_YZ[streamwise_lateral_label+'_avg']*dd3_YZ['grad_velocity1_derived_avg'] - dd3_YZ[streamwise_vertical_label + '_avg']*dd3_YZ['grad_velocity2_derived_avg'] # units of m^3/s^3 (ordering of gradients from AMR from 0-8 is dudx dudy dudz dvdx dvdy dvz dwdx dwdy dwdz)
             dd3_YZ['1_over_rho_u_avg_dp_dx_avg'] = (1/rho)*dd3_YZ[streamwise_velocity_label+'_avg']*dd3_YZ['grad_px_derived_avg'] # units of m^2/s^3
-            dd3_YZ['coriolis_x'] = -coriolis_factor*dd3_YZ[lateral_velocity_label+'_avg']*dd3_YZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3
-            dd3_YZ['body_force'] = body_force[0]*dd3_YZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
-
+            dd3_YZ['coriolis_x'] = coriolis_forcing_YZ[2]*dd3_YZ[lateral_velocity_label+'_avg']*dd3_YZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3
+            dd3_YZ['body_force'] = body_force_YZ[0]*dd3_YZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
 
             print("Done")
 
@@ -746,7 +779,7 @@ controlvolume:
 
             self.df_in = df_in
             self.df_out = df_out
-            self.Uinf = Uinf
+            self.Uinf = inflow_velocity_YZ[0]
             self.boxDimensions=boxDimensions
 
             if len(savepklfile)>0:
@@ -788,7 +821,7 @@ controlvolume:
             print('Executing '+self.actionname)
 
             sigfigs = 3
-            referencePlane_xOverD = 0.1
+            referencePlane_xOverD = self.parent.df_in.index[0]
             normalization = self.parent.Uinf**3*(self.parent.boxDimensions[1]*self.parent.boxDimensions[2])
 
             # rhs
@@ -839,7 +872,7 @@ controlvolume:
             savefilename = self.actiondict['savefile']
 
             sigfigs = 3
-            referencePlane_xOverD = 0.1
+            referencePlane_xOverD = self.parent.df_in.index[0]
             normalization = self.parent.Uinf**3*(self.parent.boxDimensions[1]*self.parent.boxDimensions[2])
 
             fig, axs = plt.subplots(1,figsize=(12,7), sharex=True)
@@ -870,7 +903,7 @@ controlvolume:
             savefilename = self.actiondict['savefile']
 
             sigfigs = 3
-            referencePlane_xOverD = 0.1
+            referencePlane_xOverD = self.parent.df_in.index[0]
             normalization = self.parent.Uinf**3*(self.parent.boxDimensions[1]*self.parent.boxDimensions[2])
             fsize=16
 
