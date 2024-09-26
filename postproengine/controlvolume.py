@@ -16,6 +16,7 @@ import postproamrwindsample as ppsample
 from postproengine import interpolatetemplate, circavgtemplate 
 from postproengine import compute_axis1axis2_coords
 import pickle
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -47,13 +48,16 @@ class postpro_controlvolume():
 
         {'key':'Uinf','required':True,'default':None,'help':'U inflow',},
         {'key':'diam','required':True,'default':None,'help':'Turbine diameter',},
-        {'key':'axis','required':True,'default':None,'help':'Order of axis',},
-        {'key':'center','required':True,'default':None,'help':'Center of control volume',},
+        {'key':'box_center_XYZ','required':True,'default':None,'help':'Center of control volume (XYZ coordinates)',},
         {'key':'rho','required':True,'default':1.25,'help':'Density',},
-        {'key':'box_dims','required':True,'default':None,'help':'Dimensions of control volume in turbine diameters',},
+        {'key':'body_force_XYZ','required':True,'default':None,'help':'Body force from AMR-Wind input file (XYZ coordinates)',},
+        {'key':'streamwise_box_size','required':True,'default':None,'help':'Streamwise dimension of control volume in turbine diameters ',},
+        {'key':'lateral_box_size','required':True,'default':None,'help':'Lateral dimension of control volume in turbine diameters ',},
+        {'key':'vertical_box_size','required':True,'default':None,'help':'Vertical dimension of control volume in turbine diameters ',},
+
         {'key':'bot_avg_file','required':True,'default':'','help':'Bot avg pkl file',},
         {'key':'bot_rs_file','required':True,'default':'','help':'Bot rs pkl file',},
-        #{'key':'varnames','required':False,'default':['velocityx', 'velocityy', 'velocityz'],'help':'Variable names ',},
+        {'key':'varnames','required':False,'default':['velocityx', 'velocityy', 'velocityz'],'help':'Variable names ',},
         {'key':'top_avg_file','required':True,'default':'','help':'top avg pkl file',},
         {'key':'top_rs_file','required':True,'default':'','help':'top rs pkl file',},
         {'key':'lft_avg_file','required':True,'default':'','help':'lft avg pkl file',},
@@ -72,43 +76,45 @@ controlvolume:
   name: Streamwise CV
   Uinf: 9.03
   diam: 240
-  center: [2280.0,1000.0,150.0]
-  axis: ['x','y','z']
+  box_center_XYZ: [3000.0,1000.0,150.0]
+  streamwise_box_size: 6
+  lateral_box_size: 1
+  vertical_box_size: 1
   rho: 1.2456
-  box_dims: [6,1,1]
-  body_force: [0.00014295185866400572, 0.0008354682029301641, 0.0]
+  body_force_XYZ: [0.00014295185866400572, 0.0008354682029301641, 0.0]
+  varnames: ['velocitya1','velocitya2','velocitya3']
 
-  bot_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_XY.pkl'
-  bot_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_XY.pkl'
+  bot_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XY.pkl'
+  bot_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XY.pkl'
 
-  top_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_XY.pkl'
-  top_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_XY.pkl'
+  top_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XY.pkl'
+  top_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XY.pkl'
 
-  lft_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_XZl.pkl'
-  lft_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_XZl.pkl'
+  lft_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XZl.pkl'
+  lft_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XZl.pkl'
 
-  rht_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_XZr.pkl'
-  rht_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_XZr.pkl'
+  rht_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XZr.pkl'
+  rht_rs_file:  '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_XZr.pkl'
 
   x_avg_files:
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_YZwake1.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_YZwake2.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_YZwake3.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_avg_YZwake4.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake1.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake2.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake3.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_YZwake4.pkl'
   x_rs_files:
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_YZwake1.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_YZwake2.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_YZwake3.pkl'
-    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline/postpro_rs_YZwake4.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake1.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake2.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake3.pkl'
+    - '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_rs_YZwake4.pkl'
 
   table:
 
   plot_totals:
-    savefile: 'test_cv_total.png'
+    savefile: 'test_cv_total_a1a2a3.png'
 
   plot_contributions:
-    savefile: 'test_cv_contributions.png'
-    """
+    savefile: 'test_cv_contributions_a1a2a3.png'
+"""
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
         self.yamldictlist = []
@@ -137,12 +143,6 @@ controlvolume:
                 d['a1'] = d['a1'] + origina1a2a3[0]
                 d['a2'] = d['a2'] + origina1a2a3[1]
                 d['a3'] = d['a3'] + origina1a2a3[2]
-                # XX = d['a3']
-                # YY = d['a1']
-                # ZZ = d['a2']
-                # a3,axisa3 = extract_1d_from_meshgrid(XX[0,:,:])
-                # a1,axisa1 = extract_1d_from_meshgrid(YY[0,:,:])
-                # a2,axisa2 = extract_1d_from_meshgrid(ZZ[0,:,:])
 
             for key, value in d.items():
                 dd_avg[key].append(value)
@@ -200,21 +200,24 @@ controlvolume:
 
         return dd2, axis_info
 
-    def crop_data(self,dd2,axis,boxCenter,boxDimensions):
+    def permute_data(self,dd3,permutation):
+        for index, key in enumerate(dd3.keys()):
+            if np.array(dd3[key]).ndim == 3:
+                dd3[key] = np.transpose(dd3[key],permutation)
+                #dd3[key] = np.squeeze(dd3[key][indicesWithinRange,:,:])
+        return dd3
+
+    def crop_data(self,dd2,axis,axis_info,boxCenter_XYZ,boxDimensions):
+
+        #box center rotated to streamwise, vertical, lateral axis
+        axis_number1 = re.search(r'\d+', axis[0]).group()
+        axis_number2 = re.search(r'\d+', axis[1]).group()
+        axis_number3 = re.search(r'\d+', axis[2]).group()
+        R = get_mapping_xyz_to_axis1axis2(axis_info['axis'+axis_number1],axis_info['axis'+axis_number2],axis_info['axis'+axis_number3],rot=0)
+        boxCenter= R@boxCenter_XYZ
 
         indicesStreamnormal = (dd2[axis[0]]>=boxCenter[0]-boxDimensions[0]/2) & (dd2[axis[0]]<=boxCenter[0]+boxDimensions[0]/2) & (dd2[axis[1]]>=boxCenter[1]-boxDimensions[1]/2) & (dd2[axis[1]]<=boxCenter[1]+boxDimensions[1]/2) & (dd2[axis[2]]>=boxCenter[2]-boxDimensions[2]/2) & (dd2[axis[2]]<=boxCenter[2]+boxDimensions[2]/2)
         indicesStreamnormal_dim = np.where(indicesStreamnormal)
-
-        XX = np.array(dd2[axis[0]])
-        YY = np.array(dd2[axis[1]])
-        ZZ = np.array(dd2[axis[2]])
-        x,axisx = extract_1d_from_meshgrid(XX[0,:,:])
-        y,axisy = extract_1d_from_meshgrid(YY[0,:,:])
-        z,axisz = extract_1d_from_meshgrid(ZZ[0,:,:])
-
-        if axisx == -1: axis3_label = axis[0]
-        if axisy == -1: axis3_label = axis[1]
-        if axisz == -1: axis3_label = axis[2]
 
         dd3 = {}
         for index, key in enumerate(dd2.keys()):
@@ -223,14 +226,31 @@ controlvolume:
                 temp = dd2[key][indicesStreamnormal]
                 dd3[key] = np.reshape(temp,(len(set(indicesStreamnormal_dim[0])),len(set(indicesStreamnormal_dim[1])),len(set(indicesStreamnormal_dim[2]))))
 
-        #crop axis3 direction for dd2
-        dd2_slice = dd2[axis3_label][:, 0, 0] 
-        dd3_slice = dd3[axis3_label][:, 0, 0] 
+        axis3_label = 'a3'
+        if int(axis_number1) == 3: 
+            axis3_ind   = 0
+            dd2_slice = dd2[axis3_label][:, 0, 0] 
+            dd3_slice = dd3[axis3_label][:, 0, 0] 
+        if int(axis_number2) == 3: 
+            axis3_ind   = 1
+            dd2_slice = dd2[axis3_label][0, :, 0] 
+            dd3_slice = dd3[axis3_label][0, :, 0] 
+        if int(axis_number3) == 3: 
+            axis3_ind   = 2
+            dd2_slice = dd2[axis3_label][0, 0, :] 
+            dd3_slice = dd3[axis3_label][0, 0, :] 
+
+        #crop offset direction for dd2
         _, indices_dd2, _ = np.intersect1d(dd2_slice, dd3_slice,return_indices=True)
         for index, key in enumerate(dd2.keys()):
-            dd2[key] = dd2[key][indices_dd2,:,:]
+            if int(axis_number1) == 3: 
+                dd2[key] = dd2[key][indices_dd2,:,:]
+            if int(axis_number2) == 3: 
+                dd2[key] = dd2[key][:,indices_dd2,:]
+            if int(axis_number3) == 3: 
+                dd2[key] = dd2[key][:,:,indices_dd2]
 
-        return dd2,dd3
+        return dd2,dd3,boxCenter
 
     def are_aligned(self,v1, v2):
         return np.all(np.cross(v1, v2) == 0)
@@ -275,19 +295,24 @@ controlvolume:
         for iplane, plane in enumerate(self.yamldictlist):
             Uinf = plane['Uinf']
             diam = plane['diam']
-            axis = plane['axis']
-            center_position = plane['center']            
             rho = plane['rho']
-            boxDimensions = np.asarray(plane['box_dims'])
+            #axis = plane['axis']
+
+            box_center_XYZ = plane['box_center_XYZ']
+            streamwise_box_size = plane['streamwise_box_size']
+            lateral_box_size = plane['lateral_box_size']
+            vertical_box_size = plane['vertical_box_size']
+            boxDimensions = np.asarray([streamwise_box_size,vertical_box_size,lateral_box_size])
             boxDimensions*=diam
-            #varnames = plane['varnames']            
-            body_force = np.asarray(plane['body_force'])
+            varnames = plane['varnames']            
+            body_force = np.asarray(plane['body_force_XYZ'])
             savepklfile = plane['savepklfile']
 
             rot_time_period = -(2.0 * 2.0*np.pi / 0.007524699)*Uinf 
             coriolis_factor = 2.0 * 2.0*np.pi / rot_time_period
 
-            boxCenter = [center_position[0]+boxDimensions[0]/2, center_position[1], center_position[2]]
+            #boxCenter = [center_position[0]+boxDimensions[0]/2, center_position[1], center_position[2]]
+            boxCenter = box_center_XYZ
 
             corr_mapping = {
                 'velocityx': 'u',
@@ -298,10 +323,12 @@ controlvolume:
                 'velocitya3': 'ua3'
             }
 
+            axis_labels = ['a1','a2','a3'] 
+
             print("Loading YZ planes...",end='',flush=True)
             x_avg_files   = plane['x_avg_files']            
             x_rs_files    = plane['x_rs_files']            
-            dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis)
+            dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis_labels)
             print("Done")
 
             print("Loading XY planes...",end='',flush=True)
@@ -313,7 +340,7 @@ controlvolume:
             top_rs_file  = plane['top_rs_file']            
             top_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis)
+            dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis_labels)
             print("Done")
 
             print("Loading XZ planes...",end='',flush=True)
@@ -325,40 +352,29 @@ controlvolume:
             rht_rs_file  = plane['rht_rs_file']            
             rht_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file],axis)
+            dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file],axis_labels)
             print("Done")
 
 
-            print("Cropping data...",end='',flush=True)
+            streamwise_dir = axis_info_YZ['axis3']
+            vertical_dir   = axis_info_XY['axis3']
+            lateral_dir    = axis_info_XZ['axis3']
 
-            #cropped based on prescribed axis
-            axis_YZ = axis
-            dd2_YZ_coarse,dd3_YZ_coarse = self.crop_data(dd2_YZ_coarse,axis_YZ,boxCenter,boxDimensions)
+            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,streamwise_dir,dd2_YZ_coarse,axis_labels)
+            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,streamwise_dir,dd2_XY,axis_labels)
+            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,streamwise_dir,dd2_XZ,axis_labels)
 
-            #streamwise label may be different for XZ and XY
-            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis3'],dd2_YZ_coarse,axis)
-            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis3'],dd2_XY,axis)
-            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis3'],dd2_XZ,axis)
-            #XZ and XY labels in YZ axis1 (called vertical here)
-            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis2'],dd2_YZ_coarse,axis)
-            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis2'],dd2_XY,axis)
-            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis2'],dd2_XZ,axis)
-            #XZ and XY labels in YZ axis2 (called lateral here)
-            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis1'],dd2_YZ_coarse,axis)
-            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis1'],dd2_XY,axis)
-            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis1'],dd2_XZ,axis)
+            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,vertical_dir,dd2_YZ_coarse,axis_labels)
+            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,vertical_dir,dd2_XY,axis_labels)
+            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,vertical_dir,dd2_XZ,axis_labels)
 
+            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,lateral_dir,dd2_YZ_coarse,axis_labels)
+            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,lateral_dir,dd2_XY,axis_labels)
+            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,lateral_dir,dd2_XZ,axis_labels)
 
-            if axis[0] != streamwise_label_YZ:
-                print("ERROR: Streamwise direction must be first in axis")
-                sys.exit()
-
-            if axis[1] == lateral_label_YZ:
-                axis_XY = [streamwise_label_XY,lateral_label_XY,vertical_label_XY]
-                axis_XZ = [streamwise_label_XZ,lateral_label_XZ,vertical_label_XZ]
-            else:
-                axis_XY = [streamwise_label_XY,vertical_label_XY,lateral_label_XY]
-                axis_XZ = [streamwise_label_XZ,vertical_label_XY,lateral_label_XZ]
+            axis_YZ = [streamwise_label_YZ,vertical_label_YZ,lateral_label_YZ]
+            axis_XY = [streamwise_label_XY,vertical_label_XY,lateral_label_XY]
+            axis_XZ = [streamwise_label_XZ,vertical_label_XZ,lateral_label_XZ]
 
             # print("XY INFO: ",)
             # print("X: ",streamwise_label_XY)
@@ -378,30 +394,32 @@ controlvolume:
             # print("Z: ",vertical_label_YZ)
             # print("axis_YZ:",axis_YZ)
 
-            dd2_XY,dd3_XY = self.crop_data(dd2_XY,axis_XY,boxCenter,boxDimensions)
-            dd2_XZ,dd3_XZ = self.crop_data(dd2_XZ,axis_XZ,boxCenter,boxDimensions)
+            #permute data to streamwise, vertical, lateral
+            print("Permute data to streamwise, vertical, lateral...",end='',flush=True)
+            permutation = (streamwise_ind_XY,vertical_ind_XY,lateral_ind_XY)
+            dd2_XY = self.permute_data(dd2_XY,permutation)
 
+            permutation = (streamwise_ind_XZ,vertical_ind_XZ,lateral_ind_XZ)
+            dd2_XZ = self.permute_data(dd2_XZ,permutation)
+
+            permutation = (streamwise_ind_YZ,vertical_ind_YZ,lateral_ind_YZ)
+            dd2_YZ_coarse = self.permute_data(dd2_YZ_coarse,permutation)
             print("Done")
 
+            #crop data
+            print("Crop data to control volume...",end='',flush=True)
+            dd2_YZ_coarse,dd3_YZ_coarse, boxCenter_YZ = self.crop_data(dd2_YZ_coarse,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
+            dd2_XY,dd3_XY,boxCenter_XY = self.crop_data(dd2_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
+            dd2_XZ,dd3_XZ,boxCenter_XZ = self.crop_data(dd2_XZ,axis_XZ,axis_info_XZ,boxCenter,boxDimensions)
+            print("Done")
 
             print("Interpolating YZ data in x...",end='',flush=True)
-            XX = np.array(dd3_YZ_coarse[axis[0]])
-            YY = np.array(dd3_YZ_coarse[axis[1]])
-            ZZ = np.array(dd3_YZ_coarse[axis[2]])
-            xvec,axisx = extract_1d_from_meshgrid(XX[0,:,:])
-            yvec,axisy = extract_1d_from_meshgrid(YY[0,:,:])
-            zvec,axisz = extract_1d_from_meshgrid(ZZ[0,:,:])
-            if axisx == -1: axis3_label = axis[0]
-            if axisy == -1: axis3_label = axis[1]
-            if axisz == -1: axis3_label = axis[2]
-            xvec = dd3_YZ_coarse[axis3_label][:,0,0] #in direction of streamwise plane 
-
-
-            xvecnew,_ = extract_1d_from_meshgrid(dd3_XZ[streamwise_label_XZ][0,:,:])
+            xvec = dd3_YZ_coarse['a3'][:,0,0] #in direction of streamwise plane 
+            xvecnew = dd3_XZ[streamwise_label_XZ][:,0,0]
             indicesWithinRange = np.where((xvecnew >= np.min(xvec)) & (xvecnew <= np.max(xvec)))
             xnew = xvecnew[indicesWithinRange] 
 
-            # Interpolate in x
+            # Interpolate YZ in streamwise direction
             dd3_YZ = {}
             for index, key in enumerate(dd3_YZ_coarse.keys()):
                 if np.array(dd3_YZ_coarse[key]).ndim == 3:
@@ -411,19 +429,14 @@ controlvolume:
                         for k in range(dd3_YZ_coarse[key].shape[2]):
                             dd3_YZ[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k]) 
 
-
-            #permute to YZ data ordering and reduce size to match limits of YZ grid (i.e., cut out x/D locations just behind the rotor where there is no YZ data) 
-            permutation = (streamwise_ind_XY,vertical_ind_XY,lateral_ind_XY)
             for index, key in enumerate(dd3_XY.keys()):
                 if np.array(dd3_XY[key]).ndim == 3:
-                    dd3_XY[key] = np.transpose(dd3_XY[key],permutation)
                     dd3_XY[key] = np.squeeze(dd3_XY[key][indicesWithinRange,:,:])
 
-            permutation = (streamwise_ind_XZ,vertical_ind_XZ,lateral_ind_XZ)
             for index, key in enumerate(dd3_XZ.keys()):
                 if np.array(dd3_XZ[key]).ndim == 3:
-                    dd3_XZ[key] = np.transpose(dd3_XZ[key],permutation)
                     dd3_XZ[key] = np.squeeze(dd3_XZ[key][indicesWithinRange,:,:])
+            print("Done")
 
             # print("XY INFO: ",)
             # print("X: ",dd3_XY[streamwise_label_XY][:,0,0],streamwise_label_XY,streamwise_ind_XY)
@@ -442,9 +455,21 @@ controlvolume:
             # print("Y: ",dd3_YZ[lateral_label_YZ][0,0,:],lateral_label_YZ,lateral_ind_YZ)
             # print("Z: ",dd3_YZ[vertical_label_YZ][0,:,0],vertical_label_YZ,vertical_ind_YZ)
 
-            print("Done")
-
             print("Calculating streamwise gradients...",end='',flush=True)
+
+            #if working in cartesian coordinates, revert to using x,y,z naming for velocity components
+            if not any('velocitya' in v for v in varnames):
+                streamwise_label_XY = 'x'
+                streamwise_label_YZ = 'x'
+                streamwise_label_XZ = 'x'
+
+                lateral_label_XY = 'y'
+                lateral_label_YZ = 'y'
+                lateral_label_XZ = 'y'
+
+                vertical_label_XY = 'z'
+                vertical_label_YZ = 'z'
+                vertical_label_XZ = 'z'
 
             streamwise_velocity_label = 'velocity' + streamwise_label_XY + '_avg'
             dd3_XY['grad_px_derived_avg']        = np.gradient(dd3_XY['p_avg'],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
@@ -468,7 +493,7 @@ controlvolume:
 
             # calculate useful parameters
             print("Calculating remaining transport terms...",end='',flush=True)
-            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-center_position[0]
+            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-boxCenter_YZ[0]
             numStreamPos = len(streamPos)
             minStreamPosIncrement = np.min(np.diff(streamPos))
 
