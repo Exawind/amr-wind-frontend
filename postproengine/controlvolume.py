@@ -56,7 +56,7 @@ class postpro_controlvolume():
         {'key':'streamwise_box_size','required':True,'default':None,'help':'Streamwise dimension of control volume in turbine diameters ',},
         {'key':'lateral_box_size','required':True,'default':None,'help':'Lateral dimension of control volume in turbine diameters ',},
         {'key':'vertical_box_size','required':True,'default':None,'help':'Vertical dimension of control volume in turbine diameters ',},
-
+        {'key':'compute_pressure_gradient','required':False,'default':True,'help':'To approximate the streamwise pressure gradient based on finite different between streamwise planes',},
         {'key':'bot_avg_file','required':True,'default':'','help':'Bot avg pkl file',},
         {'key':'bot_rs_file','required':True,'default':'','help':'Bot rs pkl file',},
         {'key':'varnames','required':False,'default':['velocityx', 'velocityy', 'velocityz'],'help':'Variable names ',},
@@ -86,6 +86,7 @@ controlvolume:
   vertical_box_size: 1
   rho: 1.2456
   body_force_XYZ: [0.00014295185866400572, 0.0008354682029301641, 0.0]
+  compute_pressure_gradient: True
   varnames: ['velocitya1','velocitya2','velocitya3']
   #varnames: ['velocityx','velocityy','velocityz']
 
@@ -219,6 +220,33 @@ controlvolume:
         R = get_mapping_xyz_to_axis1axis2(axis_info['axis'+axis_number1],axis_info['axis'+axis_number2],axis_info['axis'+axis_number3],rot=0)
         return R@quant
 
+    def flow_aligned_gradient(self,dpdx,dpdy,dpdz,axis,axis_info):
+        axis_number1 = re.search(r'\d+', axis[0]).group()
+        axis_number2 = re.search(r'\d+', axis[1]).group()
+        axis_number3 = re.search(r'\d+', axis[2]).group()
+
+
+        # transformation from x,y,z to streamwise, vertical, lateral direction
+        #[as,av,al] = R[x,y,z]
+        #ai = Rij xj
+        R = get_mapping_xyz_to_axis1axis2(axis_info['axis'+axis_number1],axis_info['axis'+axis_number2],axis_info['axis'+axis_number3],rot=0)
+
+        Rinv = np.linalg.inv(R) #jacobian Rji^{-1} = dxj/dai
+
+        #dp/dai = dp/dxj * dxj/dai
+        #       = dp/dxj * Rji^{-1} 
+
+        #gradients in axis[0] direction -- (streamwise)
+        dpda0 = dpdx * Rinv[0,0] + dpdy * Rinv[1,0] + dpdz * Rinv[2,0] 
+
+        #gradients in axis[1] direction -- (vertical)
+        dpda1 = dpdx * Rinv[0,1] + dpdy * Rinv[1,1] + dpdz * Rinv[2,1] 
+
+        #gradients in axis[2] direction -- (lateral)
+        dpda2 = dpdx * Rinv[0,2] + dpdy * Rinv[1,2] + dpdz * Rinv[2,2] 
+
+        return dpda0,dpda1,dpda2
+
     def crop_data(self,dd2,axis,axis_info,boxCenter,boxDimensions):
 
         indicesStreamnormal = (dd2[axis[0]]>=boxCenter[0]-boxDimensions[0]/2) & (dd2[axis[0]]<=boxCenter[0]+boxDimensions[0]/2) & (dd2[axis[1]]>=boxCenter[1]-boxDimensions[1]/2) & (dd2[axis[1]]<=boxCenter[1]+boxDimensions[1]/2) & (dd2[axis[2]]>=boxCenter[2]-boxDimensions[2]/2) & (dd2[axis[2]]<=boxCenter[2]+boxDimensions[2]/2)
@@ -305,6 +333,7 @@ controlvolume:
             diam = plane['diam']
             rho = plane['rho']
             latitude = plane['latitude']
+            compute_pressure_gradient = plane['compute_pressure_gradient']
             #axis = plane['axis']
 
             streamwise_box_size = plane['streamwise_box_size']
@@ -503,7 +532,24 @@ controlvolume:
 
             print("Calculating streamwise gradients...",end='',flush=True)
 
-            #if working in cartesian coordinates, revert to using x,y,z naming for velocity components
+            #compute streamwise pressure gradient
+            if compute_pressure_gradient:
+                dd3_XY['grad_px_derived_avg'] = np.gradient(dd3_XY['p_avg'],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
+                dd3_XZ['grad_px_derived_avg'] = np.gradient(dd3_XZ['p_avg'],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
+                dd3_YZ['grad_px_derived_avg'] = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
+
+            #trasform x to streamwise pressure gradient
+            else:
+                dpdx = dd3_XY['grad_px']
+                dpdy = dd3_XY['grad_py']
+                dpdz = dd3_XY['grad_pz']
+                dpds_XY,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XY,axis_info_XY)
+                dpds_XZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XZ,axis_info_XZ)
+                dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
+                dd3_XY['grad_px_derived_avg'] = dpds_XY
+                dd3_XZ['grad_px_derived_avg'] = dpds_XZ
+                dd3_YZ['grad_px_derived_avg'] = dpds_YZ
+
             if not any('velocitya' in v for v in varnames):
                 streamwise_label_XY = 'x'
                 streamwise_label_YZ = 'x'
@@ -517,20 +563,18 @@ controlvolume:
                 vertical_label_YZ = 'z'
                 vertical_label_XZ = 'z'
 
+
             streamwise_velocity_label = 'velocity' + streamwise_label_XY + '_avg'
-            dd3_XY['grad_px_derived_avg']        = np.gradient(dd3_XY['p_avg'],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
             dd3_XY['grad_velocity0_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
             dd3_XY['grad_velocity1_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[lateral_label_XY][0,0,:],axis=2)
             dd3_XY['grad_velocity2_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[vertical_label_XY][0,:,0],axis=1)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_XZ + '_avg'
-            dd3_XZ['grad_px_derived_avg']        = np.gradient(dd3_XZ['p_avg'],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
             dd3_XZ['grad_velocity0_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
             dd3_XZ['grad_velocity1_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[lateral_label_XZ][0,0,:],axis=2)
             dd3_XZ['grad_velocity2_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[vertical_label_XZ][0,:,0],axis=1)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_YZ + '_avg'
-            dd3_YZ['grad_px_derived_avg']        = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
             dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
             dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
             dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
