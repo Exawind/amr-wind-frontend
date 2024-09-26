@@ -226,7 +226,7 @@ def convert_pt_axis1axis2_to_xyz(ptlist, origin, axis1, axis2, axis3, offsets, i
         pt_xyz.append(porigin + pt[0]*n1 + pt[1]*n2)
     return pt_xyz
 
-def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
+def convert_pt_xyz_to_axis1axis2axis3(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
     """
     Converts the location of pt given in global xyz coordinates to 
     to natural plane (axis1-axis2) coordinates
@@ -240,15 +240,26 @@ def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, i
     if np.linalg.norm(axis3) > 0.0:
         n3 = axis3/np.linalg.norm(axis3)
     else:
-        n3 = axis3
+        #TODO: Is this approximation OK? Assumes n3 is orthogonal to n1 and n2
+        n1 = axis1/np.linalg.norm(axis1)
+        n2 = axis2/np.linalg.norm(axis2)
+        n3 = np.cross(n1, n2)
+        n3 /= np.linalg.norm(n3)
+        #n3 = axis3
 
     porigin = np.full_like(ptlist, 0.0)
+
+    #TODO: This only serves to zero out axis3, correct? Is it safe to omit it then
     for ipt in range(len(ptlist)):
-        porigin[ipt,:] = origin + n3*offsetlist[iplanevec[ipt]]
+        porigin[ipt,:] = origin #+ n3*offsetlist[iplanevec[ipt]]
 
     dv = (np.array(ptlist) - np.array(porigin))
     avec = R@dv.T
     returnvec = avec.T
+    return returnvec
+
+def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
+    returnvec = convert_pt_xyz_to_axis1axis2axis3(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot)
     return returnvec[:,0:2]
 
 def project_pt_to_plane(pt, origin, axis1, axis2, axis3, offsets, iplane):
@@ -314,6 +325,45 @@ def compute_axis1axis2_coords(db,rot=0):
     db['a1'] = avec[:,0].reshape(db['x'].shape)
     db['a2'] = avec[:,1].reshape(db['y'].shape)
     return
+
+def compute_axis1axis2axis3_coords(db,rot=0):
+    """
+    Computes the native axis1, axis2, axis3 coordinate system for a given
+    set of sample planes.
+    """
+
+    # Check to make sure db has everything needed
+    if ('origin' not in db) or \
+       ('axis1' not in db) or \
+       ('axis2' not in db) or \
+       ('axis3' not in db) or \
+       ('offsets') not in db:
+        print('Need to ensure that the sample plane data includes origin, axis1, axis2, axis3, and offset information')
+        return
+
+    # Pull out the coordate definitions
+    axis1  = np.array(db['axis1'])
+    axis2  = np.array(db['axis2'])
+    axis3  = np.array(db['axis3'])
+    origin = np.array(db['origin'])
+    offsets= db['offsets']
+    if (not isinstance(offsets,list)) and (not isinstance(offsets,np.ndarray)):
+        offsets = [offsets]
+
+    # Create the iplane matrices
+    iplanemat = np.full_like(db['x'], 0, dtype=np.int64)
+    for k in range(len(offsets)):
+        iplanemat[k,:,:] = k
+
+    # create list of points
+    xyz_pt    = np.vstack([db['x'].ravel(), db['y'].ravel(), db['z'].ravel()])
+
+    avec = convert_pt_xyz_to_axis1axis2axis3(xyz_pt.T, origin, axis1, axis2, axis3, offsets, iplanemat.ravel(),rot)
+    db['a1'] = avec[:,0].reshape(db['x'].shape)
+    db['a2'] = avec[:,1].reshape(db['y'].shape)
+    db['a3'] = avec[:,2].reshape(db['z'].shape)
+    return
+
 
 def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=None, method='linear'):
     """

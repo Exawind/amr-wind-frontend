@@ -8,7 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction, contourplottemplate
-from postproengine import compute_axis1axis2_coords, get_mapping_xyz_to_axis1axis2
+from postproengine import compute_axis1axis2axis3_coords,get_mapping_xyz_to_axis1axis2
 
 from postproengine import extract_1d_from_meshgrid
 import postproamrwindsample_xarray as ppsamplexr
@@ -129,7 +129,21 @@ controlvolume:
                 axis_info['axis1'] = d['axis1']
                 axis_info['axis2'] = d['axis2']
                 axis_info['axis3'] = d['axis3']
-                axis_info['origin'] = d['origin']
+
+                compute_axis1axis2axis3_coords(d,0)
+                R = get_mapping_xyz_to_axis1axis2(d['axis1'],d['axis2'],d['axis3'],rot=0)
+                origina1a2a3 = R@d['origin']
+
+                d['a1'] = d['a1'] + origina1a2a3[0]
+                d['a2'] = d['a2'] + origina1a2a3[1]
+                d['a3'] = d['a3'] + origina1a2a3[2]
+                # XX = d['a3']
+                # YY = d['a1']
+                # ZZ = d['a2']
+                # a3,axisa3 = extract_1d_from_meshgrid(XX[0,:,:])
+                # a1,axisa1 = extract_1d_from_meshgrid(YY[0,:,:])
+                # a2,axisa2 = extract_1d_from_meshgrid(ZZ[0,:,:])
+
             for key, value in d.items():
                 dd_avg[key].append(value)
         dd_avg = dict(dd_avg)
@@ -161,7 +175,7 @@ controlvolume:
         res = {**dict1, **dict2}
         return res
 
-    def load_avg_rs_files(self,avg_file,rs_file,axis,boxCenter,boxDimensions):
+    def load_avg_rs_files(self,avg_file,rs_file,axis):
 
         dd2_avg, axis_info = self.loadpkl(avg_file)
         dd2_rs, _  = self.loadpkl(rs_file)
@@ -184,9 +198,23 @@ controlvolume:
         for index, key in enumerate(dd2.keys()):
             dd2[key] = dd2[key][newOrder, :, :]
 
-        #crop to control volume
+        return dd2, axis_info
+
+    def crop_data(self,dd2,axis,boxCenter,boxDimensions):
+
         indicesStreamnormal = (dd2[axis[0]]>=boxCenter[0]-boxDimensions[0]/2) & (dd2[axis[0]]<=boxCenter[0]+boxDimensions[0]/2) & (dd2[axis[1]]>=boxCenter[1]-boxDimensions[1]/2) & (dd2[axis[1]]<=boxCenter[1]+boxDimensions[1]/2) & (dd2[axis[2]]>=boxCenter[2]-boxDimensions[2]/2) & (dd2[axis[2]]<=boxCenter[2]+boxDimensions[2]/2)
         indicesStreamnormal_dim = np.where(indicesStreamnormal)
+
+        XX = np.array(dd2[axis[0]])
+        YY = np.array(dd2[axis[1]])
+        ZZ = np.array(dd2[axis[2]])
+        x,axisx = extract_1d_from_meshgrid(XX[0,:,:])
+        y,axisy = extract_1d_from_meshgrid(YY[0,:,:])
+        z,axisz = extract_1d_from_meshgrid(ZZ[0,:,:])
+
+        if axisx == -1: axis3_label = axis[0]
+        if axisy == -1: axis3_label = axis[1]
+        if axisz == -1: axis3_label = axis[2]
 
         dd3 = {}
         for index, key in enumerate(dd2.keys()):
@@ -202,7 +230,7 @@ controlvolume:
         for index, key in enumerate(dd2.keys()):
             dd2[key] = dd2[key][indices_dd2,:,:]
 
-        return dd2,dd3,axis_info
+        return dd2,dd3
 
     def are_aligned(self,v1, v2):
         return np.all(np.cross(v1, v2) == 0)
@@ -234,6 +262,12 @@ controlvolume:
             axis_label = axis[2]
 
         return axis_label , axis_ind
+
+    def sort_rs_labels(self,string1,string2):
+        strings = (string1, string2)
+        sorted_strings = sorted(strings)
+        result = ''.join(sorted_strings)
+        return result
 
     def execute(self, verbose=False):
         if verbose: print('Running '+self.name)
@@ -267,7 +301,7 @@ controlvolume:
             print("Loading YZ planes...",end='',flush=True)
             x_avg_files   = plane['x_avg_files']            
             x_rs_files    = plane['x_rs_files']            
-            dd2_YZ_coarse,dd3_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis,boxCenter,boxDimensions)
+            dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis)
             print("Done")
 
             print("Loading XY planes...",end='',flush=True)
@@ -279,7 +313,7 @@ controlvolume:
             top_rs_file  = plane['top_rs_file']            
             top_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XY,dd3_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis,boxCenter,boxDimensions)
+            dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis)
             print("Done")
 
             print("Loading XZ planes...",end='',flush=True)
@@ -291,12 +325,66 @@ controlvolume:
             rht_rs_file  = plane['rht_rs_file']            
             rht_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XZ,dd3_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file],axis,boxCenter,boxDimensions)
+            dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file],axis)
             print("Done")
 
-            print("Interpolating YZ data in x...",end='',flush=True)
 
-            dd3 = dd3_YZ_coarse
+            print("Cropping data...",end='',flush=True)
+
+            #cropped based on prescribed axis
+            axis_YZ = axis
+            dd2_YZ_coarse,dd3_YZ_coarse = self.crop_data(dd2_YZ_coarse,axis_YZ,boxCenter,boxDimensions)
+
+            #streamwise label may be different for XZ and XY
+            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis3'],dd2_YZ_coarse,axis)
+            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis3'],dd2_XY,axis)
+            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis3'],dd2_XZ,axis)
+            #XZ and XY labels in YZ axis1 (called vertical here)
+            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis2'],dd2_YZ_coarse,axis)
+            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis2'],dd2_XY,axis)
+            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis2'],dd2_XZ,axis)
+            #XZ and XY labels in YZ axis2 (called lateral here)
+            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis1'],dd2_YZ_coarse,axis)
+            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis1'],dd2_XY,axis)
+            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis1'],dd2_XZ,axis)
+
+
+            if axis[0] != streamwise_label_YZ:
+                print("ERROR: Streamwise direction must be first in axis")
+                sys.exit()
+
+            if axis[1] == lateral_label_YZ:
+                axis_XY = [streamwise_label_XY,lateral_label_XY,vertical_label_XY]
+                axis_XZ = [streamwise_label_XZ,lateral_label_XZ,vertical_label_XZ]
+            else:
+                axis_XY = [streamwise_label_XY,vertical_label_XY,lateral_label_XY]
+                axis_XZ = [streamwise_label_XZ,vertical_label_XY,lateral_label_XZ]
+
+            # print("XY INFO: ",)
+            # print("X: ",streamwise_label_XY)
+            # print("Y: ",lateral_label_XY)
+            # print("Z: ",vertical_label_XY)
+            # print("axis_XY:",axis_XY)
+
+            # print("XZ INFO: ",)
+            # print("X: ",streamwise_label_XZ)
+            # print("Y: ",lateral_label_XZ)
+            # print("Z: ",vertical_label_XZ)
+            # print("axis_XZ:",axis_XZ)
+
+            # print("YZ INFO: ",)
+            # print("X: ",streamwise_label_YZ)
+            # print("Y: ",lateral_label_YZ)
+            # print("Z: ",vertical_label_YZ)
+            # print("axis_YZ:",axis_YZ)
+
+            dd2_XY,dd3_XY = self.crop_data(dd2_XY,axis_XY,boxCenter,boxDimensions)
+            dd2_XZ,dd3_XZ = self.crop_data(dd2_XZ,axis_XZ,boxCenter,boxDimensions)
+
+            print("Done")
+
+
+            print("Interpolating YZ data in x...",end='',flush=True)
             XX = np.array(dd3_YZ_coarse[axis[0]])
             YY = np.array(dd3_YZ_coarse[axis[1]])
             ZZ = np.array(dd3_YZ_coarse[axis[2]])
@@ -306,18 +394,7 @@ controlvolume:
             if axisx == -1: axis3_label = axis[0]
             if axisy == -1: axis3_label = axis[1]
             if axisz == -1: axis3_label = axis[2]
-
             xvec = dd3_YZ_coarse[axis3_label][:,0,0] #in direction of streamwise plane 
-
-            #streamwise label may be different for XZ and XY
-            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis3'],dd3_XY,axis)
-            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis3'],dd3_XZ,axis)
-            #XZ and XY labels in YZ axis1 (called vertical here)
-            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis2'],dd3_XY,axis)
-            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis2'],dd3_XZ,axis)
-            #XZ and XY labels in YZ axis2 (called lateral here)
-            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,axis_info_YZ['axis1'],dd3_XY,axis)
-            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,axis_info_YZ['axis1'],dd3_XZ,axis)
 
 
             xvecnew,_ = extract_1d_from_meshgrid(dd3_XZ[streamwise_label_XZ][0,:,:])
@@ -326,18 +403,14 @@ controlvolume:
 
             # Interpolate in x
             dd3_YZ = {}
-            for index, key in enumerate(dd3.keys()):
-                if np.array(dd3[key]).ndim == 3:
-                    arr = dd3[key]
+            for index, key in enumerate(dd3_YZ_coarse.keys()):
+                if np.array(dd3_YZ_coarse[key]).ndim == 3:
+                    arr = dd3_YZ_coarse[key]
                     dd3_YZ[key] = np.zeros((len(xnew),arr.shape[1],arr.shape[2]))
-                    for j in range(dd3[key].shape[1]):
-                        for k in range(dd3[key].shape[2]):
+                    for j in range(dd3_YZ_coarse[key].shape[1]):
+                        for k in range(dd3_YZ_coarse[key].shape[2]):
                             dd3_YZ[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k]) 
 
-            
-            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis1'],dd3_YZ,axis)
-            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis3'],dd3_YZ,axis)
-            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,axis_info_YZ['axis2'],dd3_YZ,axis)
 
             #permute to YZ data ordering and reduce size to match limits of YZ grid (i.e., cut out x/D locations just behind the rotor where there is no YZ data) 
             permutation = (streamwise_ind_XY,vertical_ind_XY,lateral_ind_XY)
@@ -383,7 +456,7 @@ controlvolume:
             dd3_XZ['grad_px_derived_avg']        = np.gradient(dd3_XZ['p_avg'],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
             dd3_XZ['grad_velocity0_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
             dd3_XZ['grad_velocity1_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[lateral_label_XZ][0,0,:],axis=2)
-            dd3_XZ['grad_velocity2_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[vertical_label_XY][0,:,0],axis=1)
+            dd3_XZ['grad_velocity2_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[vertical_label_XZ][0,:,0],axis=1)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_YZ + '_avg'
             dd3_YZ['grad_px_derived_avg']        = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
@@ -402,9 +475,9 @@ controlvolume:
             streamwise_velocity_label = 'velocity' + streamwise_label_XY 
             lateral_velocity_label = 'velocity' + lateral_label_XY 
             vertical_velocity_label = 'velocity' + vertical_label_XY 
-            streamwise_streamwise_label = corr_mapping[streamwise_velocity_label] + corr_mapping[streamwise_velocity_label]
-            streamwise_lateral_label = corr_mapping[streamwise_velocity_label] + corr_mapping[lateral_velocity_label]
-            streamwise_vertical_label = corr_mapping[streamwise_velocity_label] + corr_mapping[vertical_velocity_label]
+            streamwise_streamwise_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[streamwise_velocity_label])
+            streamwise_lateral_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[lateral_velocity_label])
+            streamwise_vertical_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[vertical_velocity_label])
             dd3_XY['u_avg_cubed'] = dd3_XY[streamwise_velocity_label+'_avg']**3# units of m^3/s^3
             dd3_XY['u_avg_squared_v_avg'] = dd3_XY[streamwise_velocity_label+'_avg']**2*dd3_XY[lateral_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XY['u_avg_squared_w_avg'] = dd3_XY[streamwise_velocity_label+'_avg']**2*dd3_XY[vertical_velocity_label+'_avg'] # units of m^3/s^3
@@ -416,9 +489,9 @@ controlvolume:
             streamwise_velocity_label = 'velocity' + streamwise_label_XZ 
             lateral_velocity_label = 'velocity' + lateral_label_XZ 
             vertical_velocity_label = 'velocity' + vertical_label_XZ 
-            streamwise_streamwise_label = corr_mapping[streamwise_velocity_label] + corr_mapping[streamwise_velocity_label]
-            streamwise_lateral_label = corr_mapping[streamwise_velocity_label] + corr_mapping[lateral_velocity_label]
-            streamwise_vertical_label = corr_mapping[streamwise_velocity_label] + corr_mapping[vertical_velocity_label]
+            streamwise_streamwise_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[streamwise_velocity_label])
+            streamwise_lateral_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[lateral_velocity_label])
+            streamwise_vertical_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[vertical_velocity_label])
             dd3_XZ['u_avg_cubed'] = dd3_XZ[streamwise_velocity_label+'_avg']**3# units of m^3/s^3
             dd3_XZ['u_avg_squared_v_avg'] = dd3_XZ[streamwise_velocity_label+'_avg']**2*dd3_XZ[lateral_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XZ['u_avg_squared_w_avg'] = dd3_XZ[streamwise_velocity_label+'_avg']**2*dd3_XZ[vertical_velocity_label+'_avg'] # units of m^3/s^3
@@ -430,9 +503,9 @@ controlvolume:
             streamwise_velocity_label = 'velocity' + streamwise_label_YZ 
             lateral_velocity_label = 'velocity' + lateral_label_YZ 
             vertical_velocity_label = 'velocity' + vertical_label_YZ 
-            streamwise_streamwise_label = corr_mapping[streamwise_velocity_label] + corr_mapping[streamwise_velocity_label]
-            streamwise_lateral_label = corr_mapping[streamwise_velocity_label] + corr_mapping[lateral_velocity_label]
-            streamwise_vertical_label = corr_mapping[streamwise_velocity_label] + corr_mapping[vertical_velocity_label]
+            streamwise_streamwise_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[streamwise_velocity_label])
+            streamwise_lateral_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[lateral_velocity_label])
+            streamwise_vertical_label = self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[vertical_velocity_label])
             dd3_YZ['u_avg_cubed'] = dd3_YZ[streamwise_velocity_label+'_avg']**3# units of m^3/s^3
             dd3_YZ['u_avg_squared_v_avg'] = dd3_YZ[streamwise_velocity_label+'_avg']**2*dd3_YZ[lateral_velocity_label+'_avg'] # units of m^3/s^3
             dd3_YZ['u_avg_squared_w_avg'] = dd3_YZ[streamwise_velocity_label+'_avg']**2*dd3_YZ[vertical_velocity_label+'_avg'] # units of m^3/s^3
@@ -529,7 +602,9 @@ controlvolume:
             # front
             df_in = df_in.assign(P_turb_fr=[None] * len(df_in))
             for i in range(numStreamPos):
-                qoi = 'u_avg_uu_avg'
+                #qoi = 'u_avg_uu_avg'
+                streamwise_velocity_label = 'velocity' + streamwise_label_YZ 
+                qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + corr_mapping[streamwise_velocity_label] + corr_mapping[streamwise_velocity_label] + '_avg'
                 #val = dd3_YZ[qoi][i,:,:]
                 # TODO: WHY DOES KEN ONLY USE 0 HERE? 
                 val = dd3_YZ[qoi][0,:,:]
@@ -541,7 +616,10 @@ controlvolume:
             df_in = df_in.assign(P_turb_left=[None] * len(df_in))
             for i in range(numStreamPos):
                 dim0_index = slice(0,i+1,1) # inner integral limits
-                qoi = 'u_avg_uv_avg'
+                #qoi = 'u_avg_uv_avg'
+                streamwise_velocity_label = 'velocity' + streamwise_label_XZ
+                lateral_velocity_label = 'velocity' + lateral_label_XZ
+                qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[lateral_velocity_label]) + '_avg'
                 val = dd3_XZ[qoi][dim0_index,:,lft_iplane]
                 streamwise_grid  = dd3_XZ[streamwise_label_XZ][dim0_index,0,lft_iplane]
                 vertical_grid = dd3_XZ[vertical_label_XZ][i,:,lft_iplane]
@@ -551,7 +629,10 @@ controlvolume:
             df_in = df_in.assign(P_turb_right=[None] * len(df_in))
             for i in range(numStreamPos):
                 dim0_index = slice(0,i+1,1) # inner integral limits
-                qoi = 'u_avg_uv_avg'
+                #qoi = 'u_avg_uv_avg'
+                streamwise_velocity_label = 'velocity' + streamwise_label_XZ
+                lateral_velocity_label = 'velocity' + lateral_label_XZ
+                qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[lateral_velocity_label]) + '_avg'
                 val = dd3_XZ[qoi][dim0_index,:,rht_iplane]
                 streamwise_grid  = dd3_XZ[streamwise_label_XZ][dim0_index,0,rht_iplane]
                 vertical_grid = dd3_XZ[vertical_label_XZ][i,:,rht_iplane]
@@ -561,7 +642,11 @@ controlvolume:
             df_in = df_in.assign(P_turb_bot=[None] * len(df_in))
             for i in range(numStreamPos):
                 dim0_index = slice(0,i+1,1) # inner integral limits
-                qoi = 'u_avg_uw_avg'
+                #qoi = 'u_avg_uw_avg'
+                streamwise_velocity_label = 'velocity' + streamwise_label_XY
+                vertical_velocity_label = 'velocity' + vertical_label_XY
+                qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[vertical_velocity_label]) + '_avg'
+
                 val = dd3_XY[qoi][dim0_index,bot_iplane,:]
                 streamwise_grid  = dd3_XY[streamwise_label_XY][dim0_index,bot_iplane,0]
                 lateral_grid = dd3_XY[lateral_label_XY][i,bot_iplane,:]
@@ -571,7 +656,10 @@ controlvolume:
             df_in = df_in.assign(P_turb_top=[None] * len(df_in))
             for i in range(numStreamPos):
                 dim0_index = slice(0,i+1,1) # inner integral limits
-                qoi = 'u_avg_uw_avg'
+                #qoi = 'u_avg_uw_avg'
+                streamwise_velocity_label = 'velocity' + streamwise_label_XY
+                vertical_velocity_label = 'velocity' + vertical_label_XY
+                qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + self.sort_rs_labels(corr_mapping[streamwise_velocity_label],corr_mapping[vertical_velocity_label]) + '_avg'
                 val = dd3_XY[qoi][dim0_index,top_iplane,:]
                 streamwise_grid  = dd3_XY[streamwise_label_XY][dim0_index,top_iplane,0]
                 lateral_grid = dd3_XY[lateral_label_XY][i,top_iplane,:]
