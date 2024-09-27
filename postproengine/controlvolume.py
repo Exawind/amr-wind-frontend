@@ -277,6 +277,7 @@ controlvolume:
 
         if interp:
             dd3 = self.interpolate_axis(dd3,xvecorg,xvec,axis)
+        print()
 
         return dd3
 
@@ -556,12 +557,43 @@ controlvolume:
             xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
             dx_XZ = xvec_XZ[1] - xvec_XZ[0]
             dx_XY = xvec_XY[1] - xvec_XY[0]
-            dx = min(dx_XZ,dx_XY)
 
-            #refined x grid that includes original offset planes
+            #interpolate all data to same streamwise grid. Need for formulation of integrals at bottom
+            #easier to interpolate to coarser grid than finer
+            #if (dx_XZ > dx_XY):
+            #    xnew = xvec_XZ
+            #if (dx_XZ < dx_XY):
+            #    xnew = xvec_XY
+            dx = max(dx_XZ,dx_XY)
             xnew = np.arange(min(xvec_YZ),max(xvec_YZ)+dx,dx)
-            #interpolate YZ data in streamwise direction
+
+            #need to interpolate data to new grid 
             dd3_YZ = self.interpolate_axis(dd2_YZ_coarse,xvec_YZ,xnew,axis=0)
+            dd3_XZ = self.interpolate_axis(dd2_XZ,xvec_XZ,xnew,axis=0)
+            dd3_XY = self.interpolate_axis(dd2_XY,xvec_XY,xnew,axis=0)
+
+            #Adding control volume boundary data 
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd3_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd3_XY[streamwise_label_XY][:,0,0]
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,xvec_YZ,0,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,xvec_XZ,0,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,xvec_XY,0,boxCenter,boxDimensions)
+
+            zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
+            zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
+            zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,zvec_YZ,1,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxCenter,boxDimensions)
+
+            yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
+            yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
+            yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,yvec_YZ,2,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxCenter,boxDimensions)
+
             
             #compute streamwise pressure gradient
             if compute_pressure_gradient:
@@ -585,28 +617,6 @@ controlvolume:
             dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
             dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
             dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
-
-            #Adding control volume boundary data 
-            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
-            xvec_XZ = dd2_XZ[streamwise_label_XZ][:,0,0]
-            xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
-            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,xvec_YZ,0,boxCenter,boxDimensions)
-            dd3_XZ = self.add_control_volume_boundary(dd2_XZ,xvec_XZ,0,boxCenter,boxDimensions)
-            dd3_XY = self.add_control_volume_boundary(dd2_XY,xvec_XY,0,boxCenter,boxDimensions)
-
-            zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
-            zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
-            zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
-            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,zvec_YZ,1,boxCenter,boxDimensions)
-            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxCenter,boxDimensions)
-            dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxCenter,boxDimensions)
-
-            yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
-            yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
-            yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
-            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,yvec_YZ,2,boxCenter,boxDimensions)
-            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxCenter,boxDimensions)
-            dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxCenter,boxDimensions)
 
             dd3_YZ = self.crop_data(dd3_YZ,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
             dd3_XY = self.crop_data(dd3_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
