@@ -50,6 +50,7 @@ class postpro_controlvolume():
         {'key':'diam','required':True,'default':None,'help':'Turbine diameter',},
         {'key':'box_center_XYZ','required':False,'default':None,'help':'Center of control volume (XYZ coordinates)',},
         {'key':'box_fr_center_XYZ','required':False,'default':None,'help':'Center of control volume on front face (XYZ coordinates)',},
+        {'key':'box_fr_streamwise_offset','required':False,'default':0,'help':'Streamwise offset when specifying front face of control volume in turbine diameters',},
         {'key':'rho','required':True,'default':1.25,'help':'Density',},
         {'key':'latitude','required':True,'default':0,'help':'Latitude',},
         {'key':'body_force_XYZ','required':True,'default':None,'help':'Body force from AMR-Wind input file (XYZ coordinates)',},
@@ -138,18 +139,18 @@ controlvolume:
             with open(pklfile, 'rb') as fp:
                 d = pickle.load(fp)
                 axis_info = {} 
-                axis_info['axis1'] = d['axis1']
-                axis_info['axis2'] = d['axis2']
-                axis_info['axis3'] = d['axis3']
 
                 compute_axis1axis2axis3_coords(d,0)
                 R = get_mapping_xyz_to_axis1axis2(d['axis1'],d['axis2'],d['axis3'],rot=0)
+                axis_info['axis1'] = R[0,:]
+                axis_info['axis2'] = R[1,:]
+                axis_info['axis3'] = R[2,:]
                 origina1a2a3 = R@d['origin']
 
                 d['a1'] = d['a1'] + origina1a2a3[0]
                 d['a2'] = d['a2'] + origina1a2a3[1]
                 d['a3'] = d['a3'] + origina1a2a3[2]
-
+                
             for key, value in d.items():
                 dd_avg[key].append(value)
         dd_avg = dict(dd_avg)
@@ -181,25 +182,14 @@ controlvolume:
         res = {**dict1, **dict2}
         return res
 
-    def load_avg_rs_files(self,avg_file,rs_file,axis):
+    def load_avg_rs_files(self,avg_file,rs_file):
 
         dd2_avg, axis_info = self.loadpkl(avg_file)
         dd2_rs, _  = self.loadpkl(rs_file)
         dd2 = self.Merge(dd2_avg,dd2_rs)
 
-        XX = np.array(dd2[axis[0]])
-        YY = np.array(dd2[axis[1]])
-        ZZ = np.array(dd2[axis[2]])
-        x,axisx = extract_1d_from_meshgrid(XX[0,:,:])
-        y,axisy = extract_1d_from_meshgrid(YY[0,:,:])
-        z,axisz = extract_1d_from_meshgrid(ZZ[0,:,:])
-
-        if axisx == -1: axis3_label = axis[0]
-        if axisy == -1: axis3_label = axis[1]
-        if axisz == -1: axis3_label = axis[2]
-
         #unique in the direction of offset
-        slice_result = dd2[axis3_label][:, 0, 0] 
+        slice_result = dd2['a3'][:, 0, 0] 
         sortedd, newOrder = np.unique(slice_result, return_index=True)
         for index, key in enumerate(dd2.keys()):
             dd2[key] = dd2[key][newOrder, :, :]
@@ -249,15 +239,23 @@ controlvolume:
 
     def crop_data(self,dd2,axis,axis_info,boxCenter,boxDimensions):
 
-        indicesStreamnormal = (dd2[axis[0]]>=boxCenter[0]-boxDimensions[0]/2) & (dd2[axis[0]]<=boxCenter[0]+boxDimensions[0]/2) & (dd2[axis[1]]>=boxCenter[1]-boxDimensions[1]/2) & (dd2[axis[1]]<=boxCenter[1]+boxDimensions[1]/2) & (dd2[axis[2]]>=boxCenter[2]-boxDimensions[2]/2) & (dd2[axis[2]]<=boxCenter[2]+boxDimensions[2]/2)
-        indicesStreamnormal_dim = np.where(indicesStreamnormal)
+        tol = 1e-3
+        streamwise_mask = (dd2[axis[0]][:,0,0] >= ((boxCenter[0]-boxDimensions[0]/2.0)-tol)) & (dd2[axis[0]][:,0,0] <= ((boxCenter[0]+boxDimensions[0]/2.0)+tol))
+        vertical_mask   = (dd2[axis[1]][0,:,0] >= ((boxCenter[1]-boxDimensions[1]/2.0)-tol)) & (dd2[axis[1]][0,:,0] <= ((boxCenter[1]+boxDimensions[1]/2.0)+tol))
+        lateral_mask    = (dd2[axis[2]][0,0,:] >= ((boxCenter[2]-boxDimensions[2]/2.0)-tol)) & (dd2[axis[2]][0,0,:] <= ((boxCenter[2]+boxDimensions[2]/2.0)+tol))
+
+        streamwise_indices = np.argwhere(streamwise_mask)[:,0]
+        vertical_indices   = np.argwhere(vertical_mask)[:,0]
+        lateral_indices    = np.argwhere(lateral_mask)[:,0]
+
+        streamwise_indices = streamwise_indices[:, np.newaxis, np.newaxis]  
+        vertical_indices = vertical_indices[np.newaxis, :, np.newaxis]     
+        lateral_indices = lateral_indices[np.newaxis, np.newaxis, :]
 
         dd3 = {}
         for index, key in enumerate(dd2.keys()):
             if np.array(dd2[key]).ndim == 3:
-                dd3[key] = []
-                temp = dd2[key][indicesStreamnormal]
-                dd3[key] = np.reshape(temp,(len(set(indicesStreamnormal_dim[0])),len(set(indicesStreamnormal_dim[1])),len(set(indicesStreamnormal_dim[2]))))
+                dd3[key] = dd2[key][streamwise_indices,vertical_indices,lateral_indices]
 
         axis_number1 = re.search(r'\d+', axis[0]).group()
         axis_number2 = re.search(r'\d+', axis[1]).group()
@@ -291,31 +289,24 @@ controlvolume:
     def are_aligned(self,v1, v2):
         return np.all(np.cross(v1, v2) == 0)
 
-    def get_label_and_ind_in_dir(self,axis_info,axis_dir,dd,axis):
+    def get_label_and_ind_in_dir(self,axis_info,axis_dir,dd):
         n1 = axis_info['axis1']/np.linalg.norm(axis_info['axis1'])
         n2 = axis_info['axis2']/np.linalg.norm(axis_info['axis2'])
         n3 = axis_info['axis3']/np.linalg.norm(axis_info['axis3'])
 
         #ijk dims flipped 
-        if self.are_aligned(n1,axis_dir): axis_ind = 2
-        if self.are_aligned(n2,axis_dir): axis_ind = 1
-        if self.are_aligned(n3,axis_dir): axis_ind = 0
-
-        XX = np.array(dd[axis[0]])
-        YY = np.array(dd[axis[1]])
-        ZZ = np.array(dd[axis[2]])
-        xvec,axisx = extract_1d_from_meshgrid(XX[0,:,:])
-        yvec,axisy = extract_1d_from_meshgrid(YY[0,:,:])
-        zvec,axisz = extract_1d_from_meshgrid(ZZ[0,:,:])
-
-        if axisx+1 == axis_ind:
-            axis_label = axis[0]
-
-        if axisy+1 == axis_ind:
-            axis_label = axis[1]
-
-        if axisz+1 == axis_ind:
-            axis_label = axis[2]
+        if self.are_aligned(n1,axis_dir): 
+            axis_ind = 2
+            axis_label = 'a1'
+        elif self.are_aligned(n2,axis_dir): 
+            axis_ind = 1
+            axis_label = 'a2'
+        elif self.are_aligned(n3,axis_dir): 
+            axis_ind = 0
+            axis_label = 'a3'
+        else:
+            print("Error: Domain not aligned...exiting")
+            sys.exit()
 
         return axis_label , axis_ind
 
@@ -344,15 +335,17 @@ controlvolume:
             varnames = plane['varnames']            
             body_force_XYZ = np.asarray(plane['body_force_XYZ'])
             savepklfile = plane['savepklfile']
-
             boxCenter_XYZ = np.asarray(plane['box_center_XYZ'])
+
+            front_specified = False
             if None in boxCenter_XYZ:
                 boxFrCenter_XYZ = np.asarray(plane['box_fr_center_XYZ'])
+                boxFrOffset     = plane['box_fr_streamwise_offset']*diam
                 if None in boxFrCenter_XYZ:
                     print("Error: Must specify box center coordinates...exiting")
                     sys.exit()
-                boxCenter_XYZ = boxFrCenter_XYZ
-                boxCenter_XYZ[0] = boxFrCenter_XYZ[0] + boxDimensions[0]/2.0
+                else:
+                    front_specified = True
 
             corr_mapping = {
                 'velocityx': 'u',
@@ -363,12 +356,10 @@ controlvolume:
                 'velocitya3': 'ua3'
             }
 
-            axis_labels = ['a1','a2','a3'] 
-
             print("Loading streamwise flow planes...",end='',flush=True)
             x_avg_files   = plane['streamwise_avg_files']            
             x_rs_files    = plane['streamwise_rs_files']            
-            dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files,axis_labels)
+            dd2_YZ_coarse,axis_info_YZ  = self.load_avg_rs_files(x_avg_files,x_rs_files)
             print("Done")
 
             print("Loading vertical flow planes...",end='',flush=True)
@@ -380,7 +371,7 @@ controlvolume:
             top_rs_file  = plane['top_rs_file']            
             top_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file],axis_labels)
+            dd2_XY,axis_info_XY  = self.load_avg_rs_files([bot_avg_file,top_avg_file],[bot_rs_file,top_rs_file])
             print("Done")
 
             print("Loading lateral flow planes...",end='',flush=True)
@@ -392,47 +383,49 @@ controlvolume:
             rht_rs_file  = plane['rht_rs_file']            
             rht_iplane   = -1 #domain will get cropped so this is always -1
 
-            dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file],axis_labels)
+            dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file])
             print("Done")
-
 
             streamwise_dir = axis_info_YZ['axis3']
             vertical_dir   = axis_info_XY['axis3']
             lateral_dir    = axis_info_XZ['axis3']
 
-            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,streamwise_dir,dd2_YZ_coarse,axis_labels)
-            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,streamwise_dir,dd2_XY,axis_labels)
-            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,streamwise_dir,dd2_XZ,axis_labels)
+            streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,streamwise_dir,dd2_YZ_coarse)
+            streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,streamwise_dir,dd2_XY)
+            streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,streamwise_dir,dd2_XZ)
 
-            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,vertical_dir,dd2_YZ_coarse,axis_labels)
-            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,vertical_dir,dd2_XY,axis_labels)
-            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,vertical_dir,dd2_XZ,axis_labels)
+            vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,vertical_dir,dd2_YZ_coarse)
+            vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,vertical_dir,dd2_XY)
+            vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,vertical_dir,dd2_XZ)
 
-            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,lateral_dir,dd2_YZ_coarse,axis_labels)
-            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,lateral_dir,dd2_XY,axis_labels)
-            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,lateral_dir,dd2_XZ,axis_labels)
+            lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,lateral_dir,dd2_YZ_coarse)
+            lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,lateral_dir,dd2_XY)
+            lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,lateral_dir,dd2_XZ)
 
             axis_YZ = [streamwise_label_YZ,vertical_label_YZ,lateral_label_YZ]
             axis_XY = [streamwise_label_XY,vertical_label_XY,lateral_label_XY]
             axis_XZ = [streamwise_label_XZ,vertical_label_XZ,lateral_label_XZ]
 
-            # print("XY INFO: ",)
-            # print("X: ",streamwise_label_XY)
-            # print("Y: ",lateral_label_XY)
-            # print("Z: ",vertical_label_XY)
-            # print("axis_XY:",axis_XY)
+            #print("XY INFO: ",)
+            #print("Vertical dir: ",vertical_dir)
+            #print("X: ",streamwise_label_XY)
+            #print("Y: ",lateral_label_XY)
+            #print("Z: ",vertical_label_XY)
+            #print("axis_XY:",axis_XY)
 
-            # print("XZ INFO: ",)
-            # print("X: ",streamwise_label_XZ)
-            # print("Y: ",lateral_label_XZ)
-            # print("Z: ",vertical_label_XZ)
-            # print("axis_XZ:",axis_XZ)
+            #print("XZ INFO: ",)
+            #print("Lateral dir: ",lateral_dir)
+            #print("X: ",streamwise_label_XZ)
+            #print("Y: ",lateral_label_XZ)
+            #print("Z: ",vertical_label_XZ)
+            #print("axis_XZ:",axis_XZ)
 
-            # print("YZ INFO: ",)
-            # print("X: ",streamwise_label_YZ)
-            # print("Y: ",lateral_label_YZ)
-            # print("Z: ",vertical_label_YZ)
-            # print("axis_YZ:",axis_YZ)
+            #print("YZ INFO: ",)
+            #print("Streamwise dir: ",streamwise_dir)
+            #print("X: ",streamwise_label_YZ)
+            #print("Y: ",lateral_label_YZ)
+            #print("Z: ",vertical_label_YZ)
+            #print("axis_YZ:",axis_YZ)
 
             #permute data to streamwise, vertical, lateral
             print("Permute data to streamwise, vertical, lateral...",end='',flush=True)
@@ -476,25 +469,45 @@ controlvolume:
             coriolis_forcing_XZ = self.rotate_data(coriolis_forcing_XYZ,axis_XZ,axis_info_XZ)
             coriolis_forcing_XY = self.rotate_data(coriolis_forcing_XYZ,axis_XY,axis_info_XY)
 
-            boxCenter_YZ = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
-            boxCenter_XZ = self.rotate_data(boxCenter_XYZ,axis_XZ,axis_info_XZ)
-            boxCenter_XY = self.rotate_data(boxCenter_XYZ,axis_XY,axis_info_XY)
+            if front_specified:
+                boxFrCenter_YZ = self.rotate_data(boxFrCenter_XYZ,axis_YZ,axis_info_YZ)
+                boxCenter_YZ = boxFrCenter_YZ
+                boxCenter_YZ[0] = boxFrCenter_YZ[0] + boxDimensions[0]/2.0 + boxFrOffset
+
+                boxFrCenter_XZ = self.rotate_data(boxFrCenter_XYZ,axis_XZ,axis_info_XZ)
+                boxCenter_XZ = boxFrCenter_XZ
+                boxCenter_XZ[0] = boxFrCenter_XZ[0] + boxDimensions[0]/2.0 + boxFrOffset
+
+                boxFrCenter_XY = self.rotate_data(boxFrCenter_XYZ,axis_XY,axis_info_XY)
+                boxCenter_XY = boxFrCenter_XY
+                boxCenter_XY[0] = boxFrCenter_XY[0] + boxDimensions[0]/2.0 + boxFrOffset
+            else:
+                boxCenter_YZ = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
+                boxCenter_XZ = self.rotate_data(boxCenter_XYZ,axis_XZ,axis_info_XZ)
+                boxCenter_XY = self.rotate_data(boxCenter_XYZ,axis_XY,axis_info_XY)
             print("Done")
 
             #crop data
             print("Crop data to control volume...",end='',flush=True)
+
+
+            print()
+            #print(dd2_XZ[lateral_label_XZ].shape)
+            #print(dd2_YZ_coarse[lateral_label_XZ].shape)
+            #print(dd2_XY[lateral_label_XZ].shape)
             dd2_YZ_coarse,dd3_YZ_coarse = self.crop_data(dd2_YZ_coarse,axis_YZ,axis_info_YZ,boxCenter_YZ,boxDimensions)
             dd2_XY,dd3_XY = self.crop_data(dd2_XY,axis_XY,axis_info_XY,boxCenter_XY,boxDimensions)
             dd2_XZ,dd3_XZ = self.crop_data(dd2_XZ,axis_XZ,axis_info_XZ,boxCenter_XZ,boxDimensions)
-            print("Done")
 
             print("Interpolating YZ data in x...",end='',flush=True)
             xvec = dd3_YZ_coarse['a3'][:,0,0] #in direction of streamwise plane 
             xvecnew = dd3_XZ[streamwise_label_XZ][:,0,0]
+            xvecnew1 = dd3_XY[streamwise_label_XZ][:,0,0]
             indicesWithinRange = np.where((xvecnew >= np.min(xvec)) & (xvecnew <= np.max(xvec)))
             xnew = xvecnew[indicesWithinRange] 
 
             # Interpolate YZ in streamwise direction
+            # TODO: DO WE NEED TO INTERPOLATE ALL ARRAYS TO SAME BOX? 
             dd3_YZ = {}
             for index, key in enumerate(dd3_YZ_coarse.keys()):
                 if np.array(dd3_YZ_coarse[key]).ndim == 3:
@@ -504,6 +517,7 @@ controlvolume:
                         for k in range(dd3_YZ_coarse[key].shape[2]):
                             dd3_YZ[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k]) 
 
+
             for index, key in enumerate(dd3_XY.keys()):
                 if np.array(dd3_XY[key]).ndim == 3:
                     dd3_XY[key] = np.squeeze(dd3_XY[key][indicesWithinRange,:,:])
@@ -511,6 +525,12 @@ controlvolume:
             for index, key in enumerate(dd3_XZ.keys()):
                 if np.array(dd3_XZ[key]).ndim == 3:
                     dd3_XZ[key] = np.squeeze(dd3_XZ[key][indicesWithinRange,:,:])
+
+            #print()
+            #print(dd3_XZ[lateral_label_XZ].shape)
+            #print(dd3_YZ[lateral_label_XZ].shape)
+            #print(dd3_XY[lateral_label_XZ].shape)
+
             print("Done")
 
             # print("XY INFO: ",)
@@ -540,14 +560,22 @@ controlvolume:
 
             #trasform x to streamwise pressure gradient
             else:
-                dpdx = dd3_XY['grad_px']
-                dpdy = dd3_XY['grad_py']
-                dpdz = dd3_XY['grad_pz']
+                dpdx = dd3_XY['grad_px_avg']
+                dpdy = dd3_XY['grad_py_avg']
+                dpdz = dd3_XY['grad_pz_avg']
                 dpds_XY,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XY,axis_info_XY)
-                dpds_XZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XZ,axis_info_XZ)
-                dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
                 dd3_XY['grad_px_derived_avg'] = dpds_XY
+
+                dpdx = dd3_XZ['grad_px_avg']
+                dpdy = dd3_XZ['grad_py_avg']
+                dpdz = dd3_XZ['grad_pz_avg']
+                dpds_XZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XZ,axis_info_XZ)
                 dd3_XZ['grad_px_derived_avg'] = dpds_XZ
+
+                dpdx = dd3_YZ['grad_px_avg']
+                dpdy = dd3_YZ['grad_py_avg']
+                dpdz = dd3_YZ['grad_pz_avg']
+                dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
                 dd3_YZ['grad_px_derived_avg'] = dpds_YZ
 
             if not any('velocitya' in v for v in varnames):
@@ -562,7 +590,6 @@ controlvolume:
                 vertical_label_XY = 'z'
                 vertical_label_YZ = 'z'
                 vertical_label_XZ = 'z'
-
 
             streamwise_velocity_label = 'velocity' + streamwise_label_XY + '_avg'
             dd3_XY['grad_velocity0_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
@@ -897,6 +924,12 @@ controlvolume:
             print((self.parent.df_in[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
             print()
 
+            index = -1
+            print("Reduces")
+            print("--------")
+            columns_to_plot = ['P_reduced',]
+            print((self.parent.df_in[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            print()
 
             # residual
             index = -1
@@ -936,6 +969,7 @@ controlvolume:
             plt.plot((self.parent.df_in['P']-self.parent.df_in['P'][referencePlane_xOverD])/normalization,label='$\phi_{in,total}$')
             plt.xlabel('$x/D$ [-]')
             plt.ylabel('$\phi \; U_{\inf}^{-3} \; D^{-2}$ [-]')
+            plt.ylim([-0.1,0.1])
             plt.legend()
             fig.savefig(savefilename)
 
@@ -960,6 +994,7 @@ controlvolume:
 
             sigfigs = 3
             referencePlane_xOverD = self.parent.df_in.index[0]
+            print(self.parent.df_in)
             normalization = self.parent.Uinf**3*(self.parent.boxDimensions[1]*self.parent.boxDimensions[2])
             fsize=16
 
@@ -982,8 +1017,8 @@ controlvolume:
             ax1.axhline(y = 0, color = (0.5,0.5,0.5), linestyle = '-', zorder = -1)
             handles, labels = ax1.get_legend_handles_labels()
             order = [7,6,5,4,3,2,1,0,8,9]
-            ax1.set_ylim([-0.1, 0.2])
-            ax2.set_ylim([-0.1, 0.2])
+            #ax1.set_ylim([-0.1, 0.2])
+            #ax2.set_ylim([-0.1, 0.2])
             #ax1.yaxis.set_tick_params(labelsize=fsize) 
             ax1.legend([handles[idx] for idx in order],[labels[idx] for idx in order],bbox_to_anchor=(1, 1.15),fontsize=fsize)
             ax2.legend(legend2a_labels, loc=2,fontsize=fsize)
@@ -994,7 +1029,7 @@ controlvolume:
             xticklabels = ['' if i % 2 == 0 else str((i+1)/4) for i in xticks]
             ax1.set_xticklabels(xticklabels,fontsize=fsize)
             ax1.set_xlabel('$x/D$ [-]', labelpad=15,fontsize=fsize)
-            ax1.text(-0.1, 0.65, 'Gain', transform=ax1.transAxes, rotation=90, va='center',fontsize=fsize)
-            ax1.text(-0.1, 0.17, 'Loss', transform=ax1.transAxes, rotation=90, va='center',fontsize=fsize)
+            #ax1.text(-0.1, 0.65, 'Gain', transform=ax1.transAxes, rotation=90, va='center',fontsize=fsize)
+            #ax1.text(-0.1, 0.17, 'Loss', transform=ax1.transAxes, rotation=90, va='center',fontsize=fsize)
             #plt.gcf().set_size_inches(13, 8)
             fig.savefig(savefilename)
