@@ -259,6 +259,27 @@ controlvolume:
                             dd3[key][j,k,:] = np.interp(xnew,xvec,arr[j,k,:]) 
         return dd3
 
+    def add_control_volume_boundary(self,dd3,xvec,axis,boxCenter,boxDimensions):
+        start = boxCenter[axis] - boxDimensions[axis]/2.0
+        end   = boxCenter[axis] + boxDimensions[axis]/2.0
+        xvecorg = np.copy(xvec)
+
+        interp = False
+        if (start not in xvec): 
+            start_index = np.searchsorted(xvec,start)
+            xvec = np.insert(xvec, start_index, start)
+            interp = True
+
+        if (end not in xvec): 
+            end_index = np.searchsorted(xvec,end)
+            xvec = np.insert(xvec, end_index, end)
+            interp = True
+
+        if interp:
+            dd3 = self.interpolate_axis(dd3,xvecorg,xvec,axis)
+
+        return dd3
+
     def get_control_volume_boundaries(self,grid,boxCenter,boxDimensions):
         minval = boxCenter - boxDimensions/2.0
         maxval = boxCenter + boxDimensions/2.0
@@ -539,10 +560,8 @@ controlvolume:
 
             #refined x grid that includes original offset planes
             xnew = np.arange(min(xvec_YZ),max(xvec_YZ)+dx,dx)
-            #interpolate data in streamwise direction
+            #interpolate YZ data in streamwise direction
             dd3_YZ = self.interpolate_axis(dd2_YZ_coarse,xvec_YZ,xnew,axis=0)
-            dd3_XZ = self.interpolate_axis(dd2_XZ,xvec_XZ,xnew,axis=0)
-            dd3_XY = self.interpolate_axis(dd2_XY,xvec_XY,xnew,axis=0)
             
             #compute streamwise pressure gradient
             if compute_pressure_gradient:
@@ -567,24 +586,27 @@ controlvolume:
             dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
             dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
 
-            #interpolate to lateral and vertical boundaries of control volume
+            #Adding control volume boundary data 
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd2_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,xvec_YZ,0,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd2_XZ,xvec_XZ,0,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd2_XY,xvec_XY,0,boxCenter,boxDimensions)
+
             zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
             zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
             zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
-            znew = zvec_XY
-
-            dd3_YZ = self.interpolate_axis(dd3_YZ,zvec_YZ,znew,axis=1)
-            dd3_XZ = self.interpolate_axis(dd3_XZ,zvec_XZ,znew,axis=1)
-            dd3_XY = self.interpolate_axis(dd3_XY,zvec_XY,znew,axis=1)
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,zvec_YZ,1,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxCenter,boxDimensions)
 
             yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
             yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
             yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
-            ynew = yvec_XZ
-
-            dd3_YZ = self.interpolate_axis(dd3_YZ,yvec_YZ,ynew,axis=2)
-            dd3_XZ = self.interpolate_axis(dd3_XZ,yvec_XZ,ynew,axis=2)
-            dd3_XY = self.interpolate_axis(dd3_XY,yvec_XY,ynew,axis=2)
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,yvec_YZ,2,boxCenter,boxDimensions)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxCenter,boxDimensions)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxCenter,boxDimensions)
 
             dd3_YZ = self.crop_data(dd3_YZ,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
             dd3_XY = self.crop_data(dd3_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
