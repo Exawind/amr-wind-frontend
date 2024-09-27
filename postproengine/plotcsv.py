@@ -57,7 +57,12 @@ class postpro_plotcsv():
         {'key':'legendopts', 'required':False,  'default':{},
          'help':'Dictionary with legend options',},
         {'key':'postplotfunc', 'required':False,  'default':'',
-         'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},                
+         'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
+        {'key':'figname',    'required':False,  'default':None,
+         'help':'Name/number of figure to create plot in'},
+        {'key':'axesnum',    'required':False,  'default':None,
+         'help':'Which subplot axes to create plot in'},
+
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
@@ -69,6 +74,15 @@ plotcsv:
     legendopts: {'loc':'upper left'}
     csvfiles:
     - {'file':'T0.csv', 'xcol':'Time', 'ycol':'GenPwr', 'lineopts':{'color':'r', 'lw':2, 'label':'T0'}}
+
+Note that the csvfiles dictionary list can also include xscalefunc and yscalefunc lambda functions 
+to manipulate x and y inputs.  For instance,
+   'xscalefunc':'lambda x:x-72.5'
+shifts the x data by 72.5.  Similarly, 
+ 'yscalefunc':'lambda y:y*2.0'
+Multiples y by 2.0.  If ycol is the empty string '', then the lambda function input is the whole dataframe.  
+This allows you to provide the function
+ 'yscalefunc':'lambda y:y["BldPitch1"]+["BldPitch1"]'
     """
 
     # --- Stuff required for main task ---
@@ -95,18 +109,36 @@ plotcsv:
             title    = plotitem['title']
             legendopts = plotitem['legendopts']
             postplotfunc = plotitem['postplotfunc']
-            
-            fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
+            figname  = plotitem['figname']
+            axesnum  = None if plotitem['axesnum'] is None else plotitem['axesnum']
+
+            if (figname is not None) and (axesnum is not None):
+                fig     = plt.figure(figname)
+                allaxes = fig.get_axes()
+                ax      = allaxes[axesnum]
+            else:
+                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
 
             for csvitem in csvfiles:
                 fname    = csvitem['file']
                 xcol     = csvitem['xcol']
                 ycol     = csvitem['ycol']
                 lineopts = csvitem['lineopts'] if 'lineopts' in csvitem else {}
-                
+                xscalefunc = csvitem['xscalefunc'] if 'xscalefunc' in csvitem else 'lambda x: x'
+                yscalefunc = csvitem['yscalefunc'] if 'yscalefunc' in csvitem else 'lambda y: y'
+                xscalef  = eval(xscalefunc)
+                yscalef  = eval(yscalefunc)
+
                 varnames = [xcol, ycol]
-                self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
-                ax.plot(np.array(self.df[xcol]), np.array(self.df[ycol]), **lineopts)
+
+                if len(ycol)>0:
+                    self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
+                    yplot = yscalef(np.array(self.df[ycol]))
+                else:
+                    self.df  = pd.read_csv(fname, comment='#')
+                    yplot = yscalef(self.df)
+                xplot = xscalef(np.array(self.df[xcol]))
+                ax.plot(xplot, yplot, **lineopts)
 
             # Set up axes and labels
             ax.set_xlabel(xlabel)
