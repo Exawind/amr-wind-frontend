@@ -237,9 +237,55 @@ controlvolume:
 
         return dpda0,dpda1,dpda2
 
-    def crop_data(self,dd2,axis,axis_info,boxCenter,boxDimensions):
+    def interpolate_axis(self,dd3_coarse,xvec,xnew,axis):
+        dd3 = {}
+        for index, key in enumerate(dd3_coarse.keys()):
+            if np.array(dd3_coarse[key]).ndim == 3:
+                arr = dd3_coarse[key]
+                if axis == 0:
+                    dd3[key] = np.zeros((len(xnew),arr.shape[1],arr.shape[2]))
+                    for j in range(dd3_coarse[key].shape[1]):
+                        for k in range(dd3_coarse[key].shape[2]):
+                            dd3[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k]) 
+                elif axis == 1:
+                    dd3[key] = np.zeros((arr.shape[0],len(xnew),arr.shape[2]))
+                    for j in range(dd3_coarse[key].shape[0]):
+                        for k in range(dd3_coarse[key].shape[2]):
+                            dd3[key][j,:,k] = np.interp(xnew,xvec,arr[j,:,k]) 
+                elif axis == 2:
+                    dd3[key] = np.zeros((arr.shape[0],arr.shape[1],len(xnew)))
+                    for j in range(dd3_coarse[key].shape[0]):
+                        for k in range(dd3_coarse[key].shape[1]):
+                            dd3[key][j,k,:] = np.interp(xnew,xvec,arr[j,k,:]) 
+        return dd3
 
-        tol = 1e-3
+    def get_control_volume_boundaries(self,grid,boxCenter,boxDimensions):
+        minval = boxCenter - boxDimensions/2.0
+        maxval = boxCenter + boxDimensions/2.0
+        minind = np.argmin(abs(grid-minval))
+        maxind = np.argmin(abs(grid-maxval))
+        return minind,maxind
+
+    def update_control_volume_center_dims(self,s_grid,v_grid,l_grid,boxCenter,boxDimensions):
+        s_min , s_max = self.get_control_volume_boundaries(s_grid,boxCenter[0],boxDimensions[0])
+        v_min , v_max = self.get_control_volume_boundaries(v_grid,boxCenter[1],boxDimensions[1])
+        l_min,  l_max = self.get_control_volume_boundaries(l_grid,boxCenter[2],boxDimensions[2])
+
+        boxCenter = np.zeros(3)
+        boxCenter[0] = (s_grid[s_min] + s_grid[s_max])/2.0
+        boxCenter[1] = (v_grid[v_min] + v_grid[v_max])/2.0
+        boxCenter[2] = (l_grid[l_min] + l_grid[l_max])/2.0
+
+        boxDimensions = np.zeros(3)
+        boxDimensions[0] = s_grid[s_max] - s_grid[s_min]
+        boxDimensions[1] = v_grid[v_max] - v_grid[v_min]
+        boxDimensions[2] = l_grid[l_max] - l_grid[l_min]
+
+        return boxCenter, boxDimensions
+
+    def crop_data(self,dd2,axis,axis_info,boxCenter,boxDimensions):
+        tol = 0.0
+
         streamwise_mask = (dd2[axis[0]][:,0,0] >= ((boxCenter[0]-boxDimensions[0]/2.0)-tol)) & (dd2[axis[0]][:,0,0] <= ((boxCenter[0]+boxDimensions[0]/2.0)+tol))
         vertical_mask   = (dd2[axis[1]][0,:,0] >= ((boxCenter[1]-boxDimensions[1]/2.0)-tol)) & (dd2[axis[1]][0,:,0] <= ((boxCenter[1]+boxDimensions[1]/2.0)+tol))
         lateral_mask    = (dd2[axis[2]][0,0,:] >= ((boxCenter[2]-boxDimensions[2]/2.0)-tol)) & (dd2[axis[2]][0,0,:] <= ((boxCenter[2]+boxDimensions[2]/2.0)+tol))
@@ -256,6 +302,8 @@ controlvolume:
         for index, key in enumerate(dd2.keys()):
             if np.array(dd2[key]).ndim == 3:
                 dd3[key] = dd2[key][streamwise_indices,vertical_indices,lateral_indices]
+
+        return dd3
 
         axis_number1 = re.search(r'\d+', axis[0]).group()
         axis_number2 = re.search(r'\d+', axis[1]).group()
@@ -470,114 +518,103 @@ controlvolume:
             coriolis_forcing_XY = self.rotate_data(coriolis_forcing_XYZ,axis_XY,axis_info_XY)
 
             if front_specified:
-                boxFrCenter_YZ = self.rotate_data(boxFrCenter_XYZ,axis_YZ,axis_info_YZ)
-                boxCenter_YZ = boxFrCenter_YZ
-                boxCenter_YZ[0] = boxFrCenter_YZ[0] + boxDimensions[0]/2.0 + boxFrOffset
-
-                boxFrCenter_XZ = self.rotate_data(boxFrCenter_XYZ,axis_XZ,axis_info_XZ)
-                boxCenter_XZ = boxFrCenter_XZ
-                boxCenter_XZ[0] = boxFrCenter_XZ[0] + boxDimensions[0]/2.0 + boxFrOffset
-
-                boxFrCenter_XY = self.rotate_data(boxFrCenter_XYZ,axis_XY,axis_info_XY)
-                boxCenter_XY = boxFrCenter_XY
-                boxCenter_XY[0] = boxFrCenter_XY[0] + boxDimensions[0]/2.0 + boxFrOffset
+                boxFrCenter = self.rotate_data(boxFrCenter_XYZ,axis_YZ,axis_info_YZ)
+                boxCenter = boxFrCenter
+                boxCenter[0] = boxFrCenter[0] + boxDimensions[0]/2.0 + boxFrOffset
             else:
-                boxCenter_YZ = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
-                boxCenter_XZ = self.rotate_data(boxCenter_XYZ,axis_XZ,axis_info_XZ)
-                boxCenter_XY = self.rotate_data(boxCenter_XYZ,axis_XY,axis_info_XY)
+                boxCenter = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
             print("Done")
 
             #crop data
-            print("Crop data to control volume...",end='',flush=True)
+            print("Geting data inside control volume...",end='',flush=True)
+            boxCenter, boxDimensions = self.update_control_volume_center_dims(dd2_YZ_coarse['a3'][:,0,0],dd2_XY['a3'][0,:,0],dd2_XZ['a3'][0,0,:],boxCenter,boxDimensions)
 
+            #compute gradients (interpolating in x for streamwise gradients)
+            xvec_YZ = dd2_YZ_coarse[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd2_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
+            dx_XZ = xvec_XZ[1] - xvec_XZ[0]
+            dx_XY = xvec_XY[1] - xvec_XY[0]
+            dx = min(dx_XZ,dx_XY)
 
-            print()
-            #print(dd2_XZ[lateral_label_XZ].shape)
-            #print(dd2_YZ_coarse[lateral_label_XZ].shape)
-            #print(dd2_XY[lateral_label_XZ].shape)
-            dd2_YZ_coarse,dd3_YZ_coarse = self.crop_data(dd2_YZ_coarse,axis_YZ,axis_info_YZ,boxCenter_YZ,boxDimensions)
-            dd2_XY,dd3_XY = self.crop_data(dd2_XY,axis_XY,axis_info_XY,boxCenter_XY,boxDimensions)
-            dd2_XZ,dd3_XZ = self.crop_data(dd2_XZ,axis_XZ,axis_info_XZ,boxCenter_XZ,boxDimensions)
-
-            print("Interpolating YZ data in x...",end='',flush=True)
-            xvec = dd3_YZ_coarse['a3'][:,0,0] #in direction of streamwise plane 
-            xvecnew = dd3_XZ[streamwise_label_XZ][:,0,0]
-            xvecnew1 = dd3_XY[streamwise_label_XZ][:,0,0]
-            indicesWithinRange = np.where((xvecnew >= np.min(xvec)) & (xvecnew <= np.max(xvec)))
-            xnew = xvecnew[indicesWithinRange] 
-
-            # Interpolate YZ in streamwise direction
-            # TODO: DO WE NEED TO INTERPOLATE ALL ARRAYS TO SAME BOX? 
-            dd3_YZ = {}
-            for index, key in enumerate(dd3_YZ_coarse.keys()):
-                if np.array(dd3_YZ_coarse[key]).ndim == 3:
-                    arr = dd3_YZ_coarse[key]
-                    dd3_YZ[key] = np.zeros((len(xnew),arr.shape[1],arr.shape[2]))
-                    for j in range(dd3_YZ_coarse[key].shape[1]):
-                        for k in range(dd3_YZ_coarse[key].shape[2]):
-                            dd3_YZ[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k]) 
-
-
-            for index, key in enumerate(dd3_XY.keys()):
-                if np.array(dd3_XY[key]).ndim == 3:
-                    dd3_XY[key] = np.squeeze(dd3_XY[key][indicesWithinRange,:,:])
-
-            for index, key in enumerate(dd3_XZ.keys()):
-                if np.array(dd3_XZ[key]).ndim == 3:
-                    dd3_XZ[key] = np.squeeze(dd3_XZ[key][indicesWithinRange,:,:])
-
-            #print()
-            #print(dd3_XZ[lateral_label_XZ].shape)
-            #print(dd3_YZ[lateral_label_XZ].shape)
-            #print(dd3_XY[lateral_label_XZ].shape)
-
-            print("Done")
-
-            # print("XY INFO: ",)
-            # print("X: ",dd3_XY[streamwise_label_XY][:,0,0],streamwise_label_XY,streamwise_ind_XY)
-            # print("Y: ",dd3_XY[lateral_label_XY][0,0,:],lateral_label_XY,lateral_ind_XY)
-            # print("Z: ",dd3_XY[vertical_label_XY][0,:,0],vertical_label_XY,vertical_ind_XY)
-
-            # print()
-            # print("XZ INFO: ",)
-            # print("X: ",dd3_XZ[streamwise_label_XZ][:,0,0],streamwise_label_XZ,streamwise_ind_XZ)
-            # print("Y: ",dd3_XZ[lateral_label_XZ][0,0,:],lateral_label_XZ,lateral_ind_XZ)
-            # print("Z: ",dd3_XZ[vertical_label_XZ][0,:,0],vertical_label_XZ,vertical_ind_XZ)
-
-            # print()
-            # print("YZ INFO: ",)
-            # print("X: ",dd3_YZ[streamwise_label_YZ][:,0,0],streamwise_label_YZ,streamwise_ind_YZ)
-            # print("Y: ",dd3_YZ[lateral_label_YZ][0,0,:],lateral_label_YZ,lateral_ind_YZ)
-            # print("Z: ",dd3_YZ[vertical_label_YZ][0,:,0],vertical_label_YZ,vertical_ind_YZ)
-
-            print("Calculating streamwise gradients...",end='',flush=True)
-
+            #refined x grid that includes original offset planes
+            xnew = np.arange(min(xvec_YZ),max(xvec_YZ)+dx,dx)
+            #interpolate data in streamwise direction
+            dd3_YZ = self.interpolate_axis(dd2_YZ_coarse,xvec_YZ,xnew,axis=0)
+            dd3_XZ = self.interpolate_axis(dd2_XZ,xvec_XZ,xnew,axis=0)
+            dd3_XY = self.interpolate_axis(dd2_XY,xvec_XY,xnew,axis=0)
+            
             #compute streamwise pressure gradient
             if compute_pressure_gradient:
-                dd3_XY['grad_px_derived_avg'] = np.gradient(dd3_XY['p_avg'],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
-                dd3_XZ['grad_px_derived_avg'] = np.gradient(dd3_XZ['p_avg'],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
                 dd3_YZ['grad_px_derived_avg'] = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
 
             #trasform x to streamwise pressure gradient
             else:
-                dpdx = dd3_XY['grad_px_avg']
-                dpdy = dd3_XY['grad_py_avg']
-                dpdz = dd3_XY['grad_pz_avg']
-                dpds_XY,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XY,axis_info_XY)
-                dd3_XY['grad_px_derived_avg'] = dpds_XY
-
-                dpdx = dd3_XZ['grad_px_avg']
-                dpdy = dd3_XZ['grad_py_avg']
-                dpdz = dd3_XZ['grad_pz_avg']
-                dpds_XZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_XZ,axis_info_XZ)
-                dd3_XZ['grad_px_derived_avg'] = dpds_XZ
-
                 dpdx = dd3_YZ['grad_px_avg']
                 dpdy = dd3_YZ['grad_py_avg']
                 dpdz = dd3_YZ['grad_pz_avg']
                 dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
                 dd3_YZ['grad_px_derived_avg'] = dpds_YZ
 
+            if not any('velocitya' in v for v in varnames):
+                streamwise_flow_YZ = 'x'
+            else:
+                streamwise_flow_YZ = streamwise_label_YZ
+
+            #compute velocity gradients on existing YZ grid before interpolating
+            streamwise_velocity_label = 'velocity' + streamwise_flow_YZ + '_avg'
+            dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
+            dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
+            dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
+
+            #interpolate to lateral and vertical boundaries of control volume
+            zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
+            zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
+            zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
+            znew = zvec_XY
+
+            dd3_YZ = self.interpolate_axis(dd3_YZ,zvec_YZ,znew,axis=1)
+            dd3_XZ = self.interpolate_axis(dd3_XZ,zvec_XZ,znew,axis=1)
+            dd3_XY = self.interpolate_axis(dd3_XY,zvec_XY,znew,axis=1)
+
+            yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
+            yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
+            yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
+            ynew = yvec_XZ
+
+            dd3_YZ = self.interpolate_axis(dd3_YZ,yvec_YZ,ynew,axis=2)
+            dd3_XZ = self.interpolate_axis(dd3_XZ,yvec_XZ,ynew,axis=2)
+            dd3_XY = self.interpolate_axis(dd3_XY,yvec_XY,ynew,axis=2)
+
+            dd3_YZ = self.crop_data(dd3_YZ,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
+            dd3_XY = self.crop_data(dd3_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
+            dd3_XZ = self.crop_data(dd3_XZ,axis_XZ,axis_info_XZ,boxCenter,boxDimensions)
+
+            #print("XY INFO: ",)
+            #print("X: ",dd3_XY[streamwise_label_XY][:,0,0],streamwise_label_XY,streamwise_ind_XY)
+            #print("Y: ",dd3_XY[lateral_label_XY][0,0,:],lateral_label_XY,lateral_ind_XY)
+            #print("Z: ",dd3_XY[vertical_label_XY][0,:,0],vertical_label_XY,vertical_ind_XY)
+
+            #print()
+            #print("XZ INFO: ",)
+            #print("X: ",dd3_XZ[streamwise_label_XZ][:,0,0],streamwise_label_XZ,streamwise_ind_XZ)
+            #print("Y: ",dd3_XZ[lateral_label_XZ][0,0,:],lateral_label_XZ,lateral_ind_XZ)
+            #print("Z: ",dd3_XZ[vertical_label_XZ][0,:,0],vertical_label_XZ,vertical_ind_XZ)
+
+            #print()
+            #print("YZ INFO: ",)
+            #print("X: ",dd3_YZ[streamwise_label_YZ][:,0,0],streamwise_label_YZ,streamwise_ind_YZ)
+            #print("Y: ",dd3_YZ[lateral_label_YZ][0,0,:],lateral_label_YZ,lateral_ind_YZ)
+            #print("Z: ",dd3_YZ[vertical_label_YZ][0,:,0],vertical_label_YZ,vertical_ind_YZ)
+
+            #print("BOX CENTER: ",boxCenter)
+            #print("BOX DIMS: ",boxDimensions)
+            #print("BOX CENTER + DIM : ",boxCenter+boxDimensions/2.0)
+            #print("BOX CENTER - DIM : ",boxCenter-boxDimensions/2.0)
+
+            print("Done")
+
+            # calculate useful parameters
             if not any('velocitya' in v for v in varnames):
                 streamwise_label_XY = 'x'
                 streamwise_label_YZ = 'x'
@@ -591,26 +628,8 @@ controlvolume:
                 vertical_label_YZ = 'z'
                 vertical_label_XZ = 'z'
 
-            streamwise_velocity_label = 'velocity' + streamwise_label_XY + '_avg'
-            dd3_XY['grad_velocity0_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[streamwise_label_XY][:,0,0],axis=0)
-            dd3_XY['grad_velocity1_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[lateral_label_XY][0,0,:],axis=2)
-            dd3_XY['grad_velocity2_derived_avg'] = np.gradient(dd3_XY[streamwise_velocity_label],dd3_XY[vertical_label_XY][0,:,0],axis=1)
-
-            streamwise_velocity_label = 'velocity' + streamwise_label_XZ + '_avg'
-            dd3_XZ['grad_velocity0_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[streamwise_label_XZ][:,0,0],axis=0)
-            dd3_XZ['grad_velocity1_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[lateral_label_XZ][0,0,:],axis=2)
-            dd3_XZ['grad_velocity2_derived_avg'] = np.gradient(dd3_XZ[streamwise_velocity_label],dd3_XZ[vertical_label_XZ][0,:,0],axis=1)
-
-            streamwise_velocity_label = 'velocity' + streamwise_label_YZ + '_avg'
-            dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
-            dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
-            dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
-
-            print("Done")
-
-            # calculate useful parameters
             print("Calculating remaining transport terms...",end='',flush=True)
-            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-(boxCenter_YZ[0]-boxDimensions[0]/2.0)
+            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-(boxCenter[0]-boxDimensions[0]/2.0)
             numStreamPos = len(streamPos)
             minStreamPosIncrement = np.min(np.diff(streamPos))
 
@@ -623,10 +642,6 @@ controlvolume:
             dd3_XY['u_avg_cubed'] = dd3_XY[streamwise_velocity_label+'_avg']**3# units of m^3/s^3
             dd3_XY['u_avg_squared_v_avg'] = dd3_XY[streamwise_velocity_label+'_avg']**2*dd3_XY[lateral_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XY['u_avg_squared_w_avg'] = dd3_XY[streamwise_velocity_label+'_avg']**2*dd3_XY[vertical_velocity_label+'_avg'] # units of m^3/s^3
-            dd3_XY['P_x'] = -dd3_XY[streamwise_streamwise_label + '_avg']*dd3_XY['grad_velocity0_derived_avg'] - dd3_XY[streamwise_lateral_label+'_avg']*dd3_XY['grad_velocity1_derived_avg'] - dd3_XY[streamwise_vertical_label + '_avg']*dd3_XY['grad_velocity2_derived_avg'] # units of m^3/s^3 (ordering of gradients from AMR from 0-8 is dudx dudy dudz dvdx dvdy dvz dwdx dwdy dwdz)
-            dd3_XY['1_over_rho_u_avg_dp_dx_avg'] = (1/rho)*dd3_XY[streamwise_velocity_label+'_avg']*dd3_XY['grad_px_derived_avg'] # units of m^2/s^3
-            dd3_XY['coriolis_x'] = coriolis_forcing_XY[2]*dd3_XY[lateral_velocity_label+'_avg']*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3
-            dd3_XY['body_force'] = body_force_XY[0]*dd3_XY[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_XZ 
             lateral_velocity_label = 'velocity' + lateral_label_XZ 
@@ -637,10 +652,6 @@ controlvolume:
             dd3_XZ['u_avg_cubed'] = dd3_XZ[streamwise_velocity_label+'_avg']**3# units of m^3/s^3
             dd3_XZ['u_avg_squared_v_avg'] = dd3_XZ[streamwise_velocity_label+'_avg']**2*dd3_XZ[lateral_velocity_label+'_avg'] # units of m^3/s^3
             dd3_XZ['u_avg_squared_w_avg'] = dd3_XZ[streamwise_velocity_label+'_avg']**2*dd3_XZ[vertical_velocity_label+'_avg'] # units of m^3/s^3
-            dd3_XZ['P_x'] = -dd3_XZ[streamwise_streamwise_label + '_avg']*dd3_XZ['grad_velocity0_derived_avg'] - dd3_XZ[streamwise_lateral_label+'_avg']*dd3_XZ['grad_velocity1_derived_avg'] - dd3_XZ[streamwise_vertical_label + '_avg']*dd3_XZ['grad_velocity2_derived_avg'] # units of m^3/s^3 (ordering of gradients from AMR from 0-8 is dudx dudy dudz dvdx dvdy dvz dwdx dwdy dwdz)
-            dd3_XZ['1_over_rho_u_avg_dp_dx_avg'] = (1/rho)*dd3_XZ[streamwise_velocity_label+'_avg']*dd3_XZ['grad_px_derived_avg'] # units of m^2/s^3
-            dd3_XZ['coriolis_x'] = coriolis_forcing_XZ[2]*dd3_XZ[lateral_velocity_label+'_avg']*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3
-            dd3_XZ['body_force'] = body_force_XZ[0]*dd3_XZ[streamwise_velocity_label+'_avg'] # units of m^2/s^3? (see note in the input section at the top of this ipynb)
 
             streamwise_velocity_label = 'velocity' + streamwise_label_YZ 
             lateral_velocity_label = 'velocity' + lateral_label_YZ 
