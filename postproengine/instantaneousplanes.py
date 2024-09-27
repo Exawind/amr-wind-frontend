@@ -18,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import convert_vel_xyz_to_axis1axis2
 import cv2
 from postproengine import spod
+import re
 
 """
 Plugin for creating instantaneous planar images
@@ -205,6 +206,10 @@ instantaneousplanes:
              'help':'Name/number of figure to create plot in'},
             {'key':'axesnumfunc',    'required':False,  'default':None,
              'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
+            {'key':'axesnumfunc',    'required':False,  'default':None,
+             'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
+            {'key':'axisscale',    'required':False,  'default':'scaled',
+             'help':'Aspect ratio of figure axes (options:equal,scaled,tight,auto,image,square)'},
 
         ]
         def __init__(self, parent, inputs):
@@ -233,6 +238,7 @@ instantaneousplanes:
             yscalef  = eval(self.actiondict['yscalefunc'])
             figname  = self.actiondict['figname']
             axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
+            axisscale= self.actiondict['axisscale']
 
             # Loop through each time instance and plot
             iplane = self.parent.iplane
@@ -280,7 +286,8 @@ instantaneousplanes:
                         evaluated_parts.append(eval(f"rf'{part}'"))
                 title = ''.join(evaluated_parts)
                 ax.set_title(title,fontsize=fontsize)
-                ax.axis('scaled')
+                if axisscale is not None:
+                    ax.axis(axisscale)
 
                 # Run any post plot functions
                 if len(postplotfunc)>0:
