@@ -580,11 +580,11 @@ controlvolume:
                 boxCenter = self.rotate_data(boxCenter_XYZ,axis_YZ,axis_info_YZ)
 
             if not compute_pressure_gradient:
-                dpdx = dd3_YZ['grad_px_avg']
-                dpdy = dd3_YZ['grad_py_avg']
-                dpdz = dd3_YZ['grad_pz_avg']
+                dpdx = dd2_YZ_coarse['grad_px_avg']
+                dpdy = dd2_YZ_coarse['grad_py_avg']
+                dpdz = dd2_YZ_coarse['grad_pz_avg']
                 dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
-                dd3_YZ['grad_px_derived_avg'] = dpds_YZ
+                dd2_YZ_coarse['grad_px_derived_avg'] = dpds_YZ
             print("Done")
 
             #crop data
@@ -1043,7 +1043,8 @@ controlvolume:
             print("RHS")
             print("--------")
             columns_to_plot = ['P_mean', 'P_turb']
-            print((self.parent.df_out[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            for col in columns_to_plot:
+                print(col,"\t",self.parent.df_out[col].iloc[index]/normalization)
             print()
 
             # lhs
@@ -1051,14 +1052,16 @@ controlvolume:
             print("LHS")
             print("--------")
             columns_to_plot = ['P_mean', 'P_turb', 'P_prod', 'P_pres', 'P_cori', 'P_bodf']
-            print((self.parent.df_in[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            for col in columns_to_plot:
+                print(col,"\t",self.parent.df_in[col].iloc[index]/normalization)
             print()
 
             index = -1
             print("Reduces")
             print("--------")
             columns_to_plot = ['P_reduced',]
-            print((self.parent.df_in[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            #print((self.parent.df_in[columns_to_plot].iloc[index]/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            print((self.parent.df_in[columns_to_plot].iloc[index].values[0]/normalization))
             print()
 
             # residual
@@ -1066,7 +1069,22 @@ controlvolume:
             columns_to_plot = ['P']
             print("RESIDUAL")
             print("--------")
-            print(((self.parent.df_out[columns_to_plot].iloc[index]-self.parent.df_in[columns_to_plot].iloc[index])/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            total_out = self.parent.df_out[columns_to_plot].iloc[index]
+            total_in  = self.parent.df_in[columns_to_plot].iloc[index]
+            diff = total_out - total_in
+            #print((diff/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
+            print(diff.values[0]/normalization)
+            print()
+
+            index = -1
+            columns_to_plot = ['P']
+            print("Relative Error: (Total_In - Total_Out)/Total_Out")
+            print("--------")
+            total_out = self.parent.df_out[columns_to_plot].iloc[index]
+            total_in  = self.parent.df_in[columns_to_plot].iloc[index]
+            diff = (total_in - total_out)/total_out
+            print(diff.values[0])
+            #print((diff).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)),"%")
             print()
 
 
