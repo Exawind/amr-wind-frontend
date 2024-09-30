@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import interpolatetemplate, circavgtemplate
 from postproengine import compute_axis1axis2_coords
+import re
 
 """
 Plugin for post processing averaged planes
