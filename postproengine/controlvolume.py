@@ -489,18 +489,21 @@ controlvolume:
             dd2_XZ,axis_info_XZ  = self.load_avg_rs_files([lft_avg_file,rht_avg_file],[lft_rs_file,rht_rs_file])
             print("Done")
 
-            streamwise_dir = axis_info_YZ['axis3']
-            vertical_dir   = axis_info_XY['axis3']
-            lateral_dir    = axis_info_XZ['axis3']
+            streamwise_dir = axis_info_YZ['axis3'] #Define streamwise direction as normal to YZ data
+            vertical_dir   = axis_info_XY['axis3'] #Define vertical direction as normal to XY data
+            lateral_dir    = axis_info_XZ['axis3'] #Define lateral direction as normal to XZ data
 
+            #determine labels in streamwise direction
             streamwise_label_YZ , streamwise_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,streamwise_dir,dd2_YZ_coarse)
             streamwise_label_XY , streamwise_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,streamwise_dir,dd2_XY)
             streamwise_label_XZ , streamwise_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,streamwise_dir,dd2_XZ)
 
+            #determine labels in vertical direction
             vertical_label_YZ , vertical_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,vertical_dir,dd2_YZ_coarse)
             vertical_label_XY , vertical_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,vertical_dir,dd2_XY)
             vertical_label_XZ , vertical_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,vertical_dir,dd2_XZ)
 
+            #determine labels in lateral direction
             lateral_label_YZ , lateral_ind_YZ = self.get_label_and_ind_in_dir(axis_info_YZ,lateral_dir,dd2_YZ_coarse)
             lateral_label_XY , lateral_ind_XY = self.get_label_and_ind_in_dir(axis_info_XY,lateral_dir,dd2_XY)
             lateral_label_XZ , lateral_ind_XZ = self.get_label_and_ind_in_dir(axis_info_XZ,lateral_dir,dd2_XZ)
@@ -509,29 +512,9 @@ controlvolume:
             axis_XY = [streamwise_label_XY,vertical_label_XY,lateral_label_XY]
             axis_XZ = [streamwise_label_XZ,vertical_label_XZ,lateral_label_XZ]
 
-            #print("XY INFO: ",)
-            #print("Vertical dir: ",vertical_dir)
-            #print("X: ",streamwise_label_XY)
-            #print("Y: ",lateral_label_XY)
-            #print("Z: ",vertical_label_XY)
-            #print("axis_XY:",axis_XY)
-
-            #print("XZ INFO: ",)
-            #print("Lateral dir: ",lateral_dir)
-            #print("X: ",streamwise_label_XZ)
-            #print("Y: ",lateral_label_XZ)
-            #print("Z: ",vertical_label_XZ)
-            #print("axis_XZ:",axis_XZ)
-
-            #print("YZ INFO: ",)
-            #print("Streamwise dir: ",streamwise_dir)
-            #print("X: ",streamwise_label_YZ)
-            #print("Y: ",lateral_label_YZ)
-            #print("Z: ",vertical_label_YZ)
-            #print("axis_YZ:",axis_YZ)
-
             #permute data to streamwise, vertical, lateral
-            print("Permute data to streamwise, vertical, lateral...",end='',flush=True)
+            print("Permuting data to streamwise, vertical, lateral...",end='',flush=True)
+
             permutation = (streamwise_ind_XY,vertical_ind_XY,lateral_ind_XY)
             dd2_XY = self.permute_data(dd2_XY,permutation)
 
@@ -587,42 +570,27 @@ controlvolume:
                 dd2_YZ_coarse['grad_px_derived_avg'] = dpds_YZ
             print("Done")
 
-            #crop data
+            #Get nearest control volume in flow-aligned coordinates based on available planes
             print("Geting data inside control volume...",end='',flush=True)
             boxCenter, boxDimensions = self.update_control_volume_center_dims(dd2_YZ_coarse['a3'][:,0,0],dd2_XY['a3'][0,:,0],dd2_XZ['a3'][0,0,:],boxCenter,boxDimensions)
 
-            #compute gradients (interpolating in x for streamwise gradients)
+            #Refine streamwise grid
             xvec_YZ = dd2_YZ_coarse[streamwise_label_YZ][:,0,0] 
             xvec_XZ = dd2_XZ[streamwise_label_XZ][:,0,0]
             xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
             dx_XZ = xvec_XZ[1] - xvec_XZ[0]
             dx_XY = xvec_XY[1] - xvec_XY[0]
-            #interpolate all data to same streamwise grid. Need for formulation of integrals at bottom
-            #easier to interpolate to coarser grid than finer
-            #if (dx_XZ > dx_XY):
-            #    xnew = xvec_XZ
-            #if (dx_XZ < dx_XY):
-            #    xnew = xvec_XY
-            dx = max(dx_XZ,dx_XY)
+            dx = max(dx_XZ,dx_XY) 
             xmin = boxCenter[0] - boxDimensions[0]/2.0
             xmax = boxCenter[0] + boxDimensions[0]/2.0
             xnew = np.arange(xmin-dx,xmax+dx+dx,dx)
-            #need to interpolate data to new grid 
-            #dd3_YZ = self.interpolate_axis(dd2_YZ_coarse,xvec_YZ,xnew,axis=0)
-            #dd3_XZ = self.interpolate_axis(dd2_XZ,xvec_XZ,xnew,axis=0)
-            #dd3_XY = self.interpolate_axis(dd2_XY,xvec_XY,xnew,axis=0)
 
-            #Adding control volume boundary data 
-            #xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
-            #xvec_XZ = dd3_XZ[streamwise_label_XZ][:,0,0]
-            #xvec_XY = dd3_XY[streamwise_label_XY][:,0,0]
-            #dd3_YZ = self.add_control_volume_boundary(dd3_YZ,xvec_YZ,0,boxCenter,boxDimensions)
-            #dd3_XZ = self.add_control_volume_boundary(dd3_XZ,xvec_XZ,0,boxCenter,boxDimensions)
-            #dd3_XY = self.add_control_volume_boundary(dd3_XY,xvec_XY,0,boxCenter,boxDimensions)
             dd3_YZ = dd2_YZ_coarse
             dd3_XZ = dd2_XZ
             dd3_XY = dd2_XY
 
+            #Check vertical control volume boundaries and
+            #interpolate if necessary
             zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
             zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
             zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
@@ -630,19 +598,21 @@ controlvolume:
             dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxCenter,boxDimensions)
             dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxCenter,boxDimensions)
 
+            #Compute vertical velocity gradients
             if not any('velocitya' in v for v in varnames):
                 streamwise_flow_YZ = 'x'
             else:
                 streamwise_flow_YZ = streamwise_label_YZ
             streamwise_velocity_label = 'velocity' + streamwise_flow_YZ + '_avg'
-            #dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
-            #dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
             dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
 
+            #Crop data in vertical direction
             dd3_YZ = self.crop_data_axis(dd3_YZ,vertical_label_YZ,1,boxCenter,boxDimensions)
             dd3_XZ = self.crop_data_axis(dd3_XZ,vertical_label_XZ,1,boxCenter,boxDimensions)
             dd3_XY = self.crop_data_axis(dd3_XY,vertical_label_XY,1,boxCenter,boxDimensions)
 
+            #Check lateral control volume boundaries and
+            #interpolate if necessary
             yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
             yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
             yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
@@ -650,24 +620,25 @@ controlvolume:
             dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxCenter,boxDimensions)
             dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxCenter,boxDimensions)
 
+            #Compute lateral velocity gradients
             if not any('velocitya' in v for v in varnames):
                 streamwise_flow_YZ = 'x'
             else:
                 streamwise_flow_YZ = streamwise_label_YZ
             streamwise_velocity_label = 'velocity' + streamwise_flow_YZ + '_avg'
-            #dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
             dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
-            #dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
 
-
+            #Crop data in vertical directions
             dd3_YZ = self.crop_data_axis(dd3_YZ,lateral_label_YZ,2,boxCenter,boxDimensions)
             dd3_XZ = self.crop_data_axis(dd3_XZ,lateral_label_XZ,2,boxCenter,boxDimensions)
             dd3_XY = self.crop_data_axis(dd3_XY,lateral_label_XY,2,boxCenter,boxDimensions)
 
+            #Interpolate all planes to same streamwise grid
             dd3_YZ = self.interpolate_axis(dd3_YZ,xvec_YZ,xnew,axis=0)
             dd3_XZ = self.interpolate_axis(dd3_XZ,xvec_XZ,xnew,axis=0)
             dd3_XY = self.interpolate_axis(dd3_XY,xvec_XY,xnew,axis=0)
 
+            #Compute streamwise gradients
             if not any('velocitya' in v for v in varnames):
                 streamwise_flow_YZ = 'x'
             else:
@@ -677,59 +648,52 @@ controlvolume:
             if compute_pressure_gradient:
                 dd3_YZ['grad_px_derived_avg'] = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
 
+            #Crop data in streamwise direction
             dd3_YZ = self.crop_data_axis(dd3_YZ,streamwise_label_YZ,0,boxCenter,boxDimensions)
             dd3_XZ = self.crop_data_axis(dd3_XZ,streamwise_label_XZ,0,boxCenter,boxDimensions)
             dd3_XY = self.crop_data_axis(dd3_XY,streamwise_label_XY,0,boxCenter,boxDimensions)
 
-            #compute streamwise pressure gradient
-            #if compute_pressure_gradient:
-            #    dd3_YZ['grad_px_derived_avg'] = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
-
-            #trasform x to streamwise pressure gradient
-            # else:
-            #     dpdx = dd3_YZ['grad_px_avg']
-            #     dpdy = dd3_YZ['grad_py_avg']
-            #     dpdz = dd3_YZ['grad_pz_avg']
-            #     dpds_YZ,_ ,_ = self.flow_aligned_gradient(dpdx,dpdy,dpdz,axis_YZ,axis_info_YZ)
-            #     dd3_YZ['grad_px_derived_avg'] = dpds_YZ
-
-            #if not any('velocitya' in v for v in varnames):
-            #    streamwise_flow_YZ = 'x'
-            #else:
-            #    streamwise_flow_YZ = streamwise_label_YZ
-
-            ##compute velocity gradients on existing YZ grid before interpolating
-            #streamwise_velocity_label = 'velocity' + streamwise_flow_YZ + '_avg'
-            #dd3_YZ['grad_velocity0_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
-            #dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
-            #dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
-
+            #3D crop. More efficient for interpolation to do each direction 
             #dd3_YZ = self.crop_data(dd3_YZ,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
             #dd3_XY = self.crop_data(dd3_XY,axis_XY,axis_info_XY,boxCenter,boxDimensions)
             #dd3_XZ = self.crop_data(dd3_XZ,axis_XZ,axis_info_XZ,boxCenter,boxDimensions)
 
+            #DEBUGGING PRINT STATEMENTS
             #print()
             #print("XY INFO: ",)
+            #print("Vertical dir: ",vertical_dir)
+            #print("X: ",streamwise_label_XY)
+            #print("Y: ",lateral_label_XY)
+            #print("Z: ",vertical_label_XY)
             #print("X: ",dd3_XY[streamwise_label_XY][:,0,0],streamwise_label_XY,streamwise_ind_XY)
             #print("Y: ",dd3_XY[lateral_label_XY][0,0,:],lateral_label_XY,lateral_ind_XY)
             #print("Z: ",dd3_XY[vertical_label_XY][0,:,0],vertical_label_XY,vertical_ind_XY)
 
             #print()
             #print("XZ INFO: ",)
+            #print("Lateral dir: ",lateral_dir)
+            #print("X: ",streamwise_label_XZ)
+            #print("Y: ",lateral_label_XZ)
+            #print("Z: ",vertical_label_XZ)
             #print("X: ",dd3_XZ[streamwise_label_XZ][:,0,0],streamwise_label_XZ,streamwise_ind_XZ)
             #print("Y: ",dd3_XZ[lateral_label_XZ][0,0,:],lateral_label_XZ,lateral_ind_XZ)
             #print("Z: ",dd3_XZ[vertical_label_XZ][0,:,0],vertical_label_XZ,vertical_ind_XZ)
 
             #print()
             #print("YZ INFO: ",)
+            #print("Streamwise dir: ",streamwise_dir)
+            #print("X: ",streamwise_label_YZ)
+            #print("Y: ",lateral_label_YZ)
+            #print("Z: ",vertical_label_YZ)
             #print("X: ",dd3_YZ[streamwise_label_YZ][:,0,0],streamwise_label_YZ,streamwise_ind_YZ)
             #print("Y: ",dd3_YZ[lateral_label_YZ][0,0,:],lateral_label_YZ,lateral_ind_YZ)
             #print("Z: ",dd3_YZ[vertical_label_YZ][0,:,0],vertical_label_YZ,vertical_ind_YZ)
 
-            #print("BOX CENTER: ",boxCenter)
-            #print("BOX DIMS: ",boxDimensions)
-            #print("BOX CENTER + DIM : ",boxCenter+boxDimensions/2.0)
-            #print("BOX CENTER - DIM : ",boxCenter-boxDimensions/2.0)
+            print()
+            print("--> BOX CENTER [Streamwise, Vertical, Lateral]: ",boxCenter)
+            print("--> BOX DIMS [Streamwise, Vertical, Lateral]: ",boxDimensions)
+            print("--> BOX CENTER + DIM/2.0 [Streamwise, Vertical, Lateral]: ",boxCenter+boxDimensions/2.0)
+            print("--> BOX CENTER - DIM/2.0 [Streamwise, Vertical, Lateral]: ",boxCenter-boxDimensions/2.0)
 
             print("Done")
 
@@ -997,7 +961,8 @@ controlvolume:
 
             if len(savepklfile)>0:
                 directory, file_name = os.path.split(savepklfile)
-                os.makedirs(directory, exist_ok=True)
+                if directory!='':
+                    os.makedirs(directory, exist_ok=True)
 
                 with open(savepklfile, 'wb') as f:
                     pickle.dump(df_in, f)
@@ -1142,7 +1107,6 @@ controlvolume:
 
             sigfigs = 3
             referencePlane_xOverD = self.parent.df_in.index[0]
-            print(self.parent.df_in)
             normalization = self.parent.Uinf**3*(self.parent.boxDimensions[1]*self.parent.boxDimensions[2])
             fsize=16
 

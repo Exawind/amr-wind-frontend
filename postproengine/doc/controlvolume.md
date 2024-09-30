@@ -8,12 +8,14 @@ Control volume analysis
   diam                : Turbine diameter (Required)
   box_center_XYZ      : Center of control volume (XYZ coordinates) (Optional, Default: None)
   box_fr_center_XYZ   : Center of control volume on front face (XYZ coordinates) (Optional, Default: None)
+  box_fr_streamwise_offset: Streamwise offset when specifying front face of control volume in turbine diameters (Optional, Default: 0)
   rho                 : Density (Required)
   latitude            : Latitude (Required)
   body_force_XYZ      : Body force from AMR-Wind input file (XYZ coordinates) (Required)
   streamwise_box_size : Streamwise dimension of control volume in turbine diameters  (Required)
   lateral_box_size    : Lateral dimension of control volume in turbine diameters  (Required)
   vertical_box_size   : Vertical dimension of control volume in turbine diameters  (Required)
+  compute_pressure_gradient: To approximate the streamwise pressure gradient based on finite different between streamwise planes (Optional, Default: True)
   bot_avg_file        : Bot avg pkl file (Required)
   bot_rs_file         : Bot rs pkl file (Required)
   varnames            : Variable names  (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
@@ -51,6 +53,7 @@ controlvolume:
   vertical_box_size: 1
   rho: 1.2456
   body_force_XYZ: [0.00014295185866400572, 0.0008354682029301641, 0.0]
+  compute_pressure_gradient: True
   varnames: ['velocitya1','velocitya2','velocitya3']
   #varnames: ['velocityx','velocityy','velocityz']
 
