@@ -638,7 +638,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         dbfile.close()
     return db
 
-def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
+def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
                                    extrafuncs=[], avgdb = None,
                                    varnames=['velocityx','velocityy','velocityz'],
                                    savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
@@ -724,8 +724,24 @@ def phaseAvgReynoldsStress_PlaneXR(ncfileinput, tstart, tend, tperiod,
                         v2   = corr[2]
                         # Standard dev
                         db[name] += (vdat[v1]-db[v1+tavg])*(vdat[v2]-db[v2+tavg])
+                # increment counters
+                Ncount += 1
+                localNcount += 1
+                tnow += tperiod
+            print()  # Done with this file
 
-    return
+    # Normalize and sqrt std dev
+    if Ncount > 0:
+        for corr in corrlist:
+            name = corr[0]
+            db[name] = db[name]/float(Ncount)
+    if verbose: print()
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
+    return db
 
 def getLineXR(ncfile, itimevec, varnames, groupname=None,
               verbose=0, includeattr=False, gettimes=False):

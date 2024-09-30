@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import interpolatetemplate, circavgtemplate
 from postproengine import compute_axis1axis2_coords
+from collections import OrderedDict
 
 """
 Plugin for post processing phase averaged planes
@@ -72,7 +73,7 @@ class postpro_phaseavgplanes():
         {'key':'axis_rotation',  'required':False,  'default':0,
         'help':'Degrees to rotate axis for velocitya1,a2,a3 transformation',},        
     ]
-    actionlist = {}                    # Dictionary for holding sub-actions
+    actionlist = OrderedDict()                    # Dictionary for holding sub-actions    
     example = """
 ```
   phaseavgplanes:
