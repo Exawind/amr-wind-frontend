@@ -1040,7 +1040,9 @@ controlvolume:
             total_in  = self.parent.df_in[columns_to_plot].iloc[index]
             diff = total_out - total_in
             #print((diff/normalization).apply(lambda value: round(value, -int(math.floor(math.log10(abs(value)))) + sigfigs)))
-            print(diff.values[0]/normalization)
+            print("total out: ",total_out.values[0]/normalization)
+            print("total in: " ,total_in.values[0]/normalization)
+            print("Residual: ",diff.values[0]/normalization)
             print()
 
             index = -1
