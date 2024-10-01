@@ -622,7 +622,11 @@ class interpolatetemplate():
     interpdb = None
     iters    = None
     def __init__(self, parent, inputs):
-        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.actiondictlist = []
+        inputlist = inputs if isinstance(inputs, list) else [inputs]
+        for indict in inputlist:
+            self.actiondictlist.append(mergedicts(indict, self.actiondefs))
+        #self.actiondict = mergedicts(inputs, self.actiondefs)
         self.parent = parent
         print('Initialized '+self.actionname+' inside '+parent.name)
         # Don't forget to initialize interpdb in inherited classes!
@@ -630,31 +634,31 @@ class interpolatetemplate():
 
     def execute(self):
         print('Executing '+self.actionname)
-        pointlocfunc      = self.actiondict['pointlocationfunction']
-        pointcoordsystem  = self.actiondict['pointcoordsystem']
-        varnames          = self.actiondict['varnames']
-        iplane            = self.actiondict['iplane']        
-        savefile          = self.actiondict['savefile']
-        method            = self.actiondict['method']
-        #iters             = self.actiondict['iters']
+        for iaction, actiondict in enumerate(self.actiondictlist):
+            pointlocfunc      = actiondict['pointlocationfunction']
+            pointcoordsystem  = actiondict['pointcoordsystem']
+            varnames          = actiondict['varnames']
+            iplane            = actiondict['iplane']        
+            savefile          = actiondict['savefile']
+            method            = actiondict['method']
 
-        # Get the point locations from the udf
-        modname  = pointlocfunc.split('.')[0]
-        funcname = pointlocfunc.split('.')[1]
-        func = getattr(sys.modules[modname], funcname)
-        ptlist = func()
+            # Get the point locations from the udf
+            modname  = pointlocfunc.split('.')[0]
+            funcname = pointlocfunc.split('.')[1]
+            func = getattr(sys.modules[modname], funcname)
+            ptlist = func()
 
-        # interpolate data
-        interpdat = interp_db_pts(self.interpdb, ptlist, iplane, varnames,
-                                  pt_coords=pointcoordsystem, timeindex=self.iters,
-                                  method=method)
-        #print(interpdat)
-        # Save the output to a csv file
-        if len(savefile)>0:
-            dfcsv = pd.DataFrame()
-            for k, g in interpdat.items():
-                dfcsv[k] = g
-            dfcsv.to_csv(savefile,index=False,sep=',')
+            # interpolate data
+            interpdat = interp_db_pts(self.interpdb, ptlist, iplane, varnames,
+                                      pt_coords=pointcoordsystem, timeindex=self.iters,
+                                      method=method)
+            #print(interpdat)
+            # Save the output to a csv file
+            if len(savefile)>0:
+                dfcsv = pd.DataFrame()
+                for k, g in interpdat.items():
+                    dfcsv[k] = g
+                dfcsv.to_csv(savefile,index=False,sep=',')
             
         return
 
