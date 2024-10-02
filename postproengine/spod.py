@@ -777,7 +777,7 @@ spod:
                         self.variables['theta']    = theta
                         self.variables['y']        = y
                         self.variables['z']        = z
-                        self.variables['x']        = xcs[iplane]
+                        self.variables['x']        = xcs[iplaneiter]
                         self.variables['ycenter']  = ycenter
                         self.variables['zcenter']  = zcenter
                         self.variables['nperseg']  = self.nperseg
