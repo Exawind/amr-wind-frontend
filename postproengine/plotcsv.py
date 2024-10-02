@@ -137,7 +137,14 @@ This allows you to provide the function
                 else:
                     self.df  = pd.read_csv(fname, comment='#')
                     yplot = yscalef(self.df)
-                xplot = xscalef(np.array(self.df[xcol]))
+
+                if len(xcol)>0:
+                    self.df  = pd.read_csv(fname, comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
+                    xplot = xscalef(np.array(self.df[xcol]))
+                else:
+                    self.df  = pd.read_csv(fname, comment='#')
+                    xplot = xscalef(self.df)
+
                 ax.plot(xplot, yplot, **lineopts)
 
             # Set up axes and labels
