@@ -52,7 +52,7 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     else:
         offsets = [0]
     
-    offsetnormal = np.array(pdict['sampling_p_normal'])
+    offsetnormal = np.array(pdict['sampling_p_offset_vector'])
 
     # Construct the list of offsets
     offsetvec = []
