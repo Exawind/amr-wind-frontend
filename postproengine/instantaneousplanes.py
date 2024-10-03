@@ -18,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from postproengine import convert_vel_xyz_to_axis1axis2
 import cv2
 from postproengine import spod
+import re
 
 """
 Plugin for creating instantaneous planar images

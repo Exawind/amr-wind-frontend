@@ -139,7 +139,7 @@ def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variabl
             for comp in components:
                 Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
                 Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
-                t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hann')
+                t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hamming')
                 mode_r[r,theta,:,comp] = real_signal[:numSteps]
 
     return mode_r
@@ -293,7 +293,7 @@ def interpolate_cart_to_radial(U,yy,zz,RR,TT,offsety,offsetz):
     U_interp = np.reshape(U_interp,(RR.shape[0],TT.shape[0]))
     return U_interp
 
-def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hann',subtract_mean=True):
+def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hamming',subtract_mean=True):
     """
     Compute the Short-Time Fourier Transform (STFT) of a signal using scipy.
 
@@ -317,7 +317,7 @@ def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hann',subtract_m
 
     return f, t, Zxx.swapaxes(0,1)
 
-def compute_istft(Zxx, fs=1.0, nperseg=256, noverlap=None, window='hann'):
+def compute_istft(Zxx, fs=1.0, nperseg=256, noverlap=None, window='hamming'):
     """
     Compute the Inverse Short-Time Fourier Transform (ISTFT) to reconstruct the signal using scipy.
 
@@ -998,7 +998,7 @@ spod:
                         mode_rhat[:,ktheta_ind,angfreq_full_ind,:] += proj_coeff*self.parent.POD_modes[corr][ind]
                     else:
                         proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
-                        mode_rhat[:,ktheta_ind,angfreq_ful_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
                     print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
 
                 mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)

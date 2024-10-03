@@ -240,7 +240,7 @@ controlvolume:
 
         return dpda0,dpda1,dpda2
 
-    def interpolate_axis(self,dd3_coarse,xvec,xnew,axis):
+    def interpolate_axis(self,dd3_coarse,xvec,xnew,axis,axis_label):
         dd3 = {}
         interp_method ='linear'
         for index, key in enumerate(dd3_coarse.keys()):
@@ -250,34 +250,40 @@ controlvolume:
                     dd3[key] = np.zeros((len(xnew),arr.shape[1],arr.shape[2]))
                     for j in range(dd3_coarse[key].shape[1]):
                         for k in range(dd3_coarse[key].shape[2]):
-                            if np.all(np.isin(xnew, xvec)):
-                                dd3[key][:,j,k] = arr[np.searchsorted(xvec, xnew),j,k]
+                            if key == axis_label:
+                                dd3[key][:,j,k] = xnew
                             else:
-                                dd3[key][:,j,k] = si.interpn((xvec,),arr[:,j,k],xnew,bounds_error=False,method=interp_method,fill_value=None) 
-                                #dd3[key][:,j,k] = np.interp(xnew,xvec,arr[:,j,k])
+                                if np.all(np.isin(xnew, xvec)):
+                                    dd3[key][:,j,k] = arr[np.searchsorted(xvec, xnew),j,k]
+                                else:
+                                    dd3[key][:,j,k] = si.interpn((xvec,),arr[:,j,k],xnew,bounds_error=False,method=interp_method,fill_value=None) 
                 elif axis == 1:
                     dd3[key] = np.zeros((arr.shape[0],len(xnew),arr.shape[2]))
                     for j in range(dd3_coarse[key].shape[0]):
                         for k in range(dd3_coarse[key].shape[2]):
-                            if np.all(np.isin(xnew, xvec)):
-                                dd3[key][j,:,k] = arr[j,np.searchsorted(xvec, xnew),k]
+                            if key == axis_label:
+                                dd3[key][j,:,k] = xnew
                             else:
-                                dd3[key][j,:,k] = si.interpn((xvec,),arr[j,:,k],xnew,bounds_error=False,method=interp_method,fill_value=None) 
-                                #dd3[key][j,:,k] = np.interpn(xnew,xvec,arr[j,:,k])
+                                if np.all(np.isin(xnew, xvec)):
+                                    dd3[key][j,:,k] = arr[j,np.searchsorted(xvec, xnew),k]
+                                else:
+                                    dd3[key][j,:,k] = si.interpn((xvec,),arr[j,:,k],xnew,bounds_error=False,method=interp_method,fill_value=None) 
                 elif axis == 2:
                     dd3[key] = np.zeros((arr.shape[0],arr.shape[1],len(xnew)))
                     for j in range(dd3_coarse[key].shape[0]):
                         for k in range(dd3_coarse[key].shape[1]):
-                            if np.all(np.isin(xnew, xvec)):
-                                dd3[key][j,k,:] = arr[j,k,np.searchsorted(xvec, xnew)]
+                            if key == axis_label:
+                                dd3[key][j,k,:] = xnew
                             else:
-                                dd3[key][j,k,:] = si.interpn((xvec,),arr[j,k,:],xnew,bounds_error=False,method=interp_method,fill_value=None) 
-                                #dd3[key][j,k,:] = np.interpn(xnew,xvec,arr[j,k,:])
+                                if np.all(np.isin(xnew, xvec)):
+                                    dd3[key][j,k,:] = arr[j,k,np.searchsorted(xvec, xnew)]
+                                else:
+                                    dd3[key][j,k,:] = si.interpn((xvec,),arr[j,k,:],xnew,bounds_error=False,method=interp_method,fill_value=None) 
         return dd3
 
-    def add_control_volume_boundary(self,dd3,xvec,axis,boxCenter,boxDimensions):
-        start = boxCenter[axis] - boxDimensions[axis]/2.0
-        end   = boxCenter[axis] + boxDimensions[axis]/2.0
+    def add_control_volume_boundary(self,dd3,xvec,axis,boxMin,boxMax,axis_label=None):
+        start = boxMin[axis]
+        end   = boxMax[axis]
         xvecorg = np.copy(xvec)
 
         interp = False
@@ -292,7 +298,7 @@ controlvolume:
             interp = True
 
         if interp:
-            dd3 = self.interpolate_axis(dd3,xvecorg,xvec,axis)
+            dd3 = self.interpolate_axis(dd3,xvecorg,xvec,axis,axis_label)
 
         return dd3
 
@@ -320,13 +326,13 @@ controlvolume:
 
         return boxCenter, boxDimensions
 
-    def crop_data_axis(self,dd2,axis_label,axis,boxCenter,boxDimensions):
+    def crop_data_axis(self,dd2,axis_label,axis,boxMin,boxMax):
         if axis == 0:
-            mask = (dd2[axis_label][:,0,0] >= ((boxCenter[0]-boxDimensions[0]/2.0))) & (dd2[axis_label][:,0,0] <= ((boxCenter[0]+boxDimensions[0]/2.0)))
+            mask = (dd2[axis_label][:,0,0] >= (boxMin[0])) & (dd2[axis_label][:,0,0] <= (boxMax[0]))
         elif axis == 1:
-            mask = (dd2[axis_label][0,:,0] >= ((boxCenter[1]-boxDimensions[1]/2.0))) & (dd2[axis_label][0,:,0] <= ((boxCenter[1]+boxDimensions[1]/2.0)))
+            mask = (dd2[axis_label][0,:,0] >= (boxMin[1])) & (dd2[axis_label][0,:,0] <= (boxMax[1]))
         elif axis == 2:
-            mask = (dd2[axis_label][0,0,:] >= ((boxCenter[2]-boxDimensions[2]/2.0))) & (dd2[axis_label][0,0,:] <= ((boxCenter[2]+boxDimensions[2]/2.0)))
+            mask = (dd2[axis_label][0,0,:] >= (boxMin[2])) & (dd2[axis_label][0,0,:] <= (boxMax[2]))
 
         mask_ind = np.argwhere(mask)[:,0]
 
@@ -575,17 +581,8 @@ controlvolume:
             #Get nearest control volume in flow-aligned coordinates based on available planes
             print("Geting data inside control volume...",end='',flush=True)
             boxCenter, boxDimensions = self.update_control_volume_center_dims(dd2_YZ_coarse['a3'][:,0,0],dd2_XY['a3'][0,:,0],dd2_XZ['a3'][0,0,:],boxCenter,boxDimensions)
-
-            #Refine streamwise grid
-            xvec_YZ = dd2_YZ_coarse[streamwise_label_YZ][:,0,0] 
-            xvec_XZ = dd2_XZ[streamwise_label_XZ][:,0,0]
-            xvec_XY = dd2_XY[streamwise_label_XY][:,0,0]
-            dx_XZ = xvec_XZ[1] - xvec_XZ[0]
-            dx_XY = xvec_XY[1] - xvec_XY[0]
-            dx = max(dx_XZ,dx_XY) 
-            xmin = boxCenter[0] - boxDimensions[0]/2.0
-            xmax = boxCenter[0] + boxDimensions[0]/2.0
-            xnew = np.arange(xmin-dx,xmax+dx+dx,dx)
+            boxMin = boxCenter - boxDimensions/2.0
+            boxMax = boxCenter + boxDimensions/2.0
 
             dd3_YZ = dd2_YZ_coarse
             dd3_XZ = dd2_XZ
@@ -596,9 +593,9 @@ controlvolume:
             zvec_YZ = dd3_YZ[vertical_label_YZ][0,:,0] 
             zvec_XZ = dd3_XZ[vertical_label_XZ][0,:,0]
             zvec_XY = dd3_XY[vertical_label_XY][0,:,0]
-            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,zvec_YZ,1,boxCenter,boxDimensions)
-            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxCenter,boxDimensions)
-            dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxCenter,boxDimensions)
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,zvec_YZ,1,boxMin,boxMax,vertical_label_YZ)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,zvec_XZ,1,boxMin,boxMax,vertical_label_XZ)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,zvec_XY,1,boxMin,boxMax,vertical_label_XY)
 
             #Compute vertical velocity gradients
             if not any('velocitya' in v for v in varnames):
@@ -609,18 +606,18 @@ controlvolume:
             dd3_YZ['grad_velocity2_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[vertical_label_YZ][0,:,0],axis=1)
 
             #Crop data in vertical direction
-            dd3_YZ = self.crop_data_axis(dd3_YZ,vertical_label_YZ,1,boxCenter,boxDimensions)
-            dd3_XZ = self.crop_data_axis(dd3_XZ,vertical_label_XZ,1,boxCenter,boxDimensions)
-            dd3_XY = self.crop_data_axis(dd3_XY,vertical_label_XY,1,boxCenter,boxDimensions)
+            dd3_YZ = self.crop_data_axis(dd3_YZ,vertical_label_YZ,1,boxMin,boxMax)
+            dd3_XZ = self.crop_data_axis(dd3_XZ,vertical_label_XZ,1,boxMin,boxMax)
+            dd3_XY = self.crop_data_axis(dd3_XY,vertical_label_XY,1,boxMin,boxMax)
 
             #Check lateral control volume boundaries and
             #interpolate if necessary
             yvec_YZ = dd3_YZ[lateral_label_YZ][0,0,:] 
             yvec_XZ = dd3_XZ[lateral_label_XZ][0,0,:]
             yvec_XY = dd3_XY[lateral_label_XY][0,0,:]
-            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,yvec_YZ,2,boxCenter,boxDimensions)
-            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxCenter,boxDimensions)
-            dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxCenter,boxDimensions)
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,yvec_YZ,2,boxMin,boxMax,lateral_label_YZ)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,yvec_XZ,2,boxMin,boxMax,lateral_label_XZ)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,yvec_XY,2,boxMin,boxMax,lateral_label_XY)
 
             #Compute lateral velocity gradients
             if not any('velocitya' in v for v in varnames):
@@ -631,15 +628,25 @@ controlvolume:
             dd3_YZ['grad_velocity1_derived_avg'] = np.gradient(dd3_YZ[streamwise_velocity_label],dd3_YZ[lateral_label_YZ][0,0,:],axis=2)
 
             #Crop data in vertical directions
-            dd3_YZ = self.crop_data_axis(dd3_YZ,lateral_label_YZ,2,boxCenter,boxDimensions)
-            dd3_XZ = self.crop_data_axis(dd3_XZ,lateral_label_XZ,2,boxCenter,boxDimensions)
-            dd3_XY = self.crop_data_axis(dd3_XY,lateral_label_XY,2,boxCenter,boxDimensions)
+            dd3_YZ = self.crop_data_axis(dd3_YZ,lateral_label_YZ,2,boxMin,boxMax)
+            dd3_XZ = self.crop_data_axis(dd3_XZ,lateral_label_XZ,2,boxMin,boxMax)
+            dd3_XY = self.crop_data_axis(dd3_XY,lateral_label_XY,2,boxMin,boxMax)
+
+            #Refine streamwise grid
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd3_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd3_XY[streamwise_label_XY][:,0,0]
+            dx_XZ = xvec_XZ[1] - xvec_XZ[0]
+            dx_XY = xvec_XY[1] - xvec_XY[0]
+            dx = max(dx_XZ,dx_XY) 
+            xmin = boxMin[0]
+            xmax = boxMax[0]
+            xnew = np.arange(xmin-dx,xmax+dx+dx,dx)
 
             #Interpolate all planes to same streamwise grid
-            dd3_YZ = self.interpolate_axis(dd3_YZ,xvec_YZ,xnew,axis=0)
-            dd3_XZ = self.interpolate_axis(dd3_XZ,xvec_XZ,xnew,axis=0)
-            dd3_XY = self.interpolate_axis(dd3_XY,xvec_XY,xnew,axis=0)
-
+            dd3_YZ = self.interpolate_axis(dd3_YZ,xvec_YZ,xnew,0,streamwise_label_YZ)
+            dd3_XZ = self.interpolate_axis(dd3_XZ,xvec_XZ,xnew,0,streamwise_label_XZ)
+            dd3_XY = self.interpolate_axis(dd3_XY,xvec_XY,xnew,0,streamwise_label_XY)
             #Compute streamwise gradients
             if not any('velocitya' in v for v in varnames):
                 streamwise_flow_YZ = 'x'
@@ -650,10 +657,22 @@ controlvolume:
             if compute_pressure_gradient:
                 dd3_YZ['grad_px_derived_avg'] = np.gradient(dd3_YZ['p_avg'],dd3_YZ[streamwise_label_YZ][:,0,0],axis=0)
 
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd3_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd3_XY[streamwise_label_XY][:,0,0]
+
+            dd3_YZ = self.add_control_volume_boundary(dd3_YZ,xvec_YZ,0,boxMin,boxMax,streamwise_label_YZ)
+            dd3_XZ = self.add_control_volume_boundary(dd3_XZ,xvec_XZ,0,boxMin,boxMax,streamwise_label_XZ)
+            dd3_XY = self.add_control_volume_boundary(dd3_XY,xvec_XY,0,boxMin,boxMax,streamwise_label_XY)
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
+            xvec_XZ = dd3_XZ[streamwise_label_XZ][:,0,0]
+            xvec_XY = dd3_XY[streamwise_label_XY][:,0,0]
+
             #Crop data in streamwise direction
-            dd3_YZ = self.crop_data_axis(dd3_YZ,streamwise_label_YZ,0,boxCenter,boxDimensions)
-            dd3_XZ = self.crop_data_axis(dd3_XZ,streamwise_label_XZ,0,boxCenter,boxDimensions)
-            dd3_XY = self.crop_data_axis(dd3_XY,streamwise_label_XY,0,boxCenter,boxDimensions)
+            dd3_YZ = self.crop_data_axis(dd3_YZ,streamwise_label_YZ,0,boxMin,boxMax)
+            dd3_XZ = self.crop_data_axis(dd3_XZ,streamwise_label_XZ,0,boxMin,boxMax)
+            dd3_XY = self.crop_data_axis(dd3_XY,streamwise_label_XY,0,boxMin,boxMax)
+            xvec_YZ = dd3_YZ[streamwise_label_YZ][:,0,0] 
 
             #3D crop. More efficient for interpolation to do each direction 
             #dd3_YZ = self.crop_data(dd3_YZ,axis_YZ,axis_info_YZ,boxCenter,boxDimensions)
@@ -714,7 +733,7 @@ controlvolume:
                 vertical_label_XZ = 'z'
 
             print("Calculating remaining transport terms...",end='',flush=True)
-            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-(boxCenter[0]-boxDimensions[0]/2.0)
+            streamPos = dd3_YZ[streamwise_label_YZ][:,0,0]-boxMin[0]
             numStreamPos = len(streamPos)
             minStreamPosIncrement = np.min(np.diff(streamPos))
 
