@@ -1268,6 +1268,14 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABLMesoForcingTemp.forcing_scheme
 
+  - name:       ABL_tendency_forcing
+    label:      Tendency forcing
+    frame:      frame_ABLMMC
+    inputtype:  bool
+    defaultval:
+    outputdef:
+      AMR-Wind: ABL.tendency_forcing
+
   - name:       ABL_initial_condition_input_file
     label:      Initial condition file
     frame:      frame_ABLMMC
