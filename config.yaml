@@ -2957,6 +2957,8 @@ popupwindow:
           activewhen: ['PlaneSampler', 1]
         - input:  sampling_p_normal
           activewhen: ['PlaneSampler', 1]
+        - input:  sampling_p_offset_vector
+          activewhen: ['PlaneSampler', 1]
         - input:  sampling_p_offsets
           activewhen: ['PlaneSampler', 1]
         - input:  sampling_lidar_num_points
@@ -3088,6 +3090,14 @@ popupwindow:
       row:        7
       outputdef:
         AMR-Wind: normal
+    - name:       sampling_p_offset_vector
+      label:      Plane offset_vector
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
+      row:        8
+      outputdef:
+        AMR-Wind: offset_vector
     - name:       sampling_p_offsets
       label:      "Plane offsets   "
       inputtype:  str

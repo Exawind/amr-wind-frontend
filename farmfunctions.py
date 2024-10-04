@@ -970,7 +970,8 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             downstream = scale*float(pdict['downstream'])        
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
-            sampledict['sampling_p_offset_vector']  = streamwise
+            sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offset_vector'] = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create hub-height sampling planes --- 
     elif probetype == 'hubheight':
@@ -1009,6 +1010,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             above      = scale*float(pdict['above'])
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = vert
             sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create streamwise sampling planes --- 
@@ -1047,6 +1049,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             lateral    = scale*float(pdict['lateral'])
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = crossstream
             sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
@@ -1222,6 +1225,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             above      = scale*float(pdict['above'])
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = vert
             sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create rotorplane sampling plane --- 
@@ -1260,6 +1264,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             downstream = scale*float(pdict['downstream'])        
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = streamwise
             sampledict['sampling_p_offset_vector']  = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
 
@@ -1309,6 +1314,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             lateral    = scale*float(pdict['lateral'])
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
+            sampledict['sampling_p_normal']  = crossstream
             sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
