@@ -240,37 +240,37 @@ def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
     xc = np.zeros(len(iplanes))
     YY = np.array(db[xaxis])
     ZZ = np.array(db[yaxis])
+
+    t = np.asarray(np.array(db['times']).data)
+    udata = {}
     for iplaneiter, iplane in enumerate(iplanes):
         if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
             xc[iplaneiter] = origina1a2a3[-1] + offsets[iplane]
         else:
             xc[iplaneiter] = db['x'][iplane,0,0]
-
         y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
         z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
-
         permutation = [0,axisz+1,axisy+1]
-        t = np.asarray(np.array(db['times']).data)
-        udata = np.zeros((len(iplanes),len(t),len(z),len(y),3))
+        udata[iplane] = np.zeros((len(t),len(z),len(y),3))
         for i,tstep in enumerate(db['timesteps']):
             if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
                 ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
-                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
-                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
             else:
                 ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
 
     return udata , xc, y , z , t, iplanes 
 
@@ -639,7 +639,7 @@ spod:
                             print("Error: zcenter - LR negative. Exiting")
                             print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
                             sys.exit()
-                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplaneiter,titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
+                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplane][titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
 
                 if self.cylindrical_velocities==True:
                     if self.verbose:
