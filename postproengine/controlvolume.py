@@ -810,8 +810,7 @@ controlvolume:
             df_in = df_in.assign(P_mean_fr=[None] * len(df_in))
             for i in range(numStreamPos):
                 qoi = 'u_avg_cubed'
-                #val = dd3_YZ[qoi][i,:,:]
-                # TODO: WHY DOES KEN ONLY USE 0 HERE? 
+                #Only use 0 plane for front face
                 val = dd3_YZ[qoi][0,:,:]
                 lateral_grid  = dd3_YZ[lateral_label_YZ][i,0,:]
                 vertical_grid = dd3_YZ[vertical_label_YZ][i,:,0]
@@ -861,8 +860,7 @@ controlvolume:
                 #qoi = 'u_avg_uu_avg'
                 streamwise_velocity_label = 'velocity' + streamwise_label_YZ 
                 qoi = corr_mapping[streamwise_velocity_label] + '_avg_' + corr_mapping[streamwise_velocity_label] + corr_mapping[streamwise_velocity_label] + '_avg'
-                #val = dd3_YZ[qoi][i,:,:]
-                # TODO: WHY DOES KEN ONLY USE 0 HERE? 
+                #Only use 0 plane for front face
                 val = dd3_YZ[qoi][0,:,:]
                 lateral_grid  = dd3_YZ[lateral_label_YZ][i,0,:]
                 vertical_grid = dd3_YZ[vertical_label_YZ][i,:,0]
@@ -980,6 +978,10 @@ controlvolume:
             self.Uinf = inflow_velocity_YZ[0]
             self.boxDimensions=boxDimensions
 
+            #add additional variables to save here
+            variables = {}
+            variables['boxCenter']     = boxCenter
+            variables['boxDimensions'] = boxDimensions
             if len(savepklfile)>0:
                 directory, file_name = os.path.split(savepklfile)
                 if directory!='':
@@ -988,6 +990,7 @@ controlvolume:
                 with open(savepklfile, 'wb') as f:
                     pickle.dump(df_in, f)
                     pickle.dump(df_out, f)
+                    pickle.dump(variables, f)
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
