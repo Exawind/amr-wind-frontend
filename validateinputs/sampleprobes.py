@@ -52,7 +52,6 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     else:
         offsets = [0]
     
-    # GRY: Using try - except here to start. Is the default value None if the field does not exists though?
     try:
         offsetnormal = np.array(pdict['sampling_p_offset_vector'])
     except:
