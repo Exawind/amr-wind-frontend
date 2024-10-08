@@ -3082,14 +3082,6 @@ popupwindow:
       row:        6
       outputdef:
         AMR-Wind: axis2    
-    - name:       sampling_p_normal
-      label:      Plane normal
-      inputtype:  [float, float, float]
-      defaultval: [0, 0, 0]
-      frame:      sample_plane_frame
-      row:        7
-      outputdef:
-        AMR-Wind: normal
     - name:       sampling_p_offset_vector
       label:      Plane offset_vector
       inputtype:  [float, float, float]
@@ -3098,6 +3090,14 @@ popupwindow:
       row:        8
       outputdef:
         AMR-Wind: offset_vector
+    - name:       sampling_p_normal
+      label:      Plane normal
+      inputtype:  [float, float, float]
+      defaultval: [0, 0, 0]
+      frame:      sample_plane_frame
+      row:        7
+      outputdef:
+        AMR-Wind: normal
     - name:       sampling_p_offsets
       label:      "Plane offsets   "
       inputtype:  str
