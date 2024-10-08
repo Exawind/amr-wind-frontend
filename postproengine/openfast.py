@@ -108,7 +108,13 @@ class postpro_openfast():
                 self.name  = names[fileiter]
                 print(self.name, file)
                 self.df = pd.read_csv(file,sep='\s+',skiprows=(0,1,2,3,4,5,7), comment='#', usecols=lambda col: any(keyword in col for keyword in varnames))
-                self.df.drop_duplicates(subset='Time', inplace=True)
+
+                #drop any duplicate times due to restarts. 
+                self.df = self.df.drop_duplicates(subset='Time', keep='last')
+                #sort values in time 
+                self.df = self.df.sort_values(by='Time')
+                #drop any times withmissing or NaN columns
+                self.df = self.df.dropna(axis=0)
 
                 # Do any sub-actions required for this task
                 for a in self.actionlist:

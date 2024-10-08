@@ -4,6 +4,7 @@
 The following workflows are available:
 
 - [avgplanes](avgplanes.md): Average netcdf sample planes
+- [controlvolume](controlvolume.md): Control volume analysis 
 - [convert](convert.md): Converts netcdf sample planes to different file formats
 - [correlate](correlate.md): Calculate the two-point correlation and integral lengthscale
 - [instantaneousplanes](instantaneousplanes.md): Make instantaneous plots from netcdf sample planes
