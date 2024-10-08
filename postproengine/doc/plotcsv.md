@@ -15,6 +15,8 @@ Make plots of csv files
   title               : Title of the plot (Optional, Default: '')
   legendopts          : Dictionary with legend options (Optional, Default: {})
   postplotfunc        : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
+  figname             : Name/number of figure to create plot in (Optional, Default: None)
+  axesnum             : Which subplot axes to create plot in (Optional, Default: None)
 ```
 
 ## Actions: 
@@ -29,5 +31,14 @@ plotcsv:
     legendopts: {'loc':'upper left'}
     csvfiles:
     - {'file':'T0.csv', 'xcol':'Time', 'ycol':'GenPwr', 'lineopts':{'color':'r', 'lw':2, 'label':'T0'}}
+
+Note that the csvfiles dictionary list can also include xscalefunc and yscalefunc lambda functions 
+to manipulate x and y inputs.  For instance,
+   'xscalefunc':'lambda x:x-72.5'
+shifts the x data by 72.5.  Similarly, 
+ 'yscalefunc':'lambda y:y*2.0'
+Multiples y by 2.0.  If ycol is the empty string '', then the lambda function input is the whole dataframe.  
+This allows you to provide the function
+ 'yscalefunc':'lambda y:y["BldPitch1"]+["BldPitch1"]'
     
 ```

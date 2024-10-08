@@ -685,7 +685,11 @@ class interpolatetemplate():
     interpdb = None
     iters    = None
     def __init__(self, parent, inputs):
-        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.actiondictlist = []
+        inputlist = inputs if isinstance(inputs, list) else [inputs]
+        for indict in inputlist:
+            self.actiondictlist.append(mergedicts(indict, self.actiondefs))
+        #self.actiondict = mergedicts(inputs, self.actiondefs)
         self.parent = parent
         print('Initialized '+self.actionname+' inside '+parent.name)
         # Don't forget to initialize interpdb in inherited classes!
@@ -693,31 +697,31 @@ class interpolatetemplate():
 
     def execute(self):
         print('Executing '+self.actionname)
-        pointlocfunc      = self.actiondict['pointlocationfunction']
-        pointcoordsystem  = self.actiondict['pointcoordsystem']
-        varnames          = self.actiondict['varnames']
-        iplane            = self.actiondict['iplane']        
-        savefile          = self.actiondict['savefile']
-        method            = self.actiondict['method']
-        #iters             = self.actiondict['iters']
+        for iaction, actiondict in enumerate(self.actiondictlist):
+            pointlocfunc      = actiondict['pointlocationfunction']
+            pointcoordsystem  = actiondict['pointcoordsystem']
+            varnames          = actiondict['varnames']
+            iplane            = actiondict['iplane']        
+            savefile          = actiondict['savefile']
+            method            = actiondict['method']
 
-        # Get the point locations from the udf
-        modname  = pointlocfunc.split('.')[0]
-        funcname = pointlocfunc.split('.')[1]
-        func = getattr(sys.modules[modname], funcname)
-        ptlist = func()
+            # Get the point locations from the udf
+            modname  = pointlocfunc.split('.')[0]
+            funcname = pointlocfunc.split('.')[1]
+            func = getattr(sys.modules[modname], funcname)
+            ptlist = func()
 
-        # interpolate data
-        interpdat = interp_db_pts(self.interpdb, ptlist, iplane, varnames,
-                                  pt_coords=pointcoordsystem, timeindex=self.iters,
-                                  method=method)
-        #print(interpdat)
-        # Save the output to a csv file
-        if len(savefile)>0:
-            dfcsv = pd.DataFrame()
-            for k, g in interpdat.items():
-                dfcsv[k] = g
-            dfcsv.to_csv(savefile,index=False,sep=',')
+            # interpolate data
+            interpdat = interp_db_pts(self.interpdb, ptlist, iplane, varnames,
+                                      pt_coords=pointcoordsystem, timeindex=self.iters,
+                                      method=method)
+            #print(interpdat)
+            # Save the output to a csv file
+            if len(savefile)>0:
+                dfcsv = pd.DataFrame()
+                for k, g in interpdat.items():
+                    dfcsv[k] = g
+                dfcsv.to_csv(savefile,index=False,sep=',')
             
         return
 
@@ -778,7 +782,11 @@ class contourplottemplate():
     ]
     plotdb = None
     def __init__(self, parent, inputs):
-        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.actiondictlist = []
+        inputlist = inputs if isinstance(inputs, list) else [inputs]
+        for indict in inputlist:
+            self.actiondictlist.append(mergedicts(indict, self.actiondefs))        
+        #self.actiondict = mergedicts(inputs, self.actiondefs)
         self.parent = parent
         print('Initialized '+self.actionname+' inside '+parent.name)
         # Don't forget to initialize plotdb in inherited classes!
@@ -786,95 +794,97 @@ class contourplottemplate():
 
     def execute(self):
         print('Executing '+self.actionname)
-        figsize  = self.actiondict['figsize']
-        xaxis    = self.actiondict['xaxis']
-        yaxis    = self.actiondict['yaxis']
-        dpi      = self.actiondict['dpi']
-        cmap     = self.actiondict['cmap']
-        iplanes  = self.actiondict['iplane']
-        savefile = self.actiondict['savefile']
-        xlabel   = self.actiondict['xlabel']
-        ylabel   = self.actiondict['ylabel']
-        fontsize = self.actiondict['fontsize']
-        clevels  = eval(self.actiondict['clevels'])
-        cbar_inc = self.actiondict['cbar']
-        cbar_label = self.actiondict['cbar_label']
-        cbar_nticks = self.actiondict['cbar_nticks']
-        title    = self.actiondict['title']
-        plotfunc = eval(self.actiondict['plotfunc'])
-        xscalef  = eval(self.actiondict['xscalefunc'])
-        yscalef  = eval(self.actiondict['yscalefunc'])
-        axis_rotation = self.actiondict['axis_rotation']
-        postplotfunc = self.actiondict['postplotfunc']
-        figname  = self.actiondict['figname']
-        axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
+        for iaction, actiondict in enumerate(self.actiondictlist):
+            figsize  = actiondict['figsize']
+            xaxis    = actiondict['xaxis']
+            yaxis    = actiondict['yaxis']
+            dpi      = actiondict['dpi']
+            cmap     = actiondict['cmap']
+            iplanes  = actiondict['iplane']
+            savefile = actiondict['savefile']
+            xlabel   = actiondict['xlabel']
+            ylabel   = actiondict['ylabel']
+            fontsize = actiondict['fontsize']
+            clevels  = eval(actiondict['clevels'])
+            cbar_inc = actiondict['cbar']
+            cbar_label  = actiondict['cbar_label']
+            cbar_nticks = actiondict['cbar_nticks']
+            title    = actiondict['title']
+            plotfunc = eval(actiondict['plotfunc'])
+            xscalef  = eval(actiondict['xscalefunc'])
+            yscalef  = eval(actiondict['yscalefunc'])
+            axis_rotation = actiondict['axis_rotation']
+            postplotfunc = actiondict['postplotfunc']
+            figname  = actiondict['figname']
+            axesnumf = None if actiondict['axesnumfunc'] is None else eval(actiondict['axesnumfunc'])
 
-        if not isinstance(iplanes, list): iplanes = [iplanes,]
+            if not isinstance(iplanes, list): iplanes = [iplanes,]
 
-        # Convert to native axis1/axis2 coordinates if necessary
-        if ('a1' in [xaxis, yaxis]) or \
-           ('a2' in [xaxis, yaxis]) or \
-           ('a3' in [xaxis, yaxis]):
-            compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
+            # Convert to native axis1/axis2 coordinates if necessary
+            if ('a1' in [xaxis, yaxis]) or \
+               ('a2' in [xaxis, yaxis]) or \
+               ('a3' in [xaxis, yaxis]):
+                compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
         
-        for iplane in iplanes:
-            if (figname is not None) and (axesnumf is not None):
-                fig     = plt.figure(figname)
-                allaxes = fig.get_axes()
-                iax     = axesnumf(iplane)
-                ax      = allaxes[iax]
-            else:
-                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-            plotq = plotfunc(self.plotdb)
-            c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
-                                yscalef(self.plotdb[yaxis][iplane,:,:]),
-                                plotq[iplane, :, :], 
-                                levels=clevels,cmap=cmap, extend='both')
-            if cbar_inc:
-                divider = make_axes_locatable(ax)
-                cax = divider.append_axes("right", size="3%", pad=0.05)
-                cbar=fig.colorbar(c, ax=ax, cax=cax)
-                cbar.ax.tick_params(labelsize=fontsize)
-                if cbar_label is not None:
-                    cbar.set_label(cbar_label,fontsize=fontsize)
-
-                if cbar_nticks is not None:
-                    levels = c.levels
-                    # Define the number of intervals
-                    min_tick = levels[0]
-                    max_tick = levels[-1]
-                    new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
-                    cbar.set_ticks(new_ticks)
-
-            if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
-            if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
-            ax.axis('scaled')
-
-            # SET TITLE
-            parts = re.split(r'(\$.*?\$)', title)
-            evaluated_parts = []
-            for part in parts:
-                if part.startswith('$') and part.endswith('$'):
-                    # This part is inside LaTeX math mode, leave it as is
-                    evaluated_parts.append(part)
+            for iplane in iplanes:
+                if (figname is not None) and (axesnumf is not None):
+                    fig     = plt.figure(figname)
+                    allaxes = fig.get_axes()
+                    iax     = axesnumf(iplane)
+                    ax      = allaxes[iax]
                 else:
-                    # This part is outside LaTeX math mode, evaluate it
-                    evaluated_parts.append(eval(f"rf'{part}'"))
-            title = ''.join(evaluated_parts)
-            ax.set_title(title,fontsize=fontsize)
+                    fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
+                plotq = plotfunc(self.plotdb)
+                c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
+                                    yscalef(self.plotdb[yaxis][iplane,:,:]),
+                                    plotq[iplane, :, :], 
+                                    levels=clevels,cmap=cmap, extend='both')
+                if cbar_inc:
+                    divider = make_axes_locatable(ax)
+                    cax = divider.append_axes("right", size="3%", pad=0.05)
+                    cbar=fig.colorbar(c, ax=ax, cax=cax)
+                    cbar.ax.tick_params(labelsize=fontsize)
+                    if cbar_label is not None:
+                        cbar.set_label(cbar_label,fontsize=fontsize)
 
-            ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+                    if cbar_nticks is not None:
+                        levels = c.levels
+                        # Define the number of intervals
+                        min_tick = levels[0]
+                        max_tick = levels[-1]
+                        new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                        cbar.set_ticks(new_ticks)
 
-            # Run any post plot functions
-            if len(postplotfunc)>0:
-                modname = postplotfunc.split('.')[0]
-                funcname = postplotfunc.split('.')[1]
-                func = getattr(sys.modules[modname], funcname)
-                func(fig, ax)
+                if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
+                if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
+                ax.axis('scaled')
 
-            if len(savefile)>0:
-                savefname = savefile.format(iplane=iplane)
-                plt.savefig(savefname)
+                # SET TITLE
+                parts = re.split(r'(\$.*?\$)', title)
+                evaluated_parts = []
+                for part in parts:
+                    if part.startswith('$') and part.endswith('$'):
+                        # This part is inside LaTeX math mode, leave it as is
+                        evaluated_parts.append(part)
+                    else:
+                        # This part is outside LaTeX math mode, evaluate it
+                        evaluated_parts.append(eval(f"rf'{part}'"))
+                title = ''.join(evaluated_parts)
+                ax.set_title(title,fontsize=fontsize)
+
+                ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+
+                # Run any post plot functions
+                if len(postplotfunc)>0:
+                    modname = postplotfunc.split('.')[0]
+                    funcname = postplotfunc.split('.')[1]
+                    func = getattr(sys.modules[modname], funcname)
+                    func(fig, ax)
+
+                if len(savefile)>0:
+                    savefname = savefile.format(iplane=iplane)
+                    plt.savefig(savefname)
+        # Done with action
         return
 
 # ------- reusable circumferential avg class ----------

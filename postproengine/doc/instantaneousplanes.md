@@ -36,6 +36,8 @@ Make instantaneous plots from netcdf sample planes
     yscalefunc        : Function to scale the y-axis (lambda expression) (Optional, Default: 'lambda y: y')
     figname           : Name/number of figure to create plot in (Optional, Default: None)
     axesnumfunc       : Function to determine which subplot axes to create plot in (lambda expression with iplane as arg) (Optional, Default: None)
+    axesnumfunc       : Function to determine which subplot axes to create plot in (lambda expression with iplane as arg) (Optional, Default: None)
+    axisscale         : Aspect ratio of figure axes (options:equal,scaled,tight,auto,image,square) (Optional, Default: 'scaled')
   interpolate         : ACTION: Interpolate data from an arbitrary set of points (Optional)
     pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
     pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
