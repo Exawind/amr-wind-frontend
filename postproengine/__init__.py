@@ -226,7 +226,7 @@ def convert_pt_axis1axis2_to_xyz(ptlist, origin, axis1, axis2, axis3, offsets, i
         pt_xyz.append(porigin + pt[0]*n1 + pt[1]*n2)
     return pt_xyz
 
-def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
+def convert_pt_xyz_to_axis1axis2axis3(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
     """
     Converts the location of pt given in global xyz coordinates to 
     to natural plane (axis1-axis2) coordinates
@@ -240,15 +240,26 @@ def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, i
     if np.linalg.norm(axis3) > 0.0:
         n3 = axis3/np.linalg.norm(axis3)
     else:
-        n3 = axis3
+        #TODO: Is this approximation OK? Assumes n3 is orthogonal to n1 and n2
+        n1 = axis1/np.linalg.norm(axis1)
+        n2 = axis2/np.linalg.norm(axis2)
+        n3 = np.cross(n1, n2)
+        n3 /= np.linalg.norm(n3)
+        #n3 = axis3
 
     porigin = np.full_like(ptlist, 0.0)
+
+    #TODO: This only serves to zero out axis3, correct? Is it safe to omit it then
     for ipt in range(len(ptlist)):
-        porigin[ipt,:] = origin + n3*offsetlist[iplanevec[ipt]]
+        porigin[ipt,:] = origin #+ n3*offsetlist[iplanevec[ipt]]
 
     dv = (np.array(ptlist) - np.array(porigin))
     avec = R@dv.T
     returnvec = avec.T
+    return returnvec
+
+def convert_pt_xyz_to_axis1axis2(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot=0):
+    returnvec = convert_pt_xyz_to_axis1axis2axis3(ptlist, origin, axis1, axis2, axis3, offsets, iplanevec,rot)
     return returnvec[:,0:2]
 
 def project_pt_to_plane(pt, origin, axis1, axis2, axis3, offsets, iplane):
@@ -314,6 +325,45 @@ def compute_axis1axis2_coords(db,rot=0):
     db['a1'] = avec[:,0].reshape(db['x'].shape)
     db['a2'] = avec[:,1].reshape(db['y'].shape)
     return
+
+def compute_axis1axis2axis3_coords(db,rot=0):
+    """
+    Computes the native axis1, axis2, axis3 coordinate system for a given
+    set of sample planes.
+    """
+
+    # Check to make sure db has everything needed
+    if ('origin' not in db) or \
+       ('axis1' not in db) or \
+       ('axis2' not in db) or \
+       ('axis3' not in db) or \
+       ('offsets') not in db:
+        print('Need to ensure that the sample plane data includes origin, axis1, axis2, axis3, and offset information')
+        return
+
+    # Pull out the coordate definitions
+    axis1  = np.array(db['axis1'])
+    axis2  = np.array(db['axis2'])
+    axis3  = np.array(db['axis3'])
+    origin = np.array(db['origin'])
+    offsets= db['offsets']
+    if (not isinstance(offsets,list)) and (not isinstance(offsets,np.ndarray)):
+        offsets = [offsets]
+
+    # Create the iplane matrices
+    iplanemat = np.full_like(db['x'], 0, dtype=np.int64)
+    for k in range(len(offsets)):
+        iplanemat[k,:,:] = k
+
+    # create list of points
+    xyz_pt    = np.vstack([db['x'].ravel(), db['y'].ravel(), db['z'].ravel()])
+
+    avec = convert_pt_xyz_to_axis1axis2axis3(xyz_pt.T, origin, axis1, axis2, axis3, offsets, iplanemat.ravel(),rot)
+    db['a1'] = avec[:,0].reshape(db['x'].shape)
+    db['a2'] = avec[:,1].reshape(db['y'].shape)
+    db['a3'] = avec[:,2].reshape(db['z'].shape)
+    return
+
 
 def interp_db_pts(db, ptlist, iplanelist, varnames, pt_coords='XYZ', timeindex=None, method='linear'):
     """
@@ -462,6 +512,19 @@ def convert_vel_xyz_to_axis1axis2(db,rot=0):
         db['velocitya2'][timestep] = ua2
         db['velocitya3'][timestep] = ua3
     return 
+
+def extract_1d_from_meshgrid(Z):
+    unique_rows = np.unique(Z, axis=0)
+    unique_cols = np.unique(Z, axis=1)
+
+    if unique_rows.shape[0] == 1 and unique_cols.shape[1] == 1:
+        return unique_rows[0][0],-1
+
+    if unique_rows.shape[0] == 1:
+        return unique_rows[0],1
+
+    if unique_cols.shape[1] == 1:
+        return unique_cols[:, 0],0
 
 # ------- reusable circumferential avg class ----------
 class circavgtemplate():
@@ -719,7 +782,11 @@ class contourplottemplate():
     ]
     plotdb = None
     def __init__(self, parent, inputs):
-        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.actiondictlist = []
+        inputlist = inputs if isinstance(inputs, list) else [inputs]
+        for indict in inputlist:
+            self.actiondictlist.append(mergedicts(indict, self.actiondefs))        
+        #self.actiondict = mergedicts(inputs, self.actiondefs)
         self.parent = parent
         print('Initialized '+self.actionname+' inside '+parent.name)
         # Don't forget to initialize plotdb in inherited classes!
@@ -727,96 +794,200 @@ class contourplottemplate():
 
     def execute(self):
         print('Executing '+self.actionname)
-        figsize  = self.actiondict['figsize']
+        for iaction, actiondict in enumerate(self.actiondictlist):
+            figsize  = actiondict['figsize']
+            xaxis    = actiondict['xaxis']
+            yaxis    = actiondict['yaxis']
+            dpi      = actiondict['dpi']
+            cmap     = actiondict['cmap']
+            iplanes  = actiondict['iplane']
+            savefile = actiondict['savefile']
+            xlabel   = actiondict['xlabel']
+            ylabel   = actiondict['ylabel']
+            fontsize = actiondict['fontsize']
+            clevels  = eval(actiondict['clevels'])
+            cbar_inc = actiondict['cbar']
+            cbar_label  = actiondict['cbar_label']
+            cbar_nticks = actiondict['cbar_nticks']
+            title    = actiondict['title']
+            plotfunc = eval(actiondict['plotfunc'])
+            xscalef  = eval(actiondict['xscalefunc'])
+            yscalef  = eval(actiondict['yscalefunc'])
+            axis_rotation = actiondict['axis_rotation']
+            postplotfunc = actiondict['postplotfunc']
+            figname  = actiondict['figname']
+            axesnumf = None if actiondict['axesnumfunc'] is None else eval(actiondict['axesnumfunc'])
+
+            if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+            # Convert to native axis1/axis2 coordinates if necessary
+            if ('a1' in [xaxis, yaxis]) or \
+               ('a2' in [xaxis, yaxis]) or \
+               ('a3' in [xaxis, yaxis]):
+                compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
+        
+            for iplane in iplanes:
+                if (figname is not None) and (axesnumf is not None):
+                    fig     = plt.figure(figname)
+                    allaxes = fig.get_axes()
+                    iax     = axesnumf(iplane)
+                    ax      = allaxes[iax]
+                else:
+                    fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
+                plotq = plotfunc(self.plotdb)
+                c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
+                                    yscalef(self.plotdb[yaxis][iplane,:,:]),
+                                    plotq[iplane, :, :], 
+                                    levels=clevels,cmap=cmap, extend='both')
+                if cbar_inc:
+                    divider = make_axes_locatable(ax)
+                    cax = divider.append_axes("right", size="3%", pad=0.05)
+                    cbar=fig.colorbar(c, ax=ax, cax=cax)
+                    cbar.ax.tick_params(labelsize=fontsize)
+                    if cbar_label is not None:
+                        cbar.set_label(cbar_label,fontsize=fontsize)
+
+                    if cbar_nticks is not None:
+                        levels = c.levels
+                        # Define the number of intervals
+                        min_tick = levels[0]
+                        max_tick = levels[-1]
+                        new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
+                        cbar.set_ticks(new_ticks)
+
+                if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
+                if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
+                ax.axis('scaled')
+
+                # SET TITLE
+                parts = re.split(r'(\$.*?\$)', title)
+                evaluated_parts = []
+                for part in parts:
+                    if part.startswith('$') and part.endswith('$'):
+                        # This part is inside LaTeX math mode, leave it as is
+                        evaluated_parts.append(part)
+                    else:
+                        # This part is outside LaTeX math mode, evaluate it
+                        evaluated_parts.append(eval(f"rf'{part}'"))
+                title = ''.join(evaluated_parts)
+                ax.set_title(title,fontsize=fontsize)
+
+                ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+
+                # Run any post plot functions
+                if len(postplotfunc)>0:
+                    modname = postplotfunc.split('.')[0]
+                    funcname = postplotfunc.split('.')[1]
+                    func = getattr(sys.modules[modname], funcname)
+                    func(fig, ax)
+
+                if len(savefile)>0:
+                    savefname = savefile.format(iplane=iplane)
+                    plt.savefig(savefname)
+        # Done with action
+        return
+
+# ------- reusable circumferential avg class ----------
+class doubleintegraltemplate():
+    """
+    Compute the double integral of quantity
+    """
+    actionname = 'double_integral'
+    blurb      = 'Compute double integral of a quantity over a plane'
+    required   = False
+    actiondefs = [
+        {'key':'savefile',  'required':False,  'default':None,
+         'help':'Filename to save the radial profiles', },
+        {'key':'iplane',   'required':False,  'default':None,
+         'help':'Which plane to pull from netcdf file', },            
+        {'key':'xaxis',    'required':True,  'default':'',
+         'help':'Which axis to use on the abscissa', },
+        {'key':'yaxis',    'required':True,  'default':'',
+         'help':'Which axis to use on the ordinate', },            
+        {'key':'xrange',    'required':False,  'default':None,
+         'help':'Range of data to integrate on abscissa, e.g., [xmin,xmax]', },
+        {'key':'yrange',    'required':False,  'default':None,
+         'help':'Range of data to integrate on ordinate, e.g., [ymin,ymax]', },
+        {'key':'intfunc',  'required':True,  'default':'lambda db: (db["velocityx"])',
+         'help':'Function to integrate (lambda expression)',},
+        {'key':'axis_rotation',  'required':False,  'default':0,
+         'help':'Degrees to rotate a1,a2,a3 axis for integrating.',},
+    ]
+
+    intdb = None
+    def __init__(self, parent, inputs):
+        self.actiondict = mergedicts(inputs, self.actiondefs)
+        self.parent = parent
+        # Don't forget to initialize intdb in inherited classes!
+        print('Initialized '+self.actionname+' inside '+parent.name)
+        return
+
+    def execute(self):
+        print('Executing '+self.actionname)
+        # Get inputs
+        intfunc = eval(self.actiondict['intfunc'])
+        iplanes  = self.actiondict['iplane']
         xaxis    = self.actiondict['xaxis']
         yaxis    = self.actiondict['yaxis']
-        dpi      = self.actiondict['dpi']
-        cmap     = self.actiondict['cmap']
-        iplanes  = self.actiondict['iplane']
-        savefile = self.actiondict['savefile']
-        xlabel   = self.actiondict['xlabel']
-        ylabel   = self.actiondict['ylabel']
-        fontsize = self.actiondict['fontsize']
-        clevels  = eval(self.actiondict['clevels'])
-        cbar_inc = self.actiondict['cbar']
-        cbar_label = self.actiondict['cbar_label']
-        cbar_nticks = self.actiondict['cbar_nticks']
-        title    = self.actiondict['title']
-        plotfunc = eval(self.actiondict['plotfunc'])
-        xscalef  = eval(self.actiondict['xscalefunc'])
-        yscalef  = eval(self.actiondict['yscalefunc'])
+        xrange   = self.actiondict['xrange']
+        yrange   = self.actiondict['yrange']
         axis_rotation = self.actiondict['axis_rotation']
-        postplotfunc = self.actiondict['postplotfunc']
-        figname  = self.actiondict['figname']
-        axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
+        savefile        = self.actiondict['savefile']
 
+        if iplanes == None: iplanes = list(range(len(self.intdb['offsets'])))
         if not isinstance(iplanes, list): iplanes = [iplanes,]
 
         # Convert to native axis1/axis2 coordinates if necessary
         if ('a1' in [xaxis, yaxis]) or \
            ('a2' in [xaxis, yaxis]) or \
            ('a3' in [xaxis, yaxis]):
-            compute_axis1axis2_coords(self.plotdb,rot=axis_rotation)
-        
-        for iplane in iplanes:
-            if (figname is not None) and (axesnumf is not None):
-                fig     = plt.figure(figname)
-                allaxes = fig.get_axes()
-                iax     = axesnumf(iplane)
-                ax      = allaxes[iax]
+            compute_axis1axis2_coords(self.intdb,rot=axis_rotation)
+
+        # get plane locations 
+        R = get_mapping_xyz_to_axis1axis2(self.intdb['axis1'],self.intdb['axis2'],self.intdb['axis3'],rot=axis_rotation)
+        origin = self.intdb['origin']
+        origina1a2a3 = R@self.intdb['origin']
+        offsets = self.intdb['offsets']
+        offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
+
+        intq = intfunc(self.intdb)
+        # Define the columns
+        columns = ['iplane', 'plane_loc', 'integral']
+        dfintegral = pd.DataFrame(columns=columns)
+        data = []
+        for iplaneiter, iplane in enumerate(iplanes):
+            iplane = int(iplane)
+            plane_point = origina1a2a3[-1] + offsets[iplane]
+
+            XX = np.array(self.intdb[xaxis])
+            YY = np.array(self.intdb[yaxis])
+            x,axisx = extract_1d_from_meshgrid(XX[iplane,:,:])
+            y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
+            if xrange is not None:
+                maskx =  (x >= xrange[0])  & (x <= xrange[-1])
             else:
-                fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
-            plotq = plotfunc(self.plotdb)
-            c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
-                                yscalef(self.plotdb[yaxis][iplane,:,:]),
-                                plotq[iplane, :, :], 
-                                levels=clevels,cmap=cmap, extend='both')
-            if cbar_inc:
-                divider = make_axes_locatable(ax)
-                cax = divider.append_axes("right", size="3%", pad=0.05)
-                cbar=fig.colorbar(c, ax=ax, cax=cax)
-                cbar.ax.tick_params(labelsize=fontsize)
-                if cbar_label is not None:
-                    cbar.set_label(cbar_label,fontsize=fontsize)
+                maskx =  (x >= x[0])  & (x <= x[-1])
 
-                if cbar_nticks is not None:
-                    levels = c.levels
-                    # Define the number of intervals
-                    min_tick = levels[0]
-                    max_tick = levels[-1]
-                    new_ticks = np.linspace(min_tick, max_tick, cbar_nticks)
-                    cbar.set_ticks(new_ticks)
+            if yrange is not None:
+                masky =  (y >= yrange[0])  & (y <= yrange[-1])
+            else:
+                masky =  (y >= y[0])  & (y <= y[-1])
 
-            if (xlabel is not None): ax.set_xlabel(xlabel,fontsize=fontsize)
-            if (ylabel is not None): ax.set_ylabel(ylabel,fontsize=fontsize)
-            ax.axis('scaled')
+            #integral = np.trapz(np.trapz(intq[iplane,:,:], x=y, axis=axisy),x=x,axis=0)
+            permutation = [0,axisx+1,axisy+1]
+            intq_T = np.transpose(intq,permutation)[iplane,:,:]
+            intq_T = intq_T[maskx,:]
+            intq_T = intq_T[:,masky]
+            integral = np.trapz(np.trapz(intq_T, x=y[masky],axis=1),x=x[maskx],axis=0)
+            data.append({'iplane':iplane,'plane_loc':plane_point,'integral':integral})
 
-            # SET TITLE
-            parts = re.split(r'(\$.*?\$)', title)
-            evaluated_parts = []
-            for part in parts:
-                if part.startswith('$') and part.endswith('$'):
-                    # This part is inside LaTeX math mode, leave it as is
-                    evaluated_parts.append(part)
-                else:
-                    # This part is outside LaTeX math mode, evaluate it
-                    evaluated_parts.append(eval(f"rf'{part}'"))
-            title = ''.join(evaluated_parts)
-            ax.set_title(title,fontsize=fontsize)
+        dfintegral = pd.DataFrame(data)
+        if savefile is not None:
+            dfintegral.to_csv(savefile,index=False,sep=',')
 
-            ax.tick_params(axis='both', which='major', labelsize=fontsize) 
-
-            # Run any post plot functions
-            if len(postplotfunc)>0:
-                modname = postplotfunc.split('.')[0]
-                funcname = postplotfunc.split('.')[1]
-                func = getattr(sys.modules[modname], funcname)
-                func(fig, ax)
-
-            if len(savefile)>0:
-                savefname = savefile.format(iplane=iplane)
-                plt.savefig(savefname)
         return
+
+
 
 # =====================================================
 

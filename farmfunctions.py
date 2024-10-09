@@ -1109,6 +1109,8 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
         outputvars = outputvars.split(',')
         #print('outputvars = '+repr(outputvars))
 
+    wholedomaineps = 1.0E-4
+
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
     if orient == 'x':
@@ -1192,9 +1194,9 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             streamwise  = np.array([1.0, 0.0, 0.0])
             crossstream = np.array([0.0, 1.0, 0.0])
             vert        = np.array([0.0, 0.0, 1.0])
-            origin      = np.array([prob_lo[0], prob_lo[1], probecenter[2]])
-            L1          = prob_hi[0] - prob_lo[0]
-            L2          = prob_hi[1] - prob_lo[1]
+            origin      = np.array([prob_lo[0]+wholedomaineps, prob_lo[1]+wholedomaineps, probecenter[2]])
+            L1          = prob_hi[0] - prob_lo[0] - 2.0*wholedomaineps
+            L2          = prob_hi[1] - prob_lo[1] - 2.0*wholedomaineps
         else:
             origin     = probecenter - upstream*streamwise - below*vert
             origin     = origin - lateral*crossstream
@@ -1275,10 +1277,10 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             probhi     = self.inputvars['prob_hi'].getval()
             upstream, downstream = intersectLineDomain(probecenter, -streamwise, problo, probhi)
             # Calculate the geometry
-            upstream   = np.abs(upstream)
-            downstream = np.abs(downstream)
-            below      = probecenter[2] - problo[2]
-            above      = probhi[2] - probecenter[2]
+            upstream   = np.abs(upstream) - wholedomaineps
+            downstream = np.abs(downstream) - wholedomaineps
+            below      = probecenter[2] - problo[2] - wholedomaineps
+            above      = probhi[2] - probecenter[2] - wholedomaineps
         else:
             # Calculate the geometry
             upstream   = scale*float(pdict['upstream'])

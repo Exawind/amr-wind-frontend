@@ -96,10 +96,11 @@ class Check_sampleprobes_inside():
     def check(self, app):
         
         post_processing = app.inputvars['post_processing'].getval()
+        allpost_processing = app.listboxpopupwindict['listboxpostprosetup'].getitemlist()
         allsamplingdata = app.listboxpopupwindict['listboxsampling']
         allprobes       = allsamplingdata.getitemlist()
-
-        if (len(allprobes)==0): #or ('sampling' not in post_processing): #GRY: This seems to be depreciated
+        
+        if (len(allprobes)==0) or (len(allpost_processing)==0):
             skipstatus                = {}   # Dict containing return status
             skipstatus['subname']     = ''   # Additional name info
             skipstatus['result']      = status.SKIP

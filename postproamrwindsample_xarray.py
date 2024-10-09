@@ -370,7 +370,6 @@ def avgPlaneXR(ncfileinput, timerange,
 
     if transform:
         R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
-        #if not np.array_equal(R,np.eye(R.shape[0])):
         db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
 
     if verbose:
