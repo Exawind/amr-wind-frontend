@@ -1319,7 +1319,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
         print("ERROR: probetype %s not recognized for farm centers"%probetype)
-    
+
     return sampledict
 
 def sampling_createAllProbes(self, verbose=False):

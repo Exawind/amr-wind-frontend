@@ -7,9 +7,9 @@ See README.md for details on the structure of classes here
 """
 
 def isPointInside(p, corner1, corner2):
-    inside = (corner1[0] <= p[0]) and (p[0] <= corner2[0]) and \
-             (corner1[1] <= p[1]) and (p[1] <= corner2[1]) and \
-             (corner1[2] <= p[2]) and (p[2] <= corner2[2]) 
+    inside = (corner1[0] < p[0]) and (p[0] < corner2[0]) and \
+             (corner1[1] < p[1]) and (p[1] < corner2[1]) and \
+             (corner1[2] < p[2]) and (p[2] < corner2[2]) 
     return inside
 
 def checkLineProbeInside(name, pdict, corner1, corner2):
@@ -99,7 +99,7 @@ class Check_sampleprobes_inside():
         allsamplingdata = app.listboxpopupwindict['listboxsampling']
         allprobes       = allsamplingdata.getitemlist()
 
-        if (len(allprobes)==0) or ('sampling' not in post_processing):
+        if (len(allprobes)==0): #or ('sampling' not in post_processing): #GRY: This seems to be depreciated
             skipstatus                = {}   # Dict containing return status
             skipstatus['subname']     = ''   # Additional name info
             skipstatus['result']      = status.SKIP
