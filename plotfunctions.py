@@ -291,7 +291,6 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
                 try:
                     offsetnormal = np.array(allpdict[p+'.offset_vector'])
                 except:
-                    print("offset_vector not specified. Using legacy interface: .normal")
                     offsetnormal = np.array(allpdict[p+'.normal'])
                 offsetvec = []
                 if len(offsets)==0:

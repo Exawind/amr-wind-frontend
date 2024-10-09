@@ -55,7 +55,6 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     try:
         offsetnormal = np.array(pdict['sampling_p_offset_vector'])
     except:
-        print("offset_vector not specified. Using legacy interface: .normal")
         offsetnormal = np.array(pdict['sampling_p_normal'])
 
     # Construct the list of offsets
