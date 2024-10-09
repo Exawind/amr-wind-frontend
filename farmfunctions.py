@@ -971,6 +971,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offset_vector'] = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create hub-height sampling planes --- 
     elif probetype == 'hubheight':
@@ -1010,6 +1011,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = vert
+            sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create streamwise sampling planes --- 
     elif probetype == 'streamwise':
@@ -1048,6 +1050,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = crossstream
+            sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
         print("ERROR: probetype %s not recognized"%probetype)
@@ -1225,6 +1228,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = vert
+            sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create rotorplane sampling plane --- 
     elif probetype == 'rotorplane':
@@ -1263,6 +1267,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offset_vector']  = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
 
     # --- Create streamwise sampling planes --- 
@@ -1312,10 +1317,11 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = crossstream
+            sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
         print("ERROR: probetype %s not recognized for farm centers"%probetype)
-    
+
     return sampledict
 
 def sampling_createAllProbes(self, verbose=False):

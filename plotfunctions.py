@@ -288,7 +288,10 @@ def plotDomain(self, ax=None, verbose=False, plotskip=1):
                     offsets =[float(x) for x in allpdict[p+'.offsets'].split()]
                 else:
                     offsets = [0.0]
-                offsetnormal = np.array(allpdict[p+'.normal'])
+                try:
+                    offsetnormal = np.array(allpdict[p+'.offset_vector'])
+                except:
+                    offsetnormal = np.array(allpdict[p+'.normal'])
                 offsetvec = []
                 if len(offsets)==0:
                     offsetvec.append(np.zeros(3))
