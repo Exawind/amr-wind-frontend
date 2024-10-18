@@ -2324,7 +2324,7 @@ class MyApp(tkyg.App, object):
                     print('Wrote %s'%tendencyfile)
             self.inputvars['ABL_tendency_forcing'].setval(True)
             self.inputvars['ABL_mesoscale_forcing'].setval(tendencyfile)
-            self.inputvars['ABLMesoForcingMom'].setval(False)
+            self.inputvars['ABLMesoForcingMom'].setval(True)
             if verbose:
                 printverbose('SET','ABL_tendency_forcing')
                 printverbose('SET','ABL_mesoscale_forcing')
