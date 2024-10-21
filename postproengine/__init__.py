@@ -880,8 +880,8 @@ class contourplottemplate():
                     else:
                         # This part is outside LaTeX math mode, evaluate it
                         evaluated_parts.append(eval(f"rf'{part}'"))
-                title = ''.join(evaluated_parts)
-                ax.set_title(title,fontsize=fontsize)
+                evaltitle = ''.join(evaluated_parts)
+                ax.set_title(evaltitle,fontsize=fontsize)
 
                 ax.tick_params(axis='both', which='major', labelsize=fontsize) 
 
