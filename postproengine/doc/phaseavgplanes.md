@@ -9,7 +9,6 @@ Phase average netcdf sample planes
   tend                : Time to end phase averaging (Required)
   tstart              : Time period of phase averaging (Required)
   calcavg             : Also calculate average variables (Optional, Default: False)
-  calcrestress        : Also calculate Reynolds stresses (Optional, Default: False)
   saveavgpklfile      : Name of pickle file to save average results (Optional, Default: '')
   loadavgpklfile      : Name of pickle file to load average results (Optional, Default: '')
   loadpklfile         : Load previously computed results from this pickle file (Optional, Default: '')
@@ -51,7 +50,6 @@ Phase average netcdf sample planes
 
 ## Example
 ```yaml
-```
   phaseavgplanes:
   - name: LowWSLowTI Baseline
     ncfile:
@@ -68,6 +66,5 @@ Phase average netcdf sample planes
       yaxis: z         # Which axis to use on the ordinate
       iplane: [0]
       clevels: 'np.linspace(-1, 1, 101)'
-```
 
 ```
