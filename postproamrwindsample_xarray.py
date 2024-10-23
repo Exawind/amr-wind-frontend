@@ -14,6 +14,13 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
+def find_2nearest(a, a0):
+    asort = np.argsort(np.abs(np.array(a)-a0))
+    return asort[0], asort[1]
+
+def interpfields(t1, t2, v1, v2):
+    return (v2-v1)/(t2-t1)+v1
+
 def getFileList(ncfileinput):
     ncfilelist = []
     if isinstance(ncfileinput, str):
@@ -326,13 +333,6 @@ def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
     suf='_phavg'
 
     find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-    def find_2nearest(a, a0):
-        asort = np.argsort(np.abs(np.array(a)-a0))
-        return asort[0], asort[1]
-        #da = np.array(a)-a0
-        #return np.argpartition(da, 0)[0], np.argpartition(da, 1)[1]
-    def interpfields(t1, t2, v1, v2):
-        return (v2-v1)/(t2-t1)+v1
 
     #Apply transformation after computing cartesian average
     natural_velocity_mapping = {
@@ -645,7 +645,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
 
 def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
                                     extrafuncs=[], avgdb = None,
-                                    varnames=['velocityx','velocityy','velocityz'],
+                                    varnames=['velocityx','velocityy','velocityz'], replacenan=False,
                                     savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
     """
     Calculate the phase-averaged reynolds stresses
@@ -679,12 +679,14 @@ def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
         if verbose: print("Calculating averages")
 
         orig_varnames = varnames[:]
-        db = avgPlaneXR(ncfilelist, timerange,
+        db = avgPlaneXR(ncfilelist, [tstart, tend],
                         extrafuncs=extrafuncs,
                         varnames=orig_varnames,
                         groupname=groupname, verbose=verbose, includeattr=includeattr,axis_rotation=axis_rotation)
     else:
         db.update(avgdb)
+
+    group   = db['group']
     Ncount = 0
     tnow = tstart
     for ncfile in ncfilelist:
@@ -706,7 +708,7 @@ def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
             if any('velocitya' in v for v in varnames):
                 R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             # Loop through and accumulate
-            if verbose: print("Calculating reynolds-stress")
+            #if verbose: print("Calculating reynolds-stress")
             while (tnow <= tend) and (tnow <= timevec[-1]):
                 # Find the closest time to tnow
                 i1, i2   = find_2nearest(timevec, tnow)
@@ -725,12 +727,12 @@ def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
                     vdat[v] = interpfields(ti1, ti2, v1, v2)
                     if any('velocitya' in v for v in varnames):
                         vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
-                    for corr in corrlist:
-                        name = corr[0]
-                        v1   = corr[1]
-                        v2   = corr[2]
-                        # Standard dev
-                        db[name] += (vdat[v1]-db[v1+tavg])*(vdat[v2]-db[v2+tavg])
+                for corr in corrlist:
+                    name = corr[0]
+                    v1   = corr[1]
+                    v2   = corr[2]
+                    # Standard dev
+                    db[name] += (vdat[v1]-db[v1+tavg])*(vdat[v2]-db[v2+tavg])
                 # increment counters
                 Ncount += 1
                 localNcount += 1

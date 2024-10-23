@@ -120,6 +120,7 @@ class postpro_phaseavgplanes():
             self.calcrestress    = plane['calcrestress']
             self.saveavgpklfile  = plane['saveavgpklfile']
             self.loadavgpklfile  = plane['loadavgpklfile']
+            self.verbose         = verbose
                         
             # Compute or load phase averaging
             if len(loadpkl)>0:
@@ -164,7 +165,7 @@ class postpro_phaseavgplanes():
     # --- Inner classes for action list ---
     @registeraction(actionlist)
     class calc_phaseavg_restress1():
-        actionname = 'calcreynoldsstress1'
+        actionname = 'reynoldsstress1'
         blurb      = 'Calculate Reynolds stress (version 1)'
         required   = False
         actiondefs = [
@@ -182,13 +183,17 @@ class postpro_phaseavgplanes():
             savepklfile = self.actiondict['savepklfile']
             groupname   = self.parent.group
             ncfileinput = self.parent.ncfile
+            if self.parent.calcavg:
+                avgdb = self.parent.dbpavg
+            else:
+                avgdb = None
             db_rephavg  = ppsamplexr.phaseAvgReynoldsStress1_PlaneXR(ncfileinput, self.parent.tstart,
                                                                      self.parent.tend, self.parent.tperiod,
-                                                                     extrafuncs=[], avgdb = None,
+                                                                     extrafuncs=[], avgdb = avgdb,
                                                                      varnames=['velocityx','velocityy','velocityz'],
                                                                      savepklfile=savepklfile,
                                                                      groupname=groupname,
-                                                                     verbose=False, includeattr=True,
+                                                                     verbose=self.parent.verbose, includeattr=True,
                                                                      axis_rotation=self.parent.axis_rotation)
             self.parent.dbpavg.update(db_rephavg)
             return
