@@ -8,7 +8,7 @@ Control volume analysis
   diam                : Turbine diameter (Required)
   box_center_XYZ      : Center of control volume (XYZ coordinates) (Optional, Default: None)
   box_fr_center_XYZ   : Center of control volume on front face (XYZ coordinates) (Optional, Default: None)
-  box_fr_streamwise_offset: Streamwise offset when specifying front face of control volume in turbine diameters (Optional, Default: 0)
+  box_fr_streamwise_offset: Streamwise offset when specifying front face of control volume, in turbine diameters (Optional, Default: 0)
   rho                 : Density (Required)
   latitude            : Latitude (Required)
   body_force_XYZ      : Body force from AMR-Wind input file (XYZ coordinates) (Required)
@@ -48,13 +48,15 @@ controlvolume:
   latitude: 39.55
   box_center_XYZ: [3000.0,1000.0,150.0]
   #box_fr_center_XYZ: [2280.0,1000.0,150.0]
+  #box_fr_streamwise_offset: 0
   streamwise_box_size: 6
   lateral_box_size: 1
   vertical_box_size: 1
   rho: 1.2456
   body_force_XYZ: [0.00014295185866400572, 0.0008354682029301641, 0.0]
-  compute_pressure_gradient: True
   varnames: ['velocitya1','velocitya2','velocitya3']
+  compute_pressure_gradient: True
+  savepklfile: 'Control_Volume_a123.pkl'
   #varnames: ['velocityx','velocityy','velocityz']
 
   bot_avg_file: '/nscratch/kbrown1/Advanced_Control/AMR/Turbine_Runs/One_Turb/MedWS_LowTI/postpro/Data/Baseline_test_pp/postpro_avg_XY.pkl'

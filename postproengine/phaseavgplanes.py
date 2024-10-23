@@ -56,8 +56,8 @@ class postpro_phaseavgplanes():
         # -- optional parameters ----
         {'key':'calcavg', 'required':False,  'default':False,
          'help':'Also calculate average variables', },
-        {'key':'calcrestress', 'required':False,  'default':False,
-         'help':'Also calculate Reynolds stresses', },
+        #{'key':'calcrestress', 'required':False,  'default':False,
+        # 'help':'Also calculate Reynolds stresses', },
         {'key':'saveavgpklfile', 'required':False,  'default':'',
         'help':'Name of pickle file to save average results', },
         {'key':'loadavgpklfile', 'required':False,  'default':'',
@@ -117,7 +117,7 @@ class postpro_phaseavgplanes():
             self.varnames = plane['varnames']
             self.axis_rotation = plane['axis_rotation']
             self.calcavg  = plane['calcavg']
-            self.calcrestress    = plane['calcrestress']
+            #self.calcrestress    = plane['calcrestress']
             self.saveavgpklfile  = plane['saveavgpklfile']
             self.loadavgpklfile  = plane['loadavgpklfile']
             self.verbose         = verbose
@@ -135,7 +135,7 @@ class postpro_phaseavgplanes():
                                                           savepklfile=self.pklfile, verbose=verbose, axis_rotation=self.axis_rotation)
 
             # Compute the normal average
-            if self.calcavg or self.calcrestress:
+            if self.calcavg:  # or self.calcrestress:
                 if len(self.loadavgpklfile)>0:
                     # Load from existing file
                     pfile     = open(self.loadavgpklfile, 'rb')
