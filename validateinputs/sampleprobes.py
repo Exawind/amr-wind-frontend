@@ -7,9 +7,9 @@ See README.md for details on the structure of classes here
 """
 
 def isPointInside(p, corner1, corner2):
-    inside = (corner1[0] <= p[0]) and (p[0] <= corner2[0]) and \
-             (corner1[1] <= p[1]) and (p[1] <= corner2[1]) and \
-             (corner1[2] <= p[2]) and (p[2] <= corner2[2]) 
+    inside = (corner1[0] < p[0]) and (p[0] < corner2[0]) and \
+             (corner1[1] < p[1]) and (p[1] < corner2[1]) and \
+             (corner1[2] < p[2]) and (p[2] < corner2[2]) 
     return inside
 
 def checkLineProbeInside(name, pdict, corner1, corner2):
@@ -52,7 +52,10 @@ def checkSamplePlaneInside(name, pdict, corner1, corner2):
     else:
         offsets = [0]
     
-    offsetnormal = np.array(pdict['sampling_p_normal'])
+    try:
+        offsetnormal = np.array(pdict['sampling_p_offset_vector'])
+    except:
+        offsetnormal = np.array(pdict['sampling_p_normal'])
 
     # Construct the list of offsets
     offsetvec = []
@@ -92,10 +95,11 @@ class Check_sampleprobes_inside():
     def check(self, app):
         
         post_processing = app.inputvars['post_processing'].getval()
+        allpost_processing = app.listboxpopupwindict['listboxpostprosetup'].getitemlist()
         allsamplingdata = app.listboxpopupwindict['listboxsampling']
         allprobes       = allsamplingdata.getitemlist()
-
-        if (len(allprobes)==0) or ('sampling' not in post_processing):
+        
+        if (len(allprobes)==0) or (len(allpost_processing)==0):
             skipstatus                = {}   # Dict containing return status
             skipstatus['subname']     = ''   # Additional name info
             skipstatus['result']      = status.SKIP

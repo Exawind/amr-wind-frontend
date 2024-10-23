@@ -17,7 +17,7 @@ import itertools
 import pickle
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from postproengine import interpolatetemplate, circavgtemplate
+from postproengine import interpolatetemplate, circavgtemplate,doubleintegraltemplate
 
 """
 Plugin for creating Reynolds stress averages on sample planes
@@ -329,4 +329,12 @@ reynoldsstress:
         def __init__(self, parent, inputs):
             super().__init__(parent, inputs)
             self.interpdb = self.parent.dbReAvg
+            return
+
+    @registeraction(actionlist)
+    class doubleintegral(doubleintegraltemplate):
+        actionname = 'double_integral'
+        def __init__(self, parent, inputs):
+            super().__init__(parent, inputs)
+            self.intdb = self.parent.dbReAvg
             return

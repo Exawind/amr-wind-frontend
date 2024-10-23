@@ -299,8 +299,8 @@ class postpro_wakemeander():
                     self.dfcenters.to_csv(savefname,index=False,sep=',')
 
                 if len(savepklfile)>0:
-                    savepklfile = savepklfile.format(iplane=self.iplane)
-                    savefname = os.path.join(self.output_dir, savepklfile)
+                    savefname = savepklfile.format(iplane=self.iplane)
+                    savefname = os.path.join(self.output_dir, savefname)
                     with open(savefname, 'wb') as f:
                         pickle.dump(self.wake, f)
 

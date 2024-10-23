@@ -971,6 +971,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offset_vector'] = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create hub-height sampling planes --- 
     elif probetype == 'hubheight':
@@ -1010,6 +1011,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = vert
+            sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create streamwise sampling planes --- 
     elif probetype == 'streamwise':
@@ -1048,6 +1050,7 @@ def sampling_createDictForTurbine(self, turbname, tdict, pdict, defaultopt):
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = crossstream
+            sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
         print("ERROR: probetype %s not recognized"%probetype)
@@ -1106,6 +1109,8 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
         outputvars = outputvars.split(',')
         #print('outputvars = '+repr(outputvars))
 
+    wholedomaineps = 1.0E-4
+
     # Set scale and orientation axes
     scale   = AvgTurbD if units=='diameter' else 1.0
     if orient == 'x':
@@ -1115,7 +1120,9 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     elif orient == 'y':
         streamwise  = np.array([0.0, 1.0, 0.0])
         crossstream = np.array([1.0, 0.0, 0.0])
-        vert        = np.array([0.0, 0.0, 1.0])        
+        vert        = np.array([0.0, 0.0, 1.0])
+    elif isFloat(orient):
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(float(orient))
     else:  # Use the wind direction
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 
@@ -1189,9 +1196,9 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             streamwise  = np.array([1.0, 0.0, 0.0])
             crossstream = np.array([0.0, 1.0, 0.0])
             vert        = np.array([0.0, 0.0, 1.0])
-            origin      = np.array([prob_lo[0], prob_lo[1], probecenter[2]])
-            L1          = prob_hi[0] - prob_lo[0]
-            L2          = prob_hi[1] - prob_lo[1]
+            origin      = np.array([prob_lo[0]+wholedomaineps, prob_lo[1]+wholedomaineps, probecenter[2]])
+            L1          = prob_hi[0] - prob_lo[0] - 2.0*wholedomaineps
+            L2          = prob_hi[1] - prob_lo[1] - 2.0*wholedomaineps
         else:
             origin     = probecenter - upstream*streamwise - below*vert
             origin     = origin - lateral*crossstream
@@ -1223,6 +1230,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, above+below, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = vert
+            sampledict['sampling_p_offset_vector']  = vert
             sampledict['sampling_p_offsets'] = offsetstr
     # --- Create rotorplane sampling plane --- 
     elif probetype == 'rotorplane':
@@ -1261,6 +1269,7 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, upstream+downstream, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = streamwise
+            sampledict['sampling_p_offset_vector']  = streamwise
             sampledict['sampling_p_offsets'] = offsetstr
 
     # --- Create streamwise sampling planes --- 
@@ -1270,10 +1279,10 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             probhi     = self.inputvars['prob_hi'].getval()
             upstream, downstream = intersectLineDomain(probecenter, -streamwise, problo, probhi)
             # Calculate the geometry
-            upstream   = np.abs(upstream)
-            downstream = np.abs(downstream)
-            below      = probecenter[2] - problo[2]
-            above      = probhi[2] - probecenter[2]
+            upstream   = np.abs(upstream) - wholedomaineps
+            downstream = np.abs(downstream) - wholedomaineps
+            below      = probecenter[2] - problo[2] - wholedomaineps
+            above      = probhi[2] - probecenter[2] - wholedomaineps
         else:
             # Calculate the geometry
             upstream   = scale*float(pdict['upstream'])
@@ -1310,10 +1319,11 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
             offsetvec  = np.linspace(0, lateral, noffsets+1)
             offsetstr  = ' '.join([repr(x) for x in offsetvec])
             sampledict['sampling_p_normal']  = crossstream
+            sampledict['sampling_p_offset_vector']  = crossstream
             sampledict['sampling_p_offsets'] = offsetstr        
     else:
         print("ERROR: probetype %s not recognized for farm centers"%probetype)
-    
+
     return sampledict
 
 def sampling_createAllProbes(self, verbose=False):

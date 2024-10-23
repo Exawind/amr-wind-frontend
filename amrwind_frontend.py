@@ -10,6 +10,7 @@ import sys, os, re, shutil
 # import the tkyamlgui library
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath+'/tkyamlgui')
+sys.path.insert(1, scriptpath+'/utilities')
 sys.path.insert(1, scriptpath)
 
 import numpy as np
@@ -17,6 +18,7 @@ from functools import partial
 import tkyamlgui as tkyg
 import postproamrwindabl    as postpro
 import postproamrwindsample as ppsample
+import convert_abl_stats    as MMC_abl_stats
 
 if sys.version_info[0] < 3:
     import Tkinter as Tk
@@ -273,7 +275,7 @@ class MyApp(tkyg.App, object):
 
     def writeAMRWindInput(self, filename, verbose=False, 
                           postloadctrlelem=True,
-                          outputextraparams=True, comments=True):
+                          outputextraparams=True, comments=True,amr_wind_version='latest'):
         """
         Write out the input file for AMR-Wind
         TODO: Do more sophisticated output control later
@@ -304,12 +306,29 @@ class MyApp(tkyg.App, object):
         actuatordict= self.listboxpopupwindict['listboxactuator'].dumpdict('AMR-Wind', keyfunc=samplingkey)
 
         if verbose: print('dumping listboxpostprosetup')
+
         def postprocessingkey(n, d1, d2):
             if ('outputprefix' in d2.outputdef):
                 return n+'.'+d2.outputdef['AMR-Wind']
             else:
                 return d1['outputprefix']['AMR-Wind']+'.'+n+'.'+d2.outputdef['AMR-Wind']
         postprocessingdict= self.listboxpopupwindict['listboxpostprosetup'].dumpdict('AMR-Wind', keyfunc=postprocessingkey)
+
+        """
+        AMR_WIND version specific modification to dicts 
+        """
+        def remove_entries(data_dict, str_to_remove, how='in'):
+            if how=='in':
+                keys_to_remove = [key for key in data_dict if str_to_remove in key]
+            elif how=='endswith':
+                keys_to_remove = [key for key in data_dict if key.endswith(str_to_remove)]
+            # Remove the keys from the dictionary
+            for key in keys_to_remove:
+                del data_dict[key]
+        if amr_wind_version == 'latest':
+            remove_entries(sampledict,'.normal',how='endswith')
+        elif amr_wind_version == 'legacy':
+            remove_entries(sampledict,'.offset_vector',how='endswith')
 
         # Construct the output dict
         outputdict=inputdict.copy()
@@ -2162,6 +2181,7 @@ class MyApp(tkyg.App, object):
                               autoset_ABLForcing=True,
                               autoset_BodyForcing=True,
                               autoset_MMCForcing=False,
+                              autoset_MMCTendencyForcing=False,
                               autoset_ABLMeanBoussinesq=True,
                               autoset_ABLwallshearstresstype=True,
                               checkpointdir=None,
@@ -2257,7 +2277,7 @@ class MyApp(tkyg.App, object):
             self.inputvars['ABLForcing'].setval(False)
             if verbose: printverbose('SET','ABLForcing')
 
-        # Set the MMC body force
+        # Set the MMC body force (constant t, z-varying)
         if (len(forcingdict)>0) and (autoset_MMCForcing):
             # Calculate the body force
             ncfile = forcingdict['ablstatfile']
@@ -2292,6 +2312,24 @@ class MyApp(tkyg.App, object):
                 printverbose('SET','ABL_initial_condition_input_file')
                 printverbose('SET','ABL_mesoscale_forcing')
 
+        # Set the MMC tendency forcing (t-varying, z-varying)
+        if (len(forcingdict)>0) and (autoset_MMCTendencyForcing):
+            # Calculate the body force
+            ncfile = forcingdict['ablstatfile']
+            tendencyfile = forcingdict['tendencyforcing_file']
+            if len(ncfile)>0 and os.path.exists(ncfile):
+                data = MMC_abl_stats.read_abl_stats(ncfile)
+                MMC_abl_stats.create_tendency_forcing(data, tendencyfile)
+                if verbose:
+                    print('Wrote %s'%tendencyfile)
+            self.inputvars['ABL_tendency_forcing'].setval(True)
+            self.inputvars['ABL_mesoscale_forcing'].setval(tendencyfile)
+            self.inputvars['ABLMesoForcingMom'].setval(True)
+            if verbose:
+                printverbose('SET','ABL_tendency_forcing')
+                printverbose('SET','ABL_mesoscale_forcing')
+                printverbose('SET','ABLMesoForcingMom')
+                
         # Set the ABLMeanBoussinesq term
         if autoset_ABLMeanBoussinesq:
             self.inputvars['ABLMeanBoussinesq'].setval(True)

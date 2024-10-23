@@ -139,7 +139,7 @@ def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variabl
             for comp in components:
                 Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
                 Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
-                t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hann')
+                t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hamming')
                 mode_r[r,theta,:,comp] = real_signal[:numSteps]
 
     return mode_r
@@ -240,37 +240,37 @@ def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
     xc = np.zeros(len(iplanes))
     YY = np.array(db[xaxis])
     ZZ = np.array(db[yaxis])
+
+    t = np.asarray(np.array(db['times']).data)
+    udata = {}
     for iplaneiter, iplane in enumerate(iplanes):
         if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
             xc[iplaneiter] = origina1a2a3[-1] + offsets[iplane]
         else:
             xc[iplaneiter] = db['x'][iplane,0,0]
-
         y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
         z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
-
         permutation = [0,axisz+1,axisy+1]
-        t = np.asarray(np.array(db['times']).data)
-        udata = np.zeros((len(iplanes),len(t),len(z),len(y),3))
+        udata[iplane] = np.zeros((len(t),len(z),len(y),3))
         for i,tstep in enumerate(db['timesteps']):
             if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
                 ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
-                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
-                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
             else:
                 ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,0] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,1] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
 
                 ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
-                udata[iplaneiter,i,:,:,2] = ordered_data[iplane,:,:]
+                udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
 
     return udata , xc, y , z , t, iplanes 
 
@@ -293,7 +293,7 @@ def interpolate_cart_to_radial(U,yy,zz,RR,TT,offsety,offsetz):
     U_interp = np.reshape(U_interp,(RR.shape[0],TT.shape[0]))
     return U_interp
 
-def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hann',subtract_mean=True):
+def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hamming',subtract_mean=True):
     """
     Compute the Short-Time Fourier Transform (STFT) of a signal using scipy.
 
@@ -317,7 +317,7 @@ def compute_stft(x, fs=1.0, nperseg=256, noverlap=None, window='hann',subtract_m
 
     return f, t, Zxx.swapaxes(0,1)
 
-def compute_istft(Zxx, fs=1.0, nperseg=256, noverlap=None, window='hann'):
+def compute_istft(Zxx, fs=1.0, nperseg=256, noverlap=None, window='hamming'):
     """
     Compute the Inverse Short-Time Fourier Transform (ISTFT) to reconstruct the signal using scipy.
 
@@ -639,7 +639,7 @@ spod:
                             print("Error: zcenter - LR negative. Exiting")
                             print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
                             sys.exit()
-                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplaneiter,titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
+                        self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplane][titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
 
                 if self.cylindrical_velocities==True:
                     if self.verbose:
@@ -777,7 +777,7 @@ spod:
                         self.variables['theta']    = theta
                         self.variables['y']        = y
                         self.variables['z']        = z
-                        self.variables['x']        = xcs[iplane]
+                        self.variables['x']        = xcs[iplaneiter]
                         self.variables['ycenter']  = ycenter
                         self.variables['zcenter']  = zcenter
                         self.variables['nperseg']  = self.nperseg
@@ -998,7 +998,7 @@ spod:
                         mode_rhat[:,ktheta_ind,angfreq_full_ind,:] += proj_coeff*self.parent.POD_modes[corr][ind]
                     else:
                         proj_coeff  = self.parent.POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind]
-                        mode_rhat[:,ktheta_ind,angfreq_ful_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
+                        mode_rhat[:,ktheta_ind,angfreq_full_ind,:] += proj_coeff*self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,block_ind,:]
                     print("---> Adding mode for ktheta = ",self.parent.variables['ktheta'][ktheta_ind]," and St = ", self.parent.variables['angfreq'][angfreq_ind] * scaling)
 
                 mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)

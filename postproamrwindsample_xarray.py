@@ -88,7 +88,10 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                 db['z'] = zm        
                 db['axis1'] = ds.attrs['axis1']
                 db['axis2'] = ds.attrs['axis2']
-                db['axis3'] = ds.attrs['axis3']
+                try:
+                    db['axis3'] = ds.attrs['offset_vector']
+                except:
+                    db['axis3'] = ds.attrs['axis3']
                 R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             for itime in itimevec:
                 local_ind = np.where(np.isin(times[ncfileiter], timevec[itime]))[0]
@@ -247,7 +250,10 @@ def avgPlaneXR(ncfileinput, timerange,
                 db['z'] = zm
                 db['axis1'] = ds.attrs['axis1']
                 db['axis2'] = ds.attrs['axis2']
-                db['axis3'] = ds.attrs['axis3']
+                try:
+                    db['axis3'] = ds.attrs['offset_vector']
+                except:
+                    db['axis3'] = ds.attrs['axis3']
                 db['origin'] = ds.attrs['origin']
                 db['offsets'] = ds.attrs['offsets']
             # Set up the initial mean fields
@@ -288,7 +294,6 @@ def avgPlaneXR(ncfileinput, timerange,
 
     if transform:
         R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
-        #if not np.array_equal(R,np.eye(R.shape[0])):
         db['velocitya1_avg'],db['velocitya2_avg'],db['velocitya3_avg'] = apply_coordinate_transform(R,db['velocityx_avg'],db['velocityy_avg'],db['velocityz_avg'])
 
     if verbose:
