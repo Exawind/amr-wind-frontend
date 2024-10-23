@@ -639,11 +639,13 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     return db
 
 def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
-                                   extrafuncs=[], avgdb = None,
-                                   varnames=['velocityx','velocityy','velocityz'],
-                                   savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
+                                    extrafuncs=[], avgdb = None,
+                                    varnames=['velocityx','velocityy','velocityz'],
+                                    savepklfile='', groupname=None, verbose=False, includeattr=False,axis_rotation=0):
     """
     Calculate the phase-averaged reynolds stresses
+    
+    Computes < (u_i - \overline{u_i})*(u_j - \overline{u_j}) >
     """
     ncfilelist = getFileList(ncfileinput)
     ncfile=ncfilelist[0]
@@ -730,7 +732,7 @@ def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
                 tnow += tperiod
             print()  # Done with this file
 
-    # Normalize and sqrt std dev
+    # Normalize 
     if Ncount > 0:
         for corr in corrlist:
             name = corr[0]

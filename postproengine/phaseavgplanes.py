@@ -162,6 +162,36 @@ class postpro_phaseavgplanes():
         return 
 
     # --- Inner classes for action list ---
+    @registeraction(actionlist)
+    class calc_phaseavg_restress1():
+        actionname = 'calcreynoldsstress1'
+        blurb      = 'Calculate Reynolds stress (version 1)'
+        required   = False
+        actiondefs = [
+            {'key':'savepklfile', 'required':False,  'default':'',
+             'help':'Name of pickle file to save phase averaged results', },
+        ]
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            print('Executing ' + self.actionname)
+            savepklfile = self.actiondict['savepklfile']
+            groupname   = self.parent.group
+            ncfileinput = self.parent.ncfile
+            db_rephavg  = ppsamplexr.phaseAvgReynoldsStress1_PlaneXR(ncfileinput, self.parent.tstart,
+                                                                     self.parent.tend, self.parent.tperiod,
+                                                                     extrafuncs=[], avgdb = None,
+                                                                     varnames=['velocityx','velocityy','velocityz'],
+                                                                     savepklfile=savepklfile,
+                                                                     groupname=groupname,
+                                                                     verbose=False, includeattr=True,
+                                                                     axis_rotation=self.parent.axis_rotation)
+            self.parent.dbpavg.update(db_rephavg)
+            return
 
     @registeraction(actionlist)
     class contourplot(contourplottemplate):
