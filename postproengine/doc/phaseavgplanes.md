@@ -46,6 +46,7 @@ Phase average netcdf sample planes
     cbar_label        : Label for colorbar (Optional, Default: None)
     cbar_nticks       : Number of ticks to include on colorbar (Optional, Default: None)
     subtractpklfile   : Name of pickle file to subtract from dataframe (Optional, Default: '')
+    plotturbines      : List of dictionaries which contain turbines to plot (Optional, Default: None)
 ```
 
 ## Example

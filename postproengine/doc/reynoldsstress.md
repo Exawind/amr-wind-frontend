@@ -49,6 +49,7 @@ Reynolds-Stress average netcdf sample planes
     cbar_label        : Label for colorbar (Optional, Default: None)
     cbar_nticks       : Number of ticks to include on colorbar (Optional, Default: None)
     subtractpklfile   : Name of pickle file to subtract from dataframe (Optional, Default: '')
+    plotturbines      : List of dictionaries which contain turbines to plot (Optional, Default: None)
   interpolate         : ACTION: Interpolate data from an arbitrary set of points (Optional)
     pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
     pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
