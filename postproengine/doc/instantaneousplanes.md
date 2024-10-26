@@ -8,11 +8,11 @@ Make instantaneous plots from netcdf sample planes
   iters               : Which iterations to pull from netcdf file (Required)
   xaxis               : Which axis to use on the abscissa (Required)
   yaxis               : Which axis to use on the ordinate (Required)
+  iplane              : Which plane to pull from netcdf file (Required)
   times               : Which times to pull from netcdf file (overrides iters) (Optional, Default: [])
   trange              : Pull a range of times from netcdf file (overrides iters) (Optional, Default: None)
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
-  iplane              : Which plane to pull from netcdf file (Required)
 ```
 
 ## Actions: 
@@ -38,6 +38,7 @@ Make instantaneous plots from netcdf sample planes
     axesnumfunc       : Function to determine which subplot axes to create plot in (lambda expression with iplane as arg) (Optional, Default: None)
     axesnumfunc       : Function to determine which subplot axes to create plot in (lambda expression with iplane as arg) (Optional, Default: None)
     axisscale         : Aspect ratio of figure axes (options:equal,scaled,tight,auto,image,square) (Optional, Default: 'scaled')
+    plotturbines      : List of dictionaries which contain turbines to plot (Optional, Default: None)
   interpolate         : ACTION: Interpolate data from an arbitrary set of points (Optional)
     pointlocationfunction: Function to call to generate point locations. Function should have no arguments and return a list of points (Required)
     pointcoordsystem  : Coordinate system for point interpolation.  Options: XYZ, A1A2 (Required)
