@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import OrderedDict
 import numpy as np
+import pickle
 import pandas as pd
 import re
 from scipy.interpolate import RegularGridInterpolator
@@ -779,6 +780,8 @@ class contourplottemplate():
         'help':'Label for colorbar',},
         {'key':'cbar_nticks', 'required':False,  'default':None,
         'help':'Number of ticks to include on colorbar',},
+        {'key':'subtractpklfile', 'required':False,  'default':'',
+        'help':'Name of pickle file to subtract from dataframe', }, 
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -815,6 +818,7 @@ class contourplottemplate():
             yscalef  = eval(actiondict['yscalefunc'])
             axis_rotation = actiondict['axis_rotation']
             postplotfunc = actiondict['postplotfunc']
+            subtractpkl  = actiondict['subtractpklfile']
             figname  = actiondict['figname']
             axesnumf = None if actiondict['axesnumfunc'] is None else eval(actiondict['axesnumfunc'])
 
@@ -835,6 +839,13 @@ class contourplottemplate():
                 else:
                     fig, ax = plt.subplots(1,1,figsize=(figsize[0],figsize[1]), dpi=dpi)
                 plotq = plotfunc(self.plotdb)
+                if subtractpkl != '':
+                    pfile          = open(subtractpkl, 'rb')
+                    subtractdb         = pickle.load(pfile)
+                    pfile.close()
+                    
+                    subtract_plotq = plotfunc(subtractdb)
+                    plotq -= subtract_plotq
                 c     = ax.contourf(xscalef(self.plotdb[xaxis][iplane,:,:]),
                                     yscalef(self.plotdb[yaxis][iplane,:,:]),
                                     plotq[iplane, :, :], 
