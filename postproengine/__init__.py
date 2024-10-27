@@ -11,6 +11,7 @@ import pickle
 import pandas as pd
 import re
 from scipy.interpolate import RegularGridInterpolator
+import plotfunctions
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -781,7 +782,9 @@ class contourplottemplate():
         {'key':'cbar_nticks', 'required':False,  'default':None,
         'help':'Number of ticks to include on colorbar',},
         {'key':'subtractpklfile', 'required':False,  'default':'',
-        'help':'Name of pickle file to subtract from dataframe', }, 
+        'help':'Name of pickle file to subtract from dataframe', },
+        {'key':'plotturbines',   'required':False,  'default':None,
+         'help':'List of dictionaries which contain turbines to plot', },
     ]
     plotdb = None
     def __init__(self, parent, inputs):
@@ -821,6 +824,7 @@ class contourplottemplate():
             subtractpkl  = actiondict['subtractpklfile']
             figname  = actiondict['figname']
             axesnumf = None if actiondict['axesnumfunc'] is None else eval(actiondict['axesnumfunc'])
+            plotturbs= actiondict['plotturbines']
 
             if not isinstance(iplanes, list): iplanes = [iplanes,]
 
@@ -884,6 +888,21 @@ class contourplottemplate():
                 ax.set_title(evaltitle,fontsize=fontsize)
 
                 ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+
+                # Plot turbines
+                if plotturbs:
+                    axismapping = {'x':0, 'a1':0, 'y':1, 'a2':1, 'z':2, 'a3':2}
+                    defaultlstyle =  {'lw':1, 'color':'k', 'alpha':0.75}
+                    for turb in plotturbs:
+                        basexyz   = turb['basexyz']
+                        hubheight = turb['hubheight']
+                        turbD     = turb['rotordiameter']
+                        nacelledir= turb['nacelledir']
+                        ix        = turb['ix'] if 'ix' in turb else axismapping[self.parent.xaxis]
+                        iy        = turb['iy'] if 'iy' in turb else axismapping[self.parent.yaxis]
+                        lstyle    = turb['linestyle'] if 'linestyle' in turb else defaultlstyle
+                        plotfunctions.plotTurbine(ax, basexyz, hubheight, turbD, nacelledir, ix, iy,
+                                                  **lstyle)
 
                 # Run any post plot functions
                 if len(postplotfunc)>0:
