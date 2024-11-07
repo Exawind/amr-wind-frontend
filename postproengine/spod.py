@@ -105,7 +105,116 @@ def get_modes_inds(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta=
             inds[i]=int(ind)
     return inds
 
-def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variables,POD_proj_coeff,POD_modes,corr,components=None):
+def reshape_stack_velocities(U,NR,NB,corr):
+    corr_dict = {'U': 0, 'V': 1, 'W': 2}
+    comp_corr = corr.split('-')
+    corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+    shape = U.shape
+    U_stack = np.zeros((NR*len(corr_inds),NB),dtype=complex)
+    for corr_ind_iter , corr_ind in enumerate(corr_inds):
+        U_stack[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(U[:,:,corr_ind])
+
+    return U_stack
+
+def reshape_stack_velocities_single_block(U,NR,corr):
+    corr_dict = {'U': 0, 'V': 1, 'W': 2}
+    comp_corr = corr.split('-')
+    corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+    shape = U.shape
+    U_stack = np.zeros((NR*len(corr_inds)),dtype=complex)
+    for corr_ind_iter , corr_ind in enumerate(corr_inds):
+        U_stack[corr_ind_iter*NR:NR*(corr_ind_iter+1)] = np.copy(U[:,corr_ind])
+
+    return U_stack
+
+def reshape_unstack_velocities(U,NR,NB,corr):
+    corr_dict = {'U': 0, 'V': 1, 'W': 2}
+    comp_corr = corr.split('-')
+    corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+    U_unstack = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
+    for corr_ind_iter , corr_ind in enumerate(corr_inds):
+        U_unstack[:,:,corr_ind_iter] = np.copy(U[corr_ind_iter*NR:NR*(corr_ind_iter+1),:])
+    return  U_unstack
+
+def inner_product(U,V,W):
+    """
+    Computes the inner product <U,V>_x = U^H W V
+
+    """
+    #return np.conjugate(U).T @ W @ V
+    return np.dot(np.dot(np.conj(U).T,W),V)
+
+def reconstruct_r_ktheta_f(u,modes,eig_inds,POD_modes,sorted_inds,variables,corr,W,POD_proj_coeff = None):
+    NTheta  = len(variables['theta'])
+    NR      = len(variables['r'])
+    angfreq = variables['angfreq'] 
+    ktheta  = variables['ktheta'] 
+    NB = len(variables['blocks'])
+    if modes == -1: #reconstruct all modes
+        modes = list(range(len(sorted_inds[corr]['ktheta'])))
+    else:
+        if not isinstance(modes, list): modes = [modes,]
+    if eig_inds == -1:
+        eig_inds = list(range(NB))
+    else:
+        if not isinstance(eig_inds, list): eig_inds = [eig_inds,]
+
+
+    #shape NR, NTheta, NB, Nkt, corr
+    mode_rhat = np.zeros((NR,NTheta,NB,len(angfreq),POD_modes[corr].shape[-1]),dtype=complex)
+
+    for mode_iter , mode in enumerate(modes):
+        ktheta_ind  = sorted_inds[corr]['ktheta'][mode]
+        angfreq_ind = sorted_inds[corr]['angfreq'][mode]
+        #print("Reconstructing ktheta = ",ktheta[ktheta_ind], ", angfreq = ",angfreq[angfreq_ind], ", mode = ",mode," (",mode_iter,"/",len(modes),")")
+        if POD_proj_coeff == None:
+            eigmodes_stacked = reshape_stack_velocities(POD_modes[corr][:,ktheta_ind,angfreq_ind,:,:],NR,NB,corr) #NR*corr for each eigenmode NB
+            u_stacked = reshape_stack_velocities(u[:,ktheta_ind,:,angfreq_ind,:],NR,NB,corr) #NR*corr for each block NB
+            reconstructed_signal = np.zeros((u_stacked.shape[0],1),dtype=complex)
+        for block_ind in range(0,NB):
+            #for eig_ind in range(0,NB):
+            for eig_ind in eig_inds:
+                if POD_proj_coeff == None:
+                    proj_coeff = inner_product(eigmodes_stacked[:,eig_ind],u_stacked[:,block_ind],W)
+                    reconstructed_signal[:,0] = proj_coeff*eigmodes_stacked[:,eig_ind]
+                    mode_rhat[:,ktheta_ind,block_ind,angfreq_ind,:] += reshape_unstack_velocities(reconstructed_signal,NR,1,corr)[:,0,:]
+                else:
+                    proj_coeff = POD_proj_coeff[corr][ktheta_ind,angfreq_ind,block_ind,eig_ind] #projection of u onto POD mode
+                    mode_rhat[:,ktheta_ind,block_ind,angfreq_ind,:] += proj_coeff * POD_modes[corr][:,ktheta_ind,angfreq_ind,eig_ind,:]
+    return mode_rhat
+
+
+def transform_to_realspace(u_r_ktheta_f,variables,numSteps,dt,corr,components=None,nowindow=False):
+    NR      = len(variables['r'])
+    NTheta  = len(variables['ktheta']) 
+    angfreq = variables['angfreq'] 
+    Nblocks = len(variables['blocks'])
+    nperseg = variables['nperseg']
+    overlap = variables['noverlap']
+    r = variables['r']
+
+    NCorr = u_r_ktheta_f.shape[-1]
+    u_r_theta_t = np.zeros((NR,NTheta,numSteps,NCorr))
+
+    #inverse Fourier transform in theta using ifft
+    u_r_theta_f = np.fft.ifft(u_r_ktheta_f,axis=1)
+
+    #inverse fourier transform in time using isft
+    if components==None: components = range(NCorr)
+    for r in range(NR):
+        for theta in range(NTheta):
+            for comp in components:
+                Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
+                for block_ind in range(Nblocks):
+                    Zxx[:,block_ind] = u_r_theta_f[r,theta,block_ind,:,comp]/Nblocks
+                if nowindow:
+                    real_signal = np.fft.irfft(Zxx[:,0],n=numSteps)
+                else:
+                    t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hamming')
+                u_r_theta_t[r,theta,:,comp] = real_signal[:numSteps]
+    return u_r_theta_t
+
+def reconstruct_r_theta_t_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variables,POD_proj_coeff,POD_modes,corr,components=None):
     NTheta  = len(variables['theta'])
     NR      = len(variables['r'])
     angfreq = variables['angfreq'] 
@@ -114,12 +223,14 @@ def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variabl
     Nblocks = len(variables['blocks'])
 
     mode_rhat = np.zeros((NR,NTheta,len(angfreq),shape[-1]),dtype=complex) 
+    angfreq_ind_list = []
     for i in range(0,numModes):
         # Get ktheta index, angfreq index, and block index associated with mode number
         ind = inds[i]
         ktheta_ind  = sorted_inds[corr]['ktheta'][ind]
         angfreq_ind = sorted_inds[corr]['angfreq'][ind]
         block_ind   = sorted_inds[corr]['block'][ind]
+        angfreq_ind_list.append(angfreq_ind)
         #If reading SPOD results from pkl file with sorted eigenvectors/eigenvalues
         if POD_modes[corr].shape[0] != NR: 
             proj_coeff  = POD_proj_coeff[corr][ind]                                      #projection of u onto POD mode
@@ -132,13 +243,16 @@ def reconstruct_flow_istfft(inds,numSteps,dt,nperseg,overlap,sorted_inds,variabl
 
     #fourier transform in theta 
     mode_r_that = np.fft.ifft(mode_rhat,axis=1) 
+
+    #fourier transform in time
     mode_r = np.zeros((NR,NTheta,numSteps,shape[-1])) 
     if components==None: components = range(mode_r_that.shape[-1])
     for r in range(mode_r_that.shape[0]):
         for theta in range(mode_r_that.shape[1]):
             for comp in components:
                 Zxx = np.zeros((len(angfreq),Nblocks),dtype=complex)
-                Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
+                for angfreq_ind in angfreq_ind_list:
+                    Zxx[angfreq_ind,:] = mode_r_that[r,theta,angfreq_ind,comp]
                 t, real_signal = compute_istft(Zxx,fs=1.0/dt,nperseg=nperseg,noverlap=overlap,window='hamming')
                 mode_r[r,theta,:,comp] = real_signal[:numSteps]
 
@@ -191,7 +305,7 @@ def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=
     else:
         im = ax.pcolormesh(theta,r,Ur,cmap=cmap,vmin=vmin,vmax=vmax)
     #im = ax.pcolormesh(theta,r,Ur,cmap='jet')
-    #cbar = plt.colorbar(im,orientation='horizontal')
+    cbar = plt.colorbar(im,orientation='horizontal')
     #cbar = plt.colorbar(im,orientation='vertical')
 
     # ---- mod here ---- #
@@ -226,7 +340,12 @@ def extract_1d_from_meshgrid(Z):
 def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
 
     db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
-    if iplanes == None: iplanes = list(range(len(db['offsets'])))
+    if iplanes == None: 
+        if isinstance(db['offsets'], np.ndarray):
+            iplanes = list(range(len(db['offsets'])))
+        else:
+            iplanes = [0,]
+
     if not isinstance(iplanes, list): iplanes = [iplanes,]
 
     if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
@@ -333,6 +452,36 @@ def compute_istft(Zxx, fs=1.0, nperseg=256, noverlap=None, window='hamming'):
     """
     t, x = scipy.signal.istft(Zxx, fs=fs, window=window, nperseg=nperseg, noverlap=noverlap)
     return t, x
+
+def fft_one_block(x,fs=1.0,overlap = 0, nowindow=False,return_onesided=True,subtract_mean=True):
+    """
+    Computed rFFT in time with one block and no damping
+    """
+    #segement the signal 
+    nperseg = len(x)
+    if return_onesided:
+        wsfreq = np.fft.rfftfreq(nperseg,d=1/fs)
+    else:
+        wsfreq = np.fft.fftfreq(nperseg,d=1/fs)
+    
+    segments = [x[i:i+nperseg] for i in range(0,len(x)-nperseg+1,nperseg-overlap)]
+
+    if nowindow:
+        windowed_segments = segments
+    else:
+        window = np.hamming(nperseg)
+        windowed_segments = [segment * window for segment in segments]
+    #subtract the mean for each segement and apply the fft 
+    if subtract_mean:
+        mean_subtracted_segments = [segment - np.mean(segment) for segment in windowed_segments]
+    else:
+        mean_subtracted_segments = windowed_segments
+
+    fft_segments = np.array([np.fft.fft(segments) for segments in mean_subtracted_segments])
+    if return_onesided:
+      fft_segments = fft_segments[:,0:int(nperseg/2)+1]
+    return wsfreq,fft_segments
+
 
 def welch_fft(x,fs=1.0,nperseg=256,return_onesided=True,subtract_mean=True):
     """
@@ -479,6 +628,8 @@ class postpro_spod():
          'help':'Variables to extract from the netcdf file',},        
         {'key':'verbose',  'required':False,  'default':True,
          'help':'Print extra information.',},        
+        {'key':'nowindow',  'required':False,  'default':False,
+         'help':'Do not window time fourier transform with single block (e.g.,, for periodic signals in time).',},        
         
     ]
     example = """
@@ -567,6 +718,7 @@ spod:
             self.yaxis    = plane['yaxis']
             self.varnames = plane['varnames']
             self.verbose = plane['verbose']
+            self.nowindow = plane['nowindow']
 
 
             #Get all times if not specified 
@@ -574,31 +726,36 @@ spod:
             #if not isinstance(iplanes, list): iplanes = [iplanes,]
             if not isinstance(correlations, list): correlations= [correlations,]
             if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
+            if self.verbose:
+                print("--> Reading in velocity data")
+            #udata_cart,xcs,y,z,self.times,iplanes = read_cart_data(ncfile,self.varnames,group,self.trange,iplanes,self.xaxis,self.yaxis)
+            file = 'ucart_data_pulse.pkl'
+            #file = 'ucart_data.pkl'
+            # with open(file,'wb') as f:
+            #     pickle.dump(udata_cart,f)
+            #     pickle.dump(xcs,f)
+            #     pickle.dump(y,f)
+            #     pickle.dump(z,f)
+            #     pickle.dump(self.times,f)
+            #     pickle.dump(iplanes,f)
+            # sys.exit()
+            with open(file, 'rb') as f:
+                udata_cart = pickle.load(f)
+                xcs = pickle.load(f)
+                y = pickle.load(f)
+                z = pickle.load(f)
+                self.times = pickle.load(f)
+                iplanes  = pickle.load(f)
             if wake_center_files != None and len(wake_center_files) != len(iplanes):
                 print("Error: len(wake_center_files) != len(iplanes). Exiting.")
                 sys.exit()
 
-            if self.verbose:
-                print("--> Reading in velocity data")
-            udata_cart,xcs,y,z,self.times,iplanes = read_cart_data(ncfile,self.varnames,group,self.trange,iplanes,self.xaxis,self.yaxis)
             for iplaneiter, iplane in enumerate(iplanes):
                 print("--> Working on iplane: ",iplane," of ",iplanes)
                 self.iplane = iplane
-                # file = 'ucart_data.pkl'
-                # with open(file,'wb') as f:
-                #     pickle.dump(udata_cart[iplaneiter,:,:,:,:],f)
-                #     pickle.dump(xc[iplaneiter],f)
-                #     pickle.dump(y,f)
-                #     pickle.dump(z,f)
-                #     pickle.dump(self.times,f)
-                #with open(file, 'rb') as f:
-                #    udata_cart = pickle.load(f)
-                #    xc = pickle.load(f)
-                #    y = pickle.load(f)
-                #    z = pickle.load(f)
-                #    self.times = pickle.load(f)
 
                 tsteps = range(len(self.times))
+                dt = self.times[1]-self.times[0]
 
                 """
                 Define polar grid 
@@ -655,15 +812,17 @@ spod:
                     if self.nperseg==None:
                         self.nperseg = len(self.times)
                         print("nperseg: ",self.nperseg)
-                    self.overlap = self.nperseg//2
-                    Nkt = int(self.nperseg/2) + 1
-                    dt = self.times[1]-self.times[0]
-                    #time_segments = np.array([self.times[i:i+self.nperseg] for i in range(0,len(self.times)-self.nperseg+1,self.nperseg-self.nperseg//2)])
 
-                    tfreq , time_segments, _ = compute_stft(self.udata_polar[0,0,:,0],fs=1.0/dt,nperseg=self.nperseg,noverlap=self.overlap,subtract_mean=remove_temporal_mean)
-                    #w = np.hamming(self.nperseg)
-                    NB = time_segments.shape[0] #number of blocks 
+                    if self.nowindow:
+                        self.overlap = 0 
+                        NB = int(1.0)
+                        tfreq ,  _ = fft_one_block(self.udata_polar[0,0,:,0],fs=1.0/dt,overlap=0,nowindow=self.nowindow,subtract_mean=remove_temporal_mean)
+                    else:
+                        self.overlap = self.nperseg//2
+                        tfreq , time_segments, _ = compute_stft(self.udata_polar[0,0,:,0],fs=1.0/dt,nperseg=self.nperseg,noverlap=self.overlap,subtract_mean=remove_temporal_mean)
+                        NB = time_segments.shape[0] #number of blocks 
                     angfreq = tfreq * 2 * np.pi #compute angular frequencies 
+                    Nkt = len(angfreq)
                     #LT = time_segments[0][-1]-time_segments[0][0]
                     #LT = self.times[int(time_segments[1])] - self.times[time_segments[0]]
                     #angfreq = get_angular_wavenumbers(self.nperseg,LT)
@@ -679,21 +838,24 @@ spod:
                                 if remove_temporal_mean:
                                     temp_signal = temp_signal - np.mean(temp_signal) #subtract out temporal mean
                                 #tfreq , tfft = welch_fft(temp_signal,fs=1/dt,nperseg=self.nperseg,subtract_mean=remove_temporal_mean)
-                                _ , _ , tfft = compute_stft(temp_signal,fs=dt,nperseg=self.nperseg,noverlap=self.overlap,subtract_mean=remove_temporal_mean)
+                                if self.nowindow:
+                                    tfreq , tfft = fft_one_block(temp_signal,fs=1/dt,overlap=0,nowindow=self.nowindow,subtract_mean=remove_temporal_mean)
+                                else:
+                                    _ , _ , tfft = compute_stft(temp_signal,fs=dt,nperseg=self.nperseg,noverlap=self.overlap,subtract_mean=remove_temporal_mean)
                                 udata_that[rind,thetaind,:,:,compind] = tfft
 
                     if self.verbose:
                         print("--> Fourier transforming in Theta")
                     NkTheta = int(NTheta)
-                    udata_rhat = np.zeros((NR,NkTheta,NB,Nkt,len(components)),dtype=complex)
-                    for rind in np.arange(0,len(r)):
+                    self.udata_rhat = np.zeros((NR,NkTheta,NB,Nkt,len(components)),dtype=complex)
+                    for rind in np.arange(0,NR):
                         for block in np.arange(0,NB):
                             for ktind in np.arange(0,Nkt):
                                 for compind,comp in enumerate(components):
                                     temp_signal = udata_that[rind,:,block,ktind,compind] 
                                     if remove_azimuthal_mean:
                                         temp_signal = temp_signal - np.mean(temp_signal) 
-                                    udata_rhat[rind,:,block,ktind,compind] = np.fft.fft(temp_signal)
+                                    self.udata_rhat[rind,:,block,ktind,compind] = np.fft.fft(temp_signal)
 
                     del udata_that #don't need this anymore 
                     thetafreq = np.fft.fftfreq(NTheta,d=dtheta)
@@ -711,8 +873,12 @@ spod:
                     if sort:
                         self.sorted_inds  = {corr: {} for corr in correlations}
 
-                    W1D = form_weighting_matrix_simpsons_rule(r)
-                    scaling_factor_k = dt / (sum(np.hamming(self.nperseg)*NB)) 
+                    self.W1D = form_weighting_matrix_simpsons_rule(r)
+                    scaling_factor_k = dt / (sum(np.hamming(self.nperseg)**2)*NB) 
+                    #self.W1D = np.eye(len(r))
+                    #scaling_factor_k = 1.0
+                    #scaling_factor_k = 1.0/NB
+
 
                     corr_dict = {'U': 0, 'V': 1, 'W': 2}
                     for corr in correlations:
@@ -721,7 +887,7 @@ spod:
                         comp_corr = corr.split('-')
                         corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
 
-                        W = np.kron(np.eye(len(corr_inds)),W1D)
+                        W = np.kron(np.eye(len(corr_inds)),self.W1D)
                         Wsqrt = np.sqrt(W)
                         Wsqrtinv = np.zeros_like(Wsqrt)
                         for i in range(NR*len(corr_inds)):
@@ -731,37 +897,36 @@ spod:
                                 Wsqrtinv[i,i] = 1.0 / Wsqrt[i,i]
                         if compute_eigen_vectors:
                             self.POD_modes[corr]       = np.zeros((NR,len(ktheta),len(tfreq),NB,len(corr_inds)),dtype=complex)
-                            self.POD_proj_coeff[corr]  = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
+
+                            #First NB is block, second is eigvalue. To reconstruct the original signal, each block needs
+                            #to be projected onto each eigenvector
+                            self.POD_proj_coeff[corr]  = np.zeros((len(ktheta),len(tfreq),NB,NB),dtype=complex)
 
                         self.POD_eigenvalues[corr] = np.zeros((len(ktheta),len(tfreq),NB),dtype=complex)
 
                         for ktheta_ind , ktheta_val in enumerate(ktheta):
                             for tfreq_ind , tfreq_val in enumerate(tfreq):
-                                POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
-                                for corr_ind_iter , corr_ind in enumerate(corr_inds):
-                                    POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
+                                POD_Mat = reshape_stack_velocities(self.udata_rhat[:,ktheta_ind,:,tfreq_ind,:],NR,NB,corr)
+                                #POD_Mat = np.zeros((NR*len(corr_inds),NB),dtype=complex)
+                                #for corr_ind_iter , corr_ind in enumerate(corr_inds):
+                                    #POD_Mat[corr_ind_iter*NR:NR*(corr_ind_iter+1),0:NB] = np.copy(self.udata_rhat[:,ktheta_ind,:,tfreq_ind,corr_ind])
                                 POD_Mat_scaled = np.sqrt(scaling_factor_k) * np.dot(Wsqrt,POD_Mat)
                                 
                                 if compute_eigen_vectors:
                                     lsvd, ssvd, rsvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=True)
-                                    eigmodes = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
+                                    #eigmodes = np.zeros((NR,NB,len(corr_inds)),dtype=complex)
+                                    eigmodes_stacked = np.dot(Wsqrtinv,lsvd)
+                                    eigmodes = reshape_unstack_velocities(eigmodes_stacked,NR,NB,corr)
+                                    self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:] = np.copy(eigmodes)
 
-                                    temp  = np.dot(Wsqrtinv,lsvd)
-                                    for corr_ind_iter , corr_ind in enumerate(corr_inds):
-                                        eigmodes[:,:,corr_ind_iter] = temp[corr_ind_iter*NR:NR*(corr_ind_iter+1),:]
-
-                                    self.POD_modes[corr][:,ktheta_ind,tfreq_ind,:,:]   = eigmodes
-                                    for block_ind in range(NB):
-                                        self.POD_proj_coeff[corr][ktheta_ind,tfreq_ind,block_ind] += \
-                                                np.dot(np.dot(np.conj(POD_Mat[:,block_ind]).T,W),temp[:,block_ind])
-
+                                    for block_ind in range(NB): #each block of the original signal
+                                        for eig_ind in range(NB): #each eigvenvector 
+                                            self.POD_proj_coeff[corr][ktheta_ind,tfreq_ind,block_ind,eig_ind] = \
+                                                inner_product(eigmodes_stacked[:,eig_ind],POD_Mat[:,block_ind],W)
                                 else:
                                     ssvd = np.linalg.svd(POD_Mat_scaled,full_matrices=False,compute_uv=False)
-
-                                    
                                 eigval = ssvd**2
                                 self.POD_eigenvalues[corr][ktheta_ind,tfreq_ind,:] = eigval
-
                         if sort:
                             sorted_eigind = np.argsort(np.abs(self.POD_eigenvalues[corr]),axis=None)[::-1]
                             self.sorted_inds[corr]['ktheta'] , self.sorted_inds[corr]['angfreq'], self.sorted_inds[corr]['block'] = np.unravel_index(sorted_eigind,self.POD_eigenvalues[corr][:,:,:].shape)
@@ -805,11 +970,11 @@ spod:
                                 save_proj_coeff = {}
                                 for corr in correlations:
                                     save_modes[corr] = np.zeros((save_num_modes,NR,len(corr.split('-'))),dtype=complex)
-                                    save_proj_coeff[corr] = np.zeros(save_num_modes,dtype=complex)
+                                    save_proj_coeff[corr] = np.zeros((save_num_modes,NB),dtype=complex)
                                     for mode in range(save_num_modes):
                                         save_modes[corr][mode,:] = self.POD_modes[corr][:,self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode],:]
 
-                                        save_proj_coeff[corr][mode] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],self.sorted_inds[corr]['block'][mode]]
+                                        save_proj_coeff[corr][mode,:] = self.POD_proj_coeff[corr][self.sorted_inds[corr]['ktheta'][mode],self.sorted_inds[corr]['angfreq'][mode],:,self.sorted_inds[corr]['block'][mode]]
                                 objects.append(save_modes)
                                 objects.append(save_proj_coeff)
 
@@ -1120,5 +1285,229 @@ spod:
                 with open(savefilename, 'wb') as f:
                     pickle.dump(db, f)
                     pickle.dump(db_velxr,f)
+
+            return
+
+    @registeraction(actionlist)
+    class unit_tests():
+        actionname = 'unit_tests'
+        blurb      = 'Run SPOD unit test suite'
+        required   = False
+        actiondefs = [
+        {'key':'correlations','required':False,  'default':['U',],
+         'help':'List of correlations', },
+        ]
+        
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            print('Executing '+self.actionname)
+            correlations = self.actiondict['correlations']
+            if not isinstance(correlations, list): correlations= [correlations,]
+
+
+            ### Convert to cylindrical velocity 
+            numSteps = len(self.parent.times)
+            dt = self.parent.times[1]-self.parent.times[0]
+
+            """
+            First unit test is reconstructing a 1D signal using the stfft functionality
+            """
+            # Example usage
+            print()
+            print("Running unit test: Short Time FFT reconstrution of 1D signal")
+            fs = 1.0/dt
+            nperseg = self.parent.nperseg
+            overlap = self.parent.overlap
+            window='hamming'
+            original_signal = np.random.randn(numSteps)
+            # Compute the STFT
+            f, t, Zxx = compute_stft(original_signal, fs=fs, nperseg=nperseg, noverlap=overlap,subtract_mean = False,window=window)
+            Zxx = Zxx.swapaxes(0,1) #need to swap for istft
+            # Compute the ISTFT to reconstruct the signal
+            _, reconstructed_signal = compute_istft(Zxx, fs=fs, nperseg=nperseg, noverlap=overlap,window=window)
+            # Check the maximum absolute difference
+            max_difference = np.max(np.abs(original_signal - reconstructed_signal[:len(original_signal)]))
+            np.testing.assert_array_almost_equal(max_difference, 1e-12)
+            print(f"--> Maximum difference: {max_difference:.6e}")
+            print()
+
+
+            """
+            #Second unit test is testing the orthogonality of the eigenvectors 
+            """
+            print("Running unit test: Orthogonality of eigenvectors")
+            components = [0,] 
+            NTheta  = len(self.parent.variables['theta'])
+            r       = self.parent.variables['r']
+            NR      = len(r)
+            angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
+            NB      = len(self.parent.variables['blocks'])
+            mode = 0 #just pick out the leading mode for now
+            corr_dict = {'U': 0, 'V': 1, 'W': 2}
+            for corr in correlations:
+                comp_corr = corr.split('-')
+                corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+                W = np.kron(np.eye(len(corr_inds)),self.parent.W1D)
+                #numModes = len(self.parent.sorted_inds[corr]['ktheta'])
+                ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][mode]
+                angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][mode]
+
+                # Test orthogonality of eigenvectors
+                eigmodes_stacked = reshape_stack_velocities(self.parent.POD_modes[corr][:,ktheta_ind,angfreq_ind,:,:],NR,NB,corr)
+                max_difference = 0.0
+                for i in range(NB):
+                    psi1 = eigmodes_stacked[:,i]
+                    for j in range(NB):
+                        if i != j:
+                            psi2 = eigmodes_stacked[:,j]
+                            inner_test = np.abs(inner_product(psi1,psi2,W))
+                            np.testing.assert_array_almost_equal(inner_test, 1e-12)
+                            max_difference = max(inner_test,max_difference)
+                print(f"--> Maximum difference: {max_difference:.6e}")
+                print()
+
+            """
+            #Third unit test is reconstructing the streamwise velocity in r for ktheta and f 
+            """
+            print("Running unit test: reconstructing streamwise velocity in r for ktheta and f ")
+            components = [0,] 
+            NTheta  = len(self.parent.variables['theta'])
+            r       = self.parent.variables['r']
+            NR      = len(r)
+            angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
+            NB      = len(self.parent.variables['blocks'])
+            modes   = 20 
+            corr_dict = {'U': 0, 'V': 1, 'W': 2}
+            for corr in correlations:
+                ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][modes]
+                angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][modes]
+                comp_corr = corr.split('-')
+                corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+                W = np.kron(np.eye(len(corr_inds)),self.parent.W1D)
+                u = self.parent.udata_rhat
+                eig_inds = -1 #reconstruct using all eigenvectors
+
+                ux_r_ktheta_f = reshape_stack_velocities(u[:,ktheta_ind,:,angfreq_ind,:],NR,NB,corr)
+                #mode_r = reconstruct_r_ktheta_f(u,modes,self.parent.POD_modes,self.parent.sorted_inds,self.parent.variables,corr,W,self.parent.POD_proj_coeff)
+                mode_r = reconstruct_r_ktheta_f(u,modes,eig_inds,self.parent.POD_modes,self.parent.sorted_inds,self.parent.variables,corr,W)
+                mode_r = reshape_stack_velocities(mode_r[:,ktheta_ind,:,angfreq_ind,:],NR,NB,corr)
+                max_difference = 0
+                for block_ind in range(NB):
+                    diff_vec = ux_r_ktheta_f[:,block_ind] - mode_r[:,block_ind]
+                    diff = np.abs(inner_product(diff_vec,diff_vec,W))
+                    max_difference = max(diff,max_difference)
+                print(f"--> Maximum difference: {max_difference:.6e}")
+                print()
+
+            """
+            #Fourth unit test is reconstructing the full streamwise velocity in r in theta and time
+            """
+            print("Running unit test: reconstructing streamwise velocity in realspace")
+            components = [0,] 
+            NTheta  = len(self.parent.variables['theta'])
+            r       = self.parent.variables['r']
+            NR      = len(r)
+            angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
+            NB      = len(self.parent.variables['blocks'])
+            modes   = -1 #just pick out the leading mode for now
+            eig_inds = -1 #reconstruct using all eigenvectors
+            corr_dict = {'U': 0, 'V': 1, 'W': 2}
+            numSteps = len(self.parent.times)
+            for corr in correlations:
+                ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][mode]
+                angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][mode]
+                comp_corr = corr.split('-')
+                corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+                W = np.kron(np.eye(len(corr_inds)),self.parent.W1D)
+                #self.udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
+                u_r_theta_t_orig = self.parent.udata_polar
+                u = self.parent.udata_rhat
+                #u_r_ktheta_f = reconstruct_r_ktheta_f(u,modes,self.parent.POD_modes,self.parent.sorted_inds,self.parent.variables,corr,W)
+                #np.save('u_r_ktheta_f_with_mean.npy', u_r_ktheta_f)
+                #u_r_ktheta_f = np.load('u_r_ktheta_f.npy')
+                u_r_ktheta_f = np.load('u_r_ktheta_f_with_mean.npy')
+                #u_r_ktheta_f = np.load('u_r_ktheta_f_nowindow.npy')
+                #u_r_ktheta_f = np.load('u_r_ktheta_f_with_mean_nowindow.npy')
+                u_r_theta_t = transform_to_realspace(u_r_ktheta_f,self.parent.variables,numSteps,dt,corr,components=None,nowindow=self.parent.nowindow)
+
+                max_difference = 0
+                for theta_iter in range(NTheta):
+                    for time_iter in range(numSteps):
+                        ux_r_theta_t_orig    = reshape_stack_velocities_single_block(u_r_theta_t_orig[:,theta_iter,time_iter,:],NR,corr)
+                        ux_r_theta_t_stacked = reshape_stack_velocities_single_block(u_r_theta_t[:,theta_iter,time_iter,:],NR,corr)
+                        diff_vec = ux_r_theta_t_stacked - ux_r_theta_t_orig
+                        diff = np.abs(inner_product(diff_vec,diff_vec,W))
+                        max_difference = max(diff,max_difference)
+                print(f"--> Maximum difference: {max_difference:.6e}")
+                print()
+                sys.exit()
+
+                ##print()
+                rind = np.argmin(np.abs(r-self.parent.diam/2.0))
+
+                # Compute the STFT
+                original_signal = u_r_theta_t_orig[rind,0,:,0]
+
+                f, t, Zxx = compute_stft(original_signal, fs=fs, nperseg=self.parent.nperseg, noverlap=self.parent.overlap,subtract_mean = self.parent.nowindow,window=window)
+
+                Zxx = Zxx.swapaxes(0,1) #need to swap for istft
+                # Compute the ISTFT to reconstruct the signal
+                _, reconstructed_signal = compute_istft(Zxx, fs=fs, nperseg=self.parent.nperseg, noverlap=self.parent.overlap,window=window)
+
+                fig,ax = plt.subplots(1,1,figsize=(16,6),dpi=125)
+                ax.plot(self.parent.times,u_r_theta_t_orig[rind,0,:,0],c='tab:blue',label='Original Signal')
+                ax.plot(self.parent.times,u_r_theta_t[rind,0,:,0],c='tab:red',label='Reconstructed Signal')
+                ax.plot(self.parent.times,reconstructed_signal[:numSteps],c='tab:green',ls='--',label='FFT/IFFT Original Signal')
+                ax.legend()
+                plt.savefig('unit_test_4.png')
+                sys.exit()
+
+
+            velocityx_avg  = np.mean(self.parent.udata_polar[:,:,:,0],axis=2,keepdims=True)
+            velocityx_fluc = streamwise_velocity - velocityx_avg
+            NTheta  = len(self.parent.variables['theta'])
+            NR      = len(self.parent.variables['r'])
+            angfreq = self.parent.variables['angfreq'] #angular frequencies for each block 
+            for corr in correlations:
+                numModes = len(self.parent.sorted_inds[corr]['ktheta'])
+                inds = np.arange(numModes)
+                start = time.time()
+                mode_r = reconstruct_flow_istfft(inds,numSteps,dt,self.parent.nperseg,self.parent.overlap,self.parent.sorted_inds,self.parent.variables,self.parent.POD_proj_coeff,self.parent.POD_modes,corr,components)
+                end = time.time()
+                print("--> Reconstruction time: ",end-start)
+                #Compute streamwise velocity fluctuations of reconstructed flow (note mean should already be 0 here)
+                velocityx_fluc_mode = mode_r[:,:,:,0] - np.mean(mode_r[:,:,:,0],axis=2,keepdims=True) 
+                print("Sum velocityx_fluc_mode: ",sum(sum(sum(velocityx_fluc_mode))))
+                print(velocityx_fluc_mode.shape)
+                print("NR,NTheta,numSteps,comp")
+
+                fig,ax = plt.subplots(1,1,sharey=False,sharex=False,figsize=(12,10),subplot_kw={'projection':'polar'})
+                val = velocityx_fluc_mode[:,:,0]
+                theta = self.parent.variables['theta']
+                r = self.parent.variables['r']
+                plot_radial(val,theta,r,cmap='jet',newfig=False,ax=ax)
+                plt.savefig('velocityx_fluc_mode.png')
+
+                fig,ax = plt.subplots(1,1,sharey=False,sharex=False,figsize=(12,10),subplot_kw={'projection':'polar'})
+                val = velocityx_fluc[:,:,0]
+                theta = self.parent.variables['theta']
+                r = self.parent.variables['r']
+                plot_radial(val,theta,r,cmap='jet',newfig=False,ax=ax)
+                plt.savefig('velocityx_fluc.png')
+
+                fig,ax = plt.subplots(1,1,sharey=False,sharex=False,figsize=(12,10),subplot_kw={'projection':'polar'})
+                val = velocityx_avg[:,:,0]
+                theta = self.parent.variables['theta']
+                r = self.parent.variables['r']
+                plot_radial(val,theta,r,cmap='jet',newfig=False,ax=ax)
+                plt.savefig('velocityx_mean.png')
+
+                expected_difference = 1e-10 * np.ones_like(velocityx_fluc_mode)
+                np.testing.assert_array_almost_equal(velocityx_fluc_mode-velocityx_fluc, expected_difference)
 
             return
