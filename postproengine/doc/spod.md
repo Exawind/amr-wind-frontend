@@ -27,8 +27,10 @@ Compute SPOD eigenvectors and eigenvalues
   sort                : Boolean to included sorted wavenumber and frequency indices by eigenvalue (Optional, Default: True)
   save_num_modes      : Number of eigenmodes to save, ordered by eigenvalue. Modes will be save in array of shape (save_num_mods,NR). (Optional, Default: None)
   cylindrical_velocities: Boolean to use cylindrical velocity components instead of cartesian. If True U->U_x, V->U_r, W->U_\Theta (Optional, Default: False)
+  save_all_proj_coeff : Boolean to precompute and store the projection coefficients of the original signal onto all POD eigenvectors. Will significantly slow down SPOD computation. Use save_num_modes to only store a subset (Optional, Default: False)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
   verbose             : Print extra information. (Optional, Default: True)
+  nowindow            : Do not window time fourier transform with single block (e.g.,, for periodic signals in time). (Optional, Default: False)
 ```
 
 ## Actions: 
@@ -51,12 +53,14 @@ Compute SPOD eigenvectors and eigenvalues
     Uinf              : Velocity for compute strouhal frequency (Optional, Default: 0)
     St                : Plot leading eigenmodes at fixed Strouhal frequency (Optional, Default: None)
     itime             : Time iteration to plot (Optional, Default: 0)
-  radial_shear_stress_flux: ACTION: Compute radial shear stress flux contribution from streamwise SPOD modes (Optional)
-    num               : Number of eigenvectors to include in reconstruction (Optional, Default: 1)
+  radial_shear_stress_flux: ACTION: Compute radial shear stress flux contribution from individual streamwise SPOD modes (Optional)
+    number_of_modes   : Number of individual eigenvectors to include in reconstruction, sorted by eigenvalues (Optional, Default: 1)
     savefile          : Filename to save results (Optional, Default: '')
     correlations      : List of correlations (Optional, Default: ['U'])
-    store_fluc        : Boolean to store fluctuating fields (Optional, Default: False)
-    components        : List of component to include in reconstructions (default is all) (Optional, Default: None)
+    decompose_radial_velocity: Boolean to apply SPOD decomposition to radial velocity in addition to streamwise velocity. Radial velocity must be included in correlations. (Optional, Default: False)
+    r                 : Radius value to compute radial shear stress flux (Required)
+  unit_tests          : ACTION: Run SPOD unit test suite (Optional)
+    correlations      : List of correlations (Optional, Default: ['U'])
 ```
 
 ## Example
