@@ -104,6 +104,12 @@ Example usage:
         help="Set the new max step (Default: None)",
         default=None,
     )
+    parser.add_argument(
+        "--amr-wind-version",
+        dest='amrwindver',
+        help="Set which version of amr-wind to use [latest, legacy] (Default: latest)",
+        default='latest',
+    )
 
     # Load the options
     args      = parser.parse_args()
@@ -114,6 +120,7 @@ Example usage:
     noturbs   = args.noturbines
     stoptime  = args.stoptime
     maxstep   = args.maxstep
+    amrwindver= args.amrwindver
 
     # Load the input file
     case = amrwind.MyApp.init_nogui()
@@ -147,6 +154,6 @@ Example usage:
     if (not noturbs) and actuator and ('Actuator' in physics):
         case.restartOpenFASTinput(latestdir)
         
-    newinput=case.writeAMRWindInput(outfile)
+    newinput=case.writeAMRWindInput(outfile, amr_wind_version=amrwindver)
     if verbose:
         print(newinput)

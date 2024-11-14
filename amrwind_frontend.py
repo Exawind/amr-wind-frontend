@@ -10,6 +10,7 @@ import sys, os, re, shutil
 # import the tkyamlgui library
 scriptpath=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, scriptpath+'/tkyamlgui')
+sys.path.insert(1, scriptpath+'/utilities')
 sys.path.insert(1, scriptpath)
 
 import numpy as np
@@ -17,6 +18,7 @@ from functools import partial
 import tkyamlgui as tkyg
 import postproamrwindabl    as postpro
 import postproamrwindsample as ppsample
+import convert_abl_stats    as MMC_abl_stats
 
 if sys.version_info[0] < 3:
     import Tkinter as Tk
@@ -2179,6 +2181,7 @@ class MyApp(tkyg.App, object):
                               autoset_ABLForcing=True,
                               autoset_BodyForcing=True,
                               autoset_MMCForcing=False,
+                              autoset_MMCTendencyForcing=False,
                               autoset_ABLMeanBoussinesq=True,
                               autoset_ABLwallshearstresstype=True,
                               checkpointdir=None,
@@ -2274,7 +2277,7 @@ class MyApp(tkyg.App, object):
             self.inputvars['ABLForcing'].setval(False)
             if verbose: printverbose('SET','ABLForcing')
 
-        # Set the MMC body force
+        # Set the MMC body force (constant t, z-varying)
         if (len(forcingdict)>0) and (autoset_MMCForcing):
             # Calculate the body force
             ncfile = forcingdict['ablstatfile']
@@ -2309,6 +2312,24 @@ class MyApp(tkyg.App, object):
                 printverbose('SET','ABL_initial_condition_input_file')
                 printverbose('SET','ABL_mesoscale_forcing')
 
+        # Set the MMC tendency forcing (t-varying, z-varying)
+        if (len(forcingdict)>0) and (autoset_MMCTendencyForcing):
+            # Calculate the body force
+            ncfile = forcingdict['ablstatfile']
+            tendencyfile = forcingdict['tendencyforcing_file']
+            if len(ncfile)>0 and os.path.exists(ncfile):
+                data = MMC_abl_stats.read_abl_stats(ncfile)
+                MMC_abl_stats.create_tendency_forcing(data, tendencyfile)
+                if verbose:
+                    print('Wrote %s'%tendencyfile)
+            self.inputvars['ABL_tendency_forcing'].setval(True)
+            self.inputvars['ABL_mesoscale_forcing'].setval(tendencyfile)
+            self.inputvars['ABLMesoForcingMom'].setval(True)
+            if verbose:
+                printverbose('SET','ABL_tendency_forcing')
+                printverbose('SET','ABL_mesoscale_forcing')
+                printverbose('SET','ABLMesoForcingMom')
+                
         # Set the ABLMeanBoussinesq term
         if autoset_ABLMeanBoussinesq:
             self.inputvars['ABLMeanBoussinesq'].setval(True)

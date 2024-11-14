@@ -1120,7 +1120,9 @@ def sampling_createDictForFarm(self, pdict, AvgCenter,
     elif orient == 'y':
         streamwise  = np.array([0.0, 1.0, 0.0])
         crossstream = np.array([1.0, 0.0, 0.0])
-        vert        = np.array([0.0, 0.0, 1.0])        
+        vert        = np.array([0.0, 0.0, 1.0])
+    elif isFloat(orient):
+        streamwise, crossstream, vert = self.convert_winddir_to_xy(float(orient))
     else:  # Use the wind direction
         streamwise, crossstream, vert = self.convert_winddir_to_xy(winddir)
 

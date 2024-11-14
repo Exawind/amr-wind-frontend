@@ -19,6 +19,7 @@ from postproengine import convert_vel_xyz_to_axis1axis2
 import cv2
 from postproengine import spod
 import re
+import plotfunctions
 
 """
 Plugin for creating instantaneous planar images
@@ -47,6 +48,8 @@ class postpro_instantaneousplanes():
         'help':'Which axis to use on the abscissa', },
         {'key':'yaxis',    'required':True,  'default':'y',
         'help':'Which axis to use on the ordinate', },
+        {'key':'iplane',   'required':True,  'default':0,
+         'help':'Which plane to pull from netcdf file', },
         # --- optional parameters ---
         {'key':'times',    'required':False,  'default':[],
          'help':'Which times to pull from netcdf file (overrides iters)', },        
@@ -56,8 +59,7 @@ class postpro_instantaneousplanes():
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},        
-        {'key':'iplane',   'required':True,  'default':0,
-        'help':'Which plane to pull from netcdf file', },
+
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
@@ -210,6 +212,8 @@ instantaneousplanes:
              'help':'Function to determine which subplot axes to create plot in (lambda expression with iplane as arg)'},
             {'key':'axisscale',    'required':False,  'default':'scaled',
              'help':'Aspect ratio of figure axes (options:equal,scaled,tight,auto,image,square)'},
+            {'key':'plotturbines',   'required':False,  'default':None,
+             'help':'List of dictionaries which contain turbines to plot', },
 
         ]
         def __init__(self, parent, inputs):
@@ -239,6 +243,7 @@ instantaneousplanes:
             figname  = self.actiondict['figname']
             axesnumf = None if self.actiondict['axesnumfunc'] is None else eval(self.actiondict['axesnumfunc'])
             axisscale= self.actiondict['axisscale']
+            plotturbs= self.actiondict['plotturbines']
 
             # Loop through each time instance and plot
             iplane = self.parent.iplane
@@ -284,10 +289,25 @@ instantaneousplanes:
                     else:
                         # This part is outside LaTeX math mode, evaluate it
                         evaluated_parts.append(eval(f"rf'{part}'"))
-                title = ''.join(evaluated_parts)
-                ax.set_title(title,fontsize=fontsize)
+                evaltitle = ''.join(evaluated_parts)
+                ax.set_title(evaltitle,fontsize=fontsize)
                 if axisscale is not None:
                     ax.axis(axisscale)
+
+                # Plot turbines
+                if plotturbs:
+                    axismapping = {'x':0, 'a1':0, 'y':1, 'a2':1, 'z':2, 'a3':2}
+                    defaultlstyle =  {'lw':1, 'color':'k', 'alpha':0.75}
+                    for turb in plotturbs:
+                        basexyz   = turb['basexyz']
+                        hubheight = turb['hubheight']
+                        turbD     = turb['rotordiameter']
+                        nacelledir= turb['nacelledir']
+                        ix        = turb['ix'] if 'ix' in turb else axismapping[self.parent.xaxis]
+                        iy        = turb['iy'] if 'iy' in turb else axismapping[self.parent.yaxis]
+                        lstyle    = turb['linestyle'] if 'linestyle' in turb else defaultlstyle
+                        plotfunctions.plotTurbine(ax, basexyz, hubheight, turbD, nacelledir, ix, iy,
+                                                  **lstyle)
 
                 # Run any post plot functions
                 if len(postplotfunc)>0:
