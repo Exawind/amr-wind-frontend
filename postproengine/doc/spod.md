@@ -58,7 +58,10 @@ Compute SPOD eigenvectors and eigenvalues
     savefile          : Filename to save results (Optional, Default: '')
     correlations      : List of correlations (Optional, Default: ['U'])
     decompose_radial_velocity: Boolean to apply SPOD decomposition to radial velocity in addition to streamwise velocity. Radial velocity must be included in correlations. (Optional, Default: False)
-    r                 : Radius value to compute radial shear stress flux (Required)
+    r                 : Radius value to compute radial shear stress flux. (Required)
+    Uinf              : Inflow velocity for defining Strouhal number. (Optional, Default: None)
+    ktheta_list       : List of kthetas to including in reconstruction. Override number of modes.  (Optional, Default: None)
+    St_list           : List of Strouhal numbers to including in reconstruction. Override number of modes.  (Optional, Default: None)
   unit_tests          : ACTION: Run SPOD unit test suite (Optional)
     correlations      : List of correlations (Optional, Default: ['U'])
 ```
