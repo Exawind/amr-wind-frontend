@@ -25,18 +25,17 @@ import matplotlib.pyplot as plt
 from itertools import product
 
 def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta=None,tol=None):
-    inds = np.arange(numModes)
+    inds = [] 
     ktheta_vals = variables['ktheta']
     angfreq_vals = variables['angfreq']
-
-    #if specific ktheta but any St
-    if (not ktheta == None) and (St == None):
-        if not isinstance(ktheta,list): ktheta=[ktheta]
+    if (ktheta == None) and (St == None):
         for i in range(0,numModes):
-            if i == 0:
-                ind = 0
-            else:
-                ind = int(inds[i-1] + 1)
+            inds.append(int(i))
+    #if specific ktheta but any St
+    elif (not ktheta == None) and (St == None):
+        if not isinstance(ktheta,list): ktheta=[ktheta,]
+        for i in range(0,numModes):
+            ind = 0
             ktheta_index = np.argmin(np.abs(variables['ktheta'] - ktheta[i]))
             cont_flag = False
             if tol == None:
@@ -44,6 +43,7 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
             else:
                 if np.abs(ktheta_vals[sorted_inds[corr]['ktheta'][ind]] - ktheta[i]) > tol : cont_flag = True
 
+            if ind in inds: cont_flag = True
             while cont_flag:
                 ind += 1
                 if tol == None:
@@ -51,18 +51,16 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
                     if sorted_inds[corr]['ktheta'][ind] == ktheta_index : cont_flag = False
                 else:
                     if np.abs(ktheta_vals[sorted_inds[corr]['ktheta'][ind]] - ktheta[i]) <= tol : cont_flag = False
+                if ind in inds: cont_flag = True
 
-            inds[i]=int(ind)
+            inds.append(int(ind))
 
     #if specific St but any ktheta
     elif (not St == None) and (ktheta == None):
         scaling = diam/(Uinf * 2 * np.pi)
-        if not isinstance(ktheta,list): ktheta=[ktheta]
+        if not isinstance(ktheta,list): ktheta=[ktheta,]
         for i in range(0,numModes):
-            if i == 0:
-                ind = 0
-            else:
-                ind = int(inds[i-1] + 1)
+            ind = 0
             cont_flag = False
             if tol == None:
                 st_index = np.argmin(np.abs(variables['angfreq'] * scaling - St))
@@ -70,6 +68,7 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
             else:
                 if np.abs(angfreq_vals[sorted_inds[corr]['angfreq'][ind]] * scaling - St) > tol : cont_flag = True
 
+            if ind in inds: cont_flag = True
             while cont_flag:
                 ind += 1
                 if tol == None:
@@ -77,17 +76,15 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
                     if sorted_inds[corr]['angfreq'][ind] == st_index: cont_flag = False
                 else:
                     if np.abs(angfreq_vals[sorted_inds[corr]['angfreq'][ind]] * scaling - St) <= tol : cont_flag = False
-            inds[i]=int(ind)
+                if ind in inds: cont_flag = True
+            inds.append(int(ind))
 
     #if specific St and specific ktheta
     elif (not St == None) and (not ktheta == None):
         scaling = diam/(Uinf * 2 * np.pi)
         if not isinstance(ktheta,list): ktheta=[ktheta]
         for i in range(0,numModes):
-            if i == 0:
-                ind = 0
-            else:
-                ind = int(inds[i-1] + 1)
+            ind = 0
             cont_flag = False
             if tol == None:
                 ktheta_index = np.argmin(np.abs(variables['ktheta'] - ktheta[i]))
@@ -95,8 +92,9 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
                 if (not sorted_inds[corr]['ktheta'][ind] == ktheta_index) or (not sorted_inds[corr]['angfreq'][ind] == st_index) : cont_flag = True
             else:
                 if (np.abs(ktheta_vals[sorted_inds[corr]['ktheta'][ind]] - ktheta[i]) > tol ) or \
-                   (np.abs(angfreq_vals[sorted_inds[corr]['angfreq'][ind]] * scaling - St) > tol) : cont_flag = True
+                (np.abs(angfreq_vals[sorted_inds[corr]['angfreq'][ind]] * scaling - St) > tol) : cont_flag = True
 
+            if ind in inds: cont_flag = True
             while cont_flag:
                 ind += 1
                 if tol == None:
@@ -106,7 +104,8 @@ def get_mode_number(numModes,sorted_inds,variables,corr,Uinf,diam,St=None,ktheta
                 else:
                     if (np.abs(ktheta_vals[sorted_inds[corr]['ktheta'][ind]] - ktheta[i]) <= tol ) and \
                     (np.abs(angfreq_vals[sorted_inds[corr]['angfreq'][ind]] * scaling - St) <= tol) : cont_flag = False
-            inds[i]=int(ind)
+                if ind in inds: cont_flag = True
+            inds.append(int(ind))
     return inds
 
 def reshape_stack_velocities(U,NR,NB,corr):
@@ -127,7 +126,7 @@ def reshape_stack_velocities_single_block(U,NR,corr):
     shape = U.shape
     U_stack = np.zeros((NR*len(corr_inds)),dtype=complex)
     for corr_ind_iter , corr_ind in enumerate(corr_inds):
-        U_stack[corr_ind_iter*NR:NR*(corr_ind_iter+1)] = np.copy(U[:,corr_ind])
+        U_stack[corr_ind_iter*NR:NR*(corr_ind_iter+1)] = np.copy(U[:,corr_ind_iter])
 
     return U_stack
 
@@ -175,7 +174,6 @@ def reconstruct_r_ktheta_f(u,modes,eig_inds,POD_modes,sorted_inds,variables,corr
         eig_inds = list(range(NB))
     else:
         if not isinstance(eig_inds, list): eig_inds = [eig_inds,]
-
 
     #shape NR, NTheta, NB, Nkt, corr
     mode_rhat = np.zeros((NR,NTheta,NB,len(angfreq),POD_modes[corr].shape[-1]),dtype=complex)
@@ -322,7 +320,7 @@ def reconstruct_flow(inds,numSteps,dt,sorted_inds,variables,POD_proj_coeff,POD_m
     mode_r = np.fft.irfft(np.fft.ifft(mode_rhat,axis=1),axis=2,n=numSteps)  #note, the entire time window is included in the reconstruction, not just a single block. 
     return mode_r
 
-def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=None,ax=None):
+def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=None,ax=None,colorbar=True):
     if newfig == True:
         fig, ax = plt.subplots(subplot_kw={'projection':'polar'})
     else:
@@ -336,7 +334,8 @@ def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=
     else:
         im = ax.pcolormesh(theta,r,Ur,cmap=cmap,vmin=vmin,vmax=vmax)
     #im = ax.pcolormesh(theta,r,Ur,cmap='jet')
-    cbar = plt.colorbar(im,orientation='horizontal')
+    if colorbar:
+        cbar = plt.colorbar(im,orientation='horizontal')
     #cbar = plt.colorbar(im,orientation='vertical')
 
     # ---- mod here ---- #
@@ -761,7 +760,7 @@ spod:
             if not isinstance(correlations, list): correlations= [correlations,]
             if not wake_center_files == None and not isinstance(wake_center_files, list): wake_center_files = [wake_center_files,]
             if self.verbose:
-                print("--> Reading in velocity data")
+                print("--> Reading in velocity data",flush=True)
             udata_cart,xcs,y,z,self.times,iplanes = read_cart_data(ncfile,self.varnames,group,self.trange,iplanes,self.xaxis,self.yaxis)
             #file = 'ucart_data_pulse.pkl'
             #file = 'ucart_data.pkl'
@@ -781,11 +780,11 @@ spod:
             #     self.times = pickle.load(f)
             #     iplanes  = pickle.load(f)
             if wake_center_files != None and len(wake_center_files) != len(iplanes):
-                print("Error: len(wake_center_files) != len(iplanes). Exiting.")
+                print("Error: len(wake_center_files) != len(iplanes). Exiting.",flush=True)
                 sys.exit()
 
             for iplaneiter, iplane in enumerate(iplanes):
-                print("--> Working on iplane: ",iplane," of ",iplanes)
+                print("--> Working on iplane: ",iplane," of ",iplanes,flush=True)
                 self.iplane = iplane
 
                 tsteps = range(len(self.times))
@@ -804,7 +803,7 @@ spod:
                 components = ['velocityx','velocityy','velocityz']
 
                 if self.verbose:
-                    print("--> Interpolating cartesian data to polar coordinates")
+                    print("--> Interpolating cartesian data to polar coordinates",flush=True)
 
                 if wake_center_files != None:
                     wake_meandering_stats_file = wake_center_files[iplaneiter]
@@ -812,29 +811,29 @@ spod:
                     ycenter = wake_meandering_stats[self.xaxis + 'c_mean'][0]
                     zcenter = wake_meandering_stats[self.yaxis + 'c_mean'][0]
                     if self.verbose:
-                        print("--> Read in mean wake centers from ",wake_meandering_stats_file+". "+self.xaxis+"c = "+str(ycenter)+", "+self.yaxis+"c = "+str(zcenter)+".")
+                        print("--> Read in mean wake centers from ",wake_meandering_stats_file+". "+self.xaxis+"c = "+str(ycenter)+", "+self.yaxis+"c = "+str(zcenter)+".",flush=True)
                 else:
                     if plane['xc'] == None: 
                         ycenter = (y[-1]+y[0])/2.0
                         if self.verbose:
-                            print("--> Centering on middle of xaxis: ",ycenter)
+                            print("--> Centering on middle of xaxis: ",ycenter,flush=True)
                     if plane['yc'] == None: 
                         zcenter = (z[-1]+z[0])/2.0
                         if self.verbose:
-                            print("--> Centering on middle of yaxis: ",zcenter)
+                            print("--> Centering on middle of yaxis: ",zcenter,flush=True)
 
                 self.udata_polar = np.zeros((NR,NTheta,len(tsteps),len(components)))
                 for titer , t in enumerate(tsteps):
                     for compind in range(len(components)):
                         if zcenter-LR < 0:
-                            print("Error: zcenter - LR negative. Exiting")
-                            print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR)
+                            print("Error: zcenter - LR negative. Exiting",flush=True)
+                            print("zcenter: ",zcenter,", LR: ",LR,", zcenter-LR: ",zcenter-LR,flush=True)
                             sys.exit()
                         self.udata_polar[:,:,titer,compind]  = interpolate_cart_to_radial(udata_cart[iplane][titer,:,:,compind],y,z,self.RR,self.TT,ycenter,zcenter)
 
                 if self.cylindrical_velocities==True:
                     if self.verbose:
-                        print("--> Transforming to cylindrical velocity components")
+                        print("--> Transforming to cylindrical velocity components",flush=True)
                     for titer , t in enumerate(tsteps):
                         v_vel = np.copy(self.udata_polar[:,:,titer,1])
                         w_vel = np.copy(self.udata_polar[:,:,titer,2])
@@ -844,7 +843,7 @@ spod:
 
                 if self.nperseg==None:
                     self.nperseg = len(self.times)
-                    print("nperseg: ",self.nperseg)
+                    print("nperseg: ",self.nperseg,flush=True)
 
                 if self.nowindow:
                     self.overlap = 0 
@@ -862,7 +861,7 @@ spod:
                 #angfreq = angfreq[0:Nkt]
 
                 if self.verbose:
-                    print("--> Fourier transforming in time (number of blocks = "+str(NB) + ")")
+                    print("--> Fourier transforming in time (number of blocks = "+str(NB) + ")",flush=True)
                 self.udata_that = np.zeros((NR,NTheta,NB,Nkt,3),dtype=complex)
                 for rind in np.arange(0,len(r)):
                     for thetaind in np.arange(0,len(theta)):
@@ -879,7 +878,7 @@ spod:
                             self.udata_that[rind,thetaind,:,:,compind] = tfft
 
                 if self.verbose:
-                    print("--> Fourier transforming in Theta")
+                    print("--> Fourier transforming in Theta",flush=True)
                 NkTheta = int(NTheta)
                 self.udata_rhat = np.zeros((NR,NkTheta,NB,Nkt,len(components)),dtype=complex)
                 for rind in np.arange(0,NR):
@@ -920,7 +919,7 @@ spod:
                     corr_dict = {'U': 0, 'V': 1, 'W': 2}
                     for corr in correlations:
                         if self.verbose:
-                            print("--> Computing SPOD for correlations: ",corr)
+                            print("--> Computing SPOD for correlations: ",corr,flush=True)
                         comp_corr = corr.split('-')
                         corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
 
@@ -991,7 +990,7 @@ spod:
                         savefname = savefile.format(iplane=iplane)
                         savefilename = os.path.join(self.output_dir, savefname)
                         if self.verbose:
-                            print("--> Saving to: ",savefilename)
+                            print("--> Saving to: ",savefilename,flush=True)
                         objects = [] 
                         objects.append(self.POD_eigenvalues)
                         objects.append(self.variables)
@@ -1028,7 +1027,7 @@ spod:
                                 pickle.dump(obj, f)
 
                 if loadpklfile!=None:
-                    print("--> Loading from: ",loadpklfile)
+                    print("--> Loading from: ",loadpklfile,flush=True)
                     with open(loadpklfile, 'rb') as f:
                         self.POD_eigenvalues = pickle.load(f)
                         self.variables = pickle.load(f)
@@ -1039,7 +1038,7 @@ spod:
                             try:
                                 self.POD_proj_coeff = pickle.load(f)
                             except:
-                                print("No projection coefficients found in pickle file")
+                                self.POD_proj_coeff = None
 
                 # Do any sub-actions required for this task for each plane
                 for a in self.actionlist:
@@ -1244,7 +1243,13 @@ spod:
         {'key':'decompose_radial_velocity','required':False,  'default':False,
          'help':'Boolean to apply SPOD decomposition to radial velocity in addition to streamwise velocity. Radial velocity must be included in correlations.', },
         {'key':'r','required':True,  'default':0,
-            'help':'Radius value to compute radial shear stress flux', },
+            'help':'Radius value to compute radial shear stress flux.', },
+        {'key':'Uinf','required':False, 'default':None,
+            'help':'Inflow velocity for defining Strouhal number.', },
+        {'key':'ktheta_list','required':False,  'default':None,
+         'help':'List of kthetas to including in reconstruction. Override number of modes. ', },
+        {'key':'St_list','required':False,  'default':None,
+         'help':'List of Strouhal numbers to including in reconstruction. Override number of modes. ', },
         ]
         
         def __init__(self, parent, inputs):
@@ -1273,9 +1278,16 @@ spod:
             numModes              = self.actiondict['number_of_modes']
             savefile = self.actiondict['savefile']
             correlations = self.actiondict['correlations']
+            Uinf         = self.actiondict['Uinf']
             rval         = self.actiondict['r']
+            ktheta_list  = self.actiondict['ktheta_list']
+            St_list      = self.actiondict['St_list']
             decompose_radial_velocity = self.actiondict['decompose_radial_velocity']
             if not isinstance(correlations, list): correlations= [correlations,]
+            if not ktheta_list  == None:
+                if not isinstance(ktheta_list,list): St_list=[St_list,]
+            if not St_list == None:
+                if not isinstance(St_list,list): St_list=[St_list,]
 
             ### Convert to cylindrical velocity 
             numSteps = len(self.parent.times)
@@ -1325,23 +1337,33 @@ spod:
             db_total['uxur_avg'] = uxur_avg 
             db_total['ux_avg_uxur_avg'] = velocityx_avg * uxur_avg 
             db_total['int_neg_ux_avg_uxur_avg'] = self.evaluate_at_r(np.mean(-db_total['ux_avg_uxur_avg'],axis=1),r,rval)
-            print("int_neg_ux_avg_uxur_avg",db_total['int_neg_ux_avg_uxur_avg'])
+            print("int_neg_ux_avg_uxur_avg",db_total['int_neg_ux_avg_uxur_avg'],flush=True)
 
             corr_dict = {'U': 0, 'V': 1, 'W': 2}
             for corr in correlations:
                 comp_corr = corr.split('-')
                 corr_inds = [corr_dict[corr.upper()] for corr in comp_corr]
+                if not 0 in corr_inds:
+                    print("Error: must included U correlations to decompose streamwise velocity...exiting.")
+                    sys.exit()
                 W = np.kron(np.eye(len(corr_inds)),W1D)
                 db[corr] = {}
                 shape = self.parent.POD_modes[corr].shape
                 #loop over leading modes in order of eigenvalues
-                for mode_ind in range(0,numModes):
+                if ktheta_list == None or St_list == None: 
+                    mode_list = range(0,numModes)
+                else: 
+                    mode_list = []
+                    for mode_iter in range(len(ktheta_list)):
+                        mode_number = get_mode_number(1,self.parent.sorted_inds,self.parent.variables,corr,Uinf,self.parent.diam,St=St_list[mode_iter],ktheta=ktheta_list[mode_iter],tol=None)
+                        mode_list.append(mode_number[0])
+                for mode_ind in mode_list:
                     db[corr][mode_ind] = {}
                     ktheta_ind  = self.parent.sorted_inds[corr]['ktheta'][mode_ind]
                     angfreq_ind = self.parent.sorted_inds[corr]['angfreq'][mode_ind]
                     eig_ind = self.parent.sorted_inds[corr]['block'][mode_ind]
                     eig_val = self.parent.POD_eigenvalues[corr][ktheta_ind,angfreq_ind,eig_ind]
-                    print("Reconstructing ktheta = ",ktheta[ktheta_ind], ", angfreq = ",angfreq[angfreq_ind],", eig ind = ", eig_ind , ", mode number = ",mode_ind, ", eigenvalue = ",eig_val)
+                    print("Reconstructing ktheta = ",ktheta[ktheta_ind], ", angfreq = ",angfreq[angfreq_ind],", eig ind = ", eig_ind , ", mode number = ",mode_ind, ", eigenvalue = ",eig_val,flush=True)
 
                     u_r_ktheta_f = reconstruct_r_ktheta_f(self.parent.udata_rhat,mode_ind,eig_ind,self.parent.POD_modes,self.parent.sorted_inds,self.parent.variables,corr,W)
 
@@ -1359,9 +1381,9 @@ spod:
 
                     db[corr][mode_ind]['int_neg_ux_avg_uxmodeur_avg'] = self.evaluate_at_r(np.mean(-db[corr][mode_ind]['ux_avg_uxmodeur_avg'],axis=1),r,rval)
 
-                    print("--> int_neg_ux_avg_uxmodeur_avg",db[corr][mode_ind]['int_neg_ux_avg_uxmodeur_avg'])
+                    print("--> int_neg_ux_avg_uxmodeur_avg",db[corr][mode_ind]['int_neg_ux_avg_uxmodeur_avg'],flush=True)
 
-                    if decompose_radial_velocity:
+                    if decompose_radial_velocity and 0 in corr_inds and 1 in corr_inds:
                         #subtract global mean of recustructed signal. 
                         try:
                             velocityr_fluc_mode = u_r_theta_t[:,:,:,1] - np.mean(u_r_theta_t[:,:,:,1],axis=2,keepdims=True) 
@@ -1374,12 +1396,12 @@ spod:
 
                             db[corr][mode_ind]['int_neg_ux_avg_uxmodeurmode_avg'] = self.evaluate_at_r(np.mean(-db[corr][mode_ind]['ux_avg_uxmodeurmode_avg'],axis=1),r,rval)
 
-                            print("--> int_neg_ux_avg_uxmodeurmode_avg",db[corr][mode_ind]['int_neg_ux_avg_uxmodeurmode_avg'])
+                            print("--> int_neg_ux_avg_uxmodeurmode_avg",db[corr][mode_ind]['int_neg_ux_avg_uxmodeurmode_avg'],flush=True)
 
                         except:
                             print("Radial velocity must be included in list of correlations...exiting.")
                             return
-                print()
+                print("\n",flush=True)
 
 
             #save the results
