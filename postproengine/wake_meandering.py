@@ -202,7 +202,11 @@ class postpro_wakemeander():
             xc = {}
             self.db = ppsamplexr.getPlaneXR(ncfile,[0,1],self.varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
 
-            if iplanes == None: iplanes = list(range(len(self.db['offsets'])))
+            if iplanes == None: 
+                try:
+                    iplanes = list(range(len(self.db['offsets'])))
+                except:
+                    iplanes = [0,]
             if not isinstance(iplanes, list): iplanes = [iplanes,]
 
             # Convert to native axis1/axis2 coordinates if necessary
@@ -471,7 +475,8 @@ class postpro_wakemeander():
                     wake_meandering_stats['aniso_mean'] = np.mean(eig_ratio)
                     wake_meandering_stats['aniso_std']  = np.std(eig_ratio)
                     if compute_uv:
-                        with open(pklfile, 'wb') as file:
+                        savefname = os.path.join(self.parent.output_dir, pklfile)
+                        with open(savefname, 'wb') as file:
                             pickle.dump(pcs, file)
                 except:
                     print("Error computing PCA for ansitropy metric")
