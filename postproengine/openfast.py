@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import fatpack
+import scipy
 
 """
 Plugin for postprocessing openfast data
@@ -54,7 +55,6 @@ def approximate_awc_time_interval(AWC,rotspeed,time,windspeed,diam,st,t1,t2):
         t2_temp = np.floor(t2_temp/dt)*dt
 
     return t2_temp
-
 
 @registerplugin
 class postpro_openfast():
@@ -190,13 +190,14 @@ class postpro_openfast():
         blurb      = 'Operates on the openfast data and saves to a csv file'
         required   = False
         actiondefs = [
-            {'key':'operations',  'required':True,  'default':['mean','std','DEL'],'help':'List of operations to perform (mean,std,DEL)'},
+            {'key':'operations',  'required':True,  'default':['mean','std','DEL','pwelch'],'help':'List of operations to perform (mean,std,DEL,pwelch)'},
             {'key':'trange',    'required':False,  'default':[],'help':'Times to apply operation over'}, 
             {'key':'awc_period', 'required':False,  'default':False,'help':'Average over equal periods for AWC forcing'},
             {'key':'awc',  'required':False,  'default':'baseline','help':'AWC case name [baseline,n0,n1p,n1m,n1p1m_cl00,n1p1m_cl90]'},
             {'key':'St',  'required':False,  'default':0.3,'help':'Forcing Strouhal number'},
             {'key':'diam',  'required':False,  'default':0,'help':'Turbine diameter'},
             {'key':'U_st',  'required':False,  'default':0,'help':'Wind speed to define Strouhal number'},
+            {'key':'nperseg',  'required':False,  'default':4096, 'help':'Number of samples per segment used in pwelch'},
         ]
         
         def __init__(self, parent, inputs):
@@ -262,5 +263,23 @@ class postpro_openfast():
                         except:
                             print("---> Warning, cannot compute DEL of: ",column, ". Setting to 0")
                 csvfile = output_dir + prefix + "_DEL" + extension
-                std_df.to_csv(csvfile, index=False,float_format='%.15f')
+                DEL_df.to_csv(csvfile, index=False,float_format='%.15f')
+
+
+            if 'pwelch' in operations:
+                nperseg = self.actiondict['nperseg']
+                pwelch_df = pd.DataFrame(index=range(int(nperseg/2+1)),columns=self.parent.df.columns)
+                pwelch_df = pwelch_df.drop('Time', axis=1)
+                for column in filtered_df:
+                    if not column  == 'Time':
+                        try:
+                            x = np.asarray(filtered_df[column][mask].values)
+                            fs= 1/(filtered_df['Time'][1]-filtered_df['Time'][0])
+                            f, Pxx_den = scipy.signal.welch(x,fs=fs,nperseg=nperseg)
+                            pwelch_df.index=f
+                            pwelch_df[column]=Pxx_den
+                        except:
+                            print("---> Warning, cannot compute pwelch of: ",column, ". Setting to 0")
+                csvfile = output_dir + prefix + "_pwelch" + extension
+                pwelch_df.to_csv(csvfile, index=True, index_label='Freq',float_format='%.15f')
             return 

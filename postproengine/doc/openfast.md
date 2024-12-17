@@ -15,11 +15,12 @@ Postprocessing of openfast variables
   csv                 : ACTION: Writes the openfast variables to a csv file (Optional)
     individual_files  : Write each variable to a separate csv file (Optional, Default: True)
   operate             : ACTION: Operates on the openfast data and saves to a csv file (Optional)
-    operations        : List of operations to perform (mean,std,DEL) (Required)
+    operations        : List of operations to perform (mean,std,DEL,pwelch) (Required)
     trange            : Times to apply operation over (Optional, Default: [])
     awc_period        : Average over equal periods for AWC forcing (Optional, Default: False)
     awc               : AWC case name [baseline,n0,n1p,n1m,n1p1m_cl00,n1p1m_cl90] (Optional, Default: 'baseline')
     St                : Forcing Strouhal number (Optional, Default: 0.3)
     diam              : Turbine diameter (Optional, Default: 0)
     U_st              : Wind speed to define Strouhal number (Optional, Default: 0)
+    nperseg           : Number of samples per segment used in pwelch (Optional, Default: 4096)
 ```
