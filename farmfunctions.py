@@ -747,6 +747,21 @@ def turbines_createAllTurbines(self):
                 print(EDoptions)
                 EDfile   = OpenFAST.getFileFromFST(fstfile,'EDFile')
                 OpenFAST.editFASTfile(EDfile, EDoptions)
+
+            # Make any edits to HydroDyn
+            HDoptions = extractkeystartingwith(options, 'HDparam_', removeprefix=True)
+            if bool(HDoptions):
+                print(HDoptions)
+                HDfile   = OpenFAST.getFileFromFST(fstfile,'HydroFile')
+                OpenFAST.editFASTfile(HDfile, HDoptions)
+
+            # Make any edits to MoorDyn
+            MDoptions = extractkeystartingwith(options, 'MDparam_', removeprefix=True)
+            if bool(MDoptions):
+                print(MDoptions)
+                MDfile   = OpenFAST.getFileFromFST(fstfile,'MooringFile')
+                OpenFAST.editFASTfile(MDfile, MDoptions)
+
             # Make any edits to DISCON
             DISCONoptions = extractkeystartingwith(options, 'DISCONparam_', removeprefix=True)
             if bool(DISCONoptions):

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
+
 #
 # Copyright (c) 2022, Alliance for Sustainable Energy
 #
@@ -16,6 +18,15 @@ utilpath   = os.path.join(scriptpath, 'utilities')
 sys.path.insert(1, utilpath)
 import findOFversion as findOFversion
 
+import argparse
+import ast
+
+try:
+    import argcomplete
+    has_argcomplete = True
+except:
+    has_argcomplete = False
+
 def is_number(s):
     try:
         complex(s) # for int, long, float and complex
@@ -23,7 +34,7 @@ def is_number(s):
         return False
     return True
 
-def editFASTfile(FASTfile, replacedict):
+def editFASTfile(FASTfile, replacedict, tagedits=True):
     commentchars = ['=', '#']
     OutListCount = 0
     for line in fileinput.input(FASTfile, inplace=True, backup='.bak'):
@@ -65,7 +76,8 @@ def editFASTfile(FASTfile, replacedict):
                 replacestring = repr(replacedict[keyword]).replace("'",'')
                 outline  = '%10s '%replacestring 
                 outline += ' '.join(linesplit[idx:])
-                outline += ' [EDITED]\n'
+                if tagedits: outline += ' [EDITED]'
+                outline += '\n'
                 sys.stderr.write(outline)
             else:
                 outline=line
@@ -307,3 +319,57 @@ def setDensity(fstfile, density, verbose=False):
         if verbose:
             print("Set AirDens in %s: %f"%(fstfile, float(AirDens)))
     return
+
+# ========================================================================
+#
+# Main
+#
+# ========================================================================
+if __name__ == "__main__":
+    helpstring = """
+    Edit an openFAST model
+    """
+    
+    # Handle arguments
+    parser     = argparse.ArgumentParser(description=helpstring,
+                                         formatter_class=argparse.RawDescriptionHelpFormatter,)
+    parser.add_argument(
+        "fstfile",
+        help="input FST file",
+        type=str,
+    )
+
+    parser.add_argument(
+        "editfile",
+        help="File to edit",
+        choices=['fstfile', 'AeroFile', 'ServoFile', 'EDFile', 'HydroFile','DISCON'],
+        type=str,
+    )
+
+    parser.add_argument(
+        "params",
+        help="String with dictionary of parameters to edit",
+    )
+
+    parser.add_argument('--notagedits', 
+                        help="Do not tag edits in the openfast files",
+                        default=False,
+                        action='store_true')
+
+    # Load the options
+    if has_argcomplete: argcomplete.autocomplete(parser)    
+    args      = parser.parse_args()
+    fstfile   = args.fstfile
+    editfile  = args.editfile
+    params    = ast.literal_eval(args.params)
+    notagedits = args.notagedits
+
+    if editfile == 'fstfile':
+        editFASTfile(fstfile, params, tagedits=(not notagedits))
+    elif editfile == 'DISCON':
+        SDfile = getFileFromFST(fstfile, 'ServoFile')
+        DISCONfile   = getFileFromFST(SDfile, 'DLL_InFile')
+        editDISCONfile(DISCONfile, params)
+    else:
+        OFfile = OpenFAST.getFileFromFST(fstfile, editfile)
+        editFASTfile(OFfile, params, tagedits=(not notagedits))
