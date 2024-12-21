@@ -38,9 +38,13 @@ def downloadmodel(modelsource):
     gitrepo     = modelsource['gitrepo']
     gitdirs     = modelsource['gitdirs']
     downloaddir = dictdefault(modelsource, 'downloaddir', '')
+    branch      = dictdefault(modelsource, 'branch', None)
 
     # Clone the repo
-    gitdlcmds   = ['git', 'clone', '-n', '--depth=1', '--filter=tree:0' ]
+    gitdlcmds   = ['git', 'clone']
+    if branch is not None:
+        gitdlcmds += ['-b', branch ]
+    gitdlcmds  += [ '-n', '--depth=1', '--filter=tree:0' ]
     gitdlcmds  += [ gitrepo]
     if len(downloaddir)>0:
         gitdlcmds  += [ downloaddir ]
@@ -117,6 +121,33 @@ if __name__ == "__main__":
     helpstring = """
     Edit an openFAST model
     """
+
+    exampleyaml = """
+# Download the openfast model from this repo
+modelsource:
+  gitrepo: git@github.com:IEAWindTask37/IEA-15-240-RWT.git
+  gitdirs:
+    - OpenFAST/IEA-15-240-RWT-UMaineSemi
+    - OpenFAST/IEA-15-240-RWT
+  #downloaddir: IEA-15-240-RWT-GIT   # destination for clone (optional)
+  copyaction:                       # copy files out from git repo (optional)
+    source: IEA-15-240-RWT/OpenFAST
+    dest: Floating-IEA-15-240-RWT
+  deleteafterdownload: True         # Delete the git repo after d/l (optional)
+
+# Edit the model parameters in this section
+modelparams:
+  fstfilename: Floating-IEA-15-240-RWT/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
+  # Specify any changes to OpenFAST parameters below
+  # Possible files to edit are: FSTFile, EDFile, AeroFile, ServoFile, HydroFile, MooringFile, SubFile, DISCONFile
+  FSTFile:
+    DT: 0.005
+    CompInflow: 2
+  AeroFile:
+    WakeMod: 0
+  DISCONFile:
+    Fl_Mode: 0
+"""
     
     # Handle arguments
     parser     = argparse.ArgumentParser(description=helpstring,
@@ -124,8 +155,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "inputfile",
         help="input YAML file",
+        nargs='*',
         type=str,
     )
+    parser.add_argument('--example', 
+                        help="Provide an example of an yaml file",
+                        default=False,
+                        action='store_true',
+                        required=False)    
     parser.add_argument('--notagedits', 
                         help="Do not tag edits in the openfast files",
                         default=False,
@@ -136,23 +173,33 @@ if __name__ == "__main__":
     args      = parser.parse_args()
     inputfile = args.inputfile
     notagedits= args.notagedits
-
-    # Load the input file
-    yamldict = {}
-    with open(inputfile, 'r') as f:
-        yamldict = Loader(f, **loaderkwargs)
-        print(yamldict)
-
-    if not yamldict:
-        # Empty dictionary, do nothing
-        raise ValueError('Empty dictionary')
+    example   = args.example
     
-    # Download the model
-    if 'modelsource' in yamldict:
-        modelsource = yamldict['modelsource']
-        downloadmodel(modelsource)
+    if example:
+        print(exampleyaml)
+        sys.exit(0)
 
-    # Edit the openfast parameters in the files
-    if 'modelparams' in yamldict:
-        modelparams = yamldict['modelparams']
-        editmodel(modelparams)
+    if len(args.inputfile)<1:
+        parser.print_help()
+        sys.exit(0)
+
+    for yamlfile in inputfile:
+        # Load the input file
+        yamldict = {}
+        with open(inputfile[0], 'r') as f:
+            yamldict = Loader(f, **loaderkwargs)
+            print(yamldict)
+
+        if not yamldict:
+            # Empty dictionary, do nothing
+            raise ValueError('Empty dictionary')
+    
+        # Download the model
+        if 'modelsource' in yamldict:
+            modelsource = yamldict['modelsource']
+            downloadmodel(modelsource)
+
+        # Edit the openfast parameters in the files
+        if 'modelparams' in yamldict:
+            modelparams = yamldict['modelparams']
+            editmodel(modelparams)
