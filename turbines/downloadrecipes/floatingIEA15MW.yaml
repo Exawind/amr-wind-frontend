@@ -1,0 +1,26 @@
+# Download the openfast model from this repo
+modelsource:
+  gitrepo: git@github.com:IEAWindTask37/IEA-15-240-RWT.git
+  gitdirs:
+    - OpenFAST/IEA-15-240-RWT-UMaineSemi
+    - OpenFAST/IEA-15-240-RWT
+  #downloaddir: IEA-15-240-RWT-GIT   # destination for clone (optional)
+  copyaction:                       # copy files out from git repo (optional)
+    source: IEA-15-240-RWT/OpenFAST
+    dest: OpenFAST3p5_Floating_IEA15MW
+  deleteafterdownload: True         # Delete the git repo after d/l (optional)
+
+# Edit the model parameters in this section
+modelparams:
+  fstfilename: OpenFAST3p5_Floating_IEA15MW/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
+  # Specify any changes to OpenFAST parameters below
+  # Possible files to edit are: FSTFile, EDFile, AeroFile, ServoFile, HydroFile, MooringFile, SubFile, DISCONFile
+  FSTFile:
+    DT: 0.005
+    CompInflow: 2
+  AeroFile:
+    WakeMod: 0
+  ServoFile:
+    DLL_FileName: /projects/wind_uq/lcheung/AMRWindBuilds/tcf.20240730/ROSCO/rosco/controller/build/libdiscon.so
+  DISCONFile:
+    Fl_Mode: 0
