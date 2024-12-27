@@ -2,18 +2,18 @@
 modelsource:
   gitrepo: git@github.com:IEAWindTask37/IEA-15-240-RWT.git
   gitdirs:
-    - OpenFAST/IEA-15-240-RWT-UMaineSemi
+    - OpenFAST/IEA-15-240-RWT-Monopile
     - OpenFAST/IEA-15-240-RWT
   #downloaddir: IEA-15-240-RWT-GIT   # destination for clone (optional)
   copyaction:                       # copy files out from git repo (optional)
     source: IEA-15-240-RWT/OpenFAST
-    dest: OpenFAST3p5_Floating_IEA15MW
+    dest: OpenFAST3p5_Monopile_IEA15MW
   deleteafterdownload: True         # Delete the git repo after d/l (optional)
 
 # Edit the model parameters in this section
 modelparams:
-  fstfilename: OpenFAST3p5_Floating_IEA15MW/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
-  postconfigcmd:  "sed -i -e '/WavesF2xi/d' -e '/WavesF2yi/d' -e '/WavesF2zi/d' -e '/WavesM2xi/d' -e '/WavesM2yi/d' -e '/WavesM2zi/d' OpenFAST3p5_Floating_IEA15MW/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi_HydroDyn.dat"
+  fstfilename: OpenFAST3p5_Monopile_IEA15MW/IEA-15-240-RWT-Monopile/IEA-15-240-RWT-Monopile.fst
+  # postconfigcmd:  
 
   # Specify any changes to OpenFAST parameters below
   # Possible files to edit are: FSTFile, EDFile, AeroFile, ServoFile, HydroFile, MooringFile, SubFile, DISCONFile
@@ -24,21 +24,21 @@ modelparams:
     WakeMod: 0
   #ServoFile:
   #  DLL_FileName: /projects/wind_uq/lcheung/AMRWindBuilds/tcf.20240730/ROSCO/rosco/controller/build/libdiscon.so
-  DISCONFile:
-    Fl_Mode: 0
+  # DISCONFile:
+  #   Fl_Mode: 0
 
 # Write the turbine yamlfile
 writeturbineyaml: True
-turbineyamlfile: floatingIEA15MW.yaml
+turbineyamlfile: monopileIEA15MW.yaml
 
 # This will be copied over to turbineyamlfile
 turbines:
   IEA15MW_ALM:     # This is an arbitrary, unique name
     # OpenFAST files from the repo git@github.com:IEAWindTask37/IEA-15-240-RWT.git
-    turbinetype_name:             "Floating_IEA15MW_ALM"
+    turbinetype_name:             "Monopile_IEA15MW_ALM"
     turbinetype_comment:          "OpenFAST 3.5 model"
     Actuator_type:                TurbineFastLine
-    Actuator_openfast_input_file: OpenFAST3p5_Floating_IEA15MW/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
+    Actuator_openfast_input_file: OpenFAST3p5_Monopile_IEA15MW/IEA-15-240-RWT-Monopile/IEA-15-240-RWT-Monopile.fst
     Actuator_rotor_diameter:      240
     Actuator_hub_height:          150
     Actuator_num_points_blade:    50
@@ -50,4 +50,4 @@ turbines:
     Actuator_nacelle_drag_coeff:  0.5
     Actuator_nacelle_area:        49.5
     Actuator_output_frequency:    10
-    turbinetype_filedir:          OpenFAST3p5_Floating_IEA15MW
+    turbinetype_filedir:          OpenFAST3p5_Monopile_IEA15MW
