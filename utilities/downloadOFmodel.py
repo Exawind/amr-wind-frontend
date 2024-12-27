@@ -28,6 +28,8 @@ import ruamel.yaml
 yaml = ruamel.yaml.YAML(typ='rt')
 Loader= yaml.load
 loaderkwargs = {}
+dumperkwargs = {}
+#dumperkwargs = {'indent':4, 'default_flow_style':False} # 'block_seq_indent':2, 'line_break':0, 'explicit_start':True, 
 
 dictdefault = lambda d, k, default: d[k] if k in d else default
 
@@ -39,6 +41,7 @@ def downloadmodel(modelsource):
     gitdirs     = modelsource['gitdirs']
     downloaddir = dictdefault(modelsource, 'downloaddir', '')
     branch      = dictdefault(modelsource, 'branch', None)
+    compilecmd  = dictdefault(modelsource, 'compilecmd', None)
 
     # Clone the repo
     gitdlcmds   = ['git', 'clone']
@@ -64,8 +67,14 @@ def downloadmodel(modelsource):
     gitdircmds += gitdirs
     subprocess.run(gitdircmds)
     print('EXECUTING '+' '.join(gitdircmds))
-    subprocess.run(['git','checkout'])        
+    subprocess.run(['git','checkout'])
 
+    # Capture the git hash
+    githash = subprocess.getoutput("git rev-parse --short HEAD")
+    print('GITHASH = %s'%githash)
+    with open('downloadmodel_githash.txt', 'w') as f:
+        f.write(githash)
+    
     # Go back to the original directory
     os.chdir(curdir)
 
@@ -77,6 +86,13 @@ def downloadmodel(modelsource):
             source = [source]
         for sdir in source:
             shutil.copytree(sdir, dest, dirs_exist_ok=True)
+        with open(os.path.join(dest, 'downloadmodel_githash.txt'), 'w') as f:
+            f.write(githash)
+
+            
+    # Compile the DISCON library (if necessary)
+    if compilecmd is not None:
+        os.system(compilecmd)
 
     if 'deleteafterdownload' in modelsource:
         shutil.rmtree(workingdir)
@@ -89,6 +105,7 @@ def editmodel(modelparams):
     Edit OpenFAST model parameters
     """
     fstfilename = modelparams['fstfilename']
+    postconfigcmd = dictdefault(modelparams, 'postconfigcmd', None)
 
     # Edit fst parameters
     if 'FSTFile' in modelparams:
@@ -104,14 +121,33 @@ def editmodel(modelparams):
             OFfile = OpenFAST.getFileFromFST(fstfilename, editfile)
             print('Editing '+OFfile)
             OpenFAST.editFASTfile(OFfile, params, tagedits=(not notagedits))
-        
+
+    # Edit DISCON parameters
     if 'DISCONFile' in modelparams:
         params = modelparams['DISCONFile']
         SDfile = OpenFAST.getFileFromFST(fstfilename, 'ServoFile')
         DISCONfile   = OpenFAST.getFileFromFST(SDfile, 'DLL_InFile')
         OpenFAST.editDISCONfile(DISCONfile, params)
+
+    # run any post configuration commands
+    if postconfigcmd is not None:
+        os.system(postconfigcmd)
+
     return
-    
+
+def writeTurbineYaml(inputdict, filename):
+    # Open the file and write it
+    outfile = sys.stdout if filename == sys.stdout else open(filename, 'w')
+    # Write out the header comment
+    outfile.write("# ----- BEGIN turbine type setup input file ----\n")
+    yaml.dump(inputdict, outfile, 
+              **dumperkwargs)
+    outfile.write("# ----- END turbine type input file ------\n")
+    if filename != sys.stdout: 
+        outfile.close()
+        print("Saved turbine setup to %s"%filename)
+    return
+
 # ========================================================================
 #
 # Main
@@ -129,15 +165,21 @@ modelsource:
   gitdirs:
     - OpenFAST/IEA-15-240-RWT-UMaineSemi
     - OpenFAST/IEA-15-240-RWT
+  branch: main                      # branch to clone (optional)
   #downloaddir: IEA-15-240-RWT-GIT   # destination for clone (optional)
   copyaction:                       # copy files out from git repo (optional)
     source: IEA-15-240-RWT/OpenFAST
     dest: Floating-IEA-15-240-RWT
+  #compilecmd: SHELL COMMAND HERE   # Shell command/script to compile DISCON (optional)
   deleteafterdownload: True         # Delete the git repo after d/l (optional)
 
 # Edit the model parameters in this section
 modelparams:
+  # Name of the FST file 
   fstfilename: Floating-IEA-15-240-RWT/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
+  # Shell script comamand to run after any OpenFAST parameter changes (optional)
+  #postconfigcmd: SHELL COMMAND HERE
+
   # Specify any changes to OpenFAST parameters below
   # Possible files to edit are: FSTFile, EDFile, AeroFile, ServoFile, HydroFile, MooringFile, SubFile, DISCONFile
   FSTFile:
@@ -147,6 +189,31 @@ modelparams:
     WakeMod: 0
   DISCONFile:
     Fl_Mode: 0
+
+# Write the turbine yamlfile
+writeturbineyaml: True
+turbineyamlfile: floatingIEA15MW.yaml
+
+# This will be copied over to turbineyamlfile
+turbines:
+  IEA15MW_ALM:     # This is an arbitrary, unique name
+    # OpenFAST files from the repo git@github.com:IEAWindTask37/IEA-15-240-RWT.git
+    turbinetype_name:             "IEA15MW_ALM"
+    turbinetype_comment:          "OpenFAST 3.5 model"
+    Actuator_type:                TurbineFastLine
+    Actuator_openfast_input_file: OpenFAST3p5_Floating_IEA15MW/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi.fst
+    Actuator_rotor_diameter:      240
+    Actuator_hub_height:          150
+    Actuator_num_points_blade:    50
+    Actuator_num_points_tower:    12
+    Actuator_epsilon:             [2.0, 2.0, 2.0]
+    Actuator_epsilon_tower:       [2.0, 2.0, 2.0]
+    Actuator_openfast_start_time: 0.0
+    Actuator_openfast_stop_time:  10000.0
+    Actuator_nacelle_drag_coeff:  0.5
+    Actuator_nacelle_area:        49.5
+    Actuator_output_frequency:    10
+    turbinetype_filedir:          OpenFAST3p5_Floating_IEA15MW/
 """
     
     # Handle arguments
@@ -186,9 +253,9 @@ modelparams:
     for yamlfile in inputfile:
         # Load the input file
         yamldict = {}
-        with open(inputfile[0], 'r') as f:
+        with open(yamlfile, 'r') as f:
             yamldict = Loader(f, **loaderkwargs)
-            print(yamldict)
+            #print(yamldict)
 
         if not yamldict:
             # Empty dictionary, do nothing
@@ -203,3 +270,12 @@ modelparams:
         if 'modelparams' in yamldict:
             modelparams = yamldict['modelparams']
             editmodel(modelparams)
+
+        # Write the turbine model yaml file
+        writeturbyaml = dictdefault(yamldict, 'writeturbineyaml', False)
+        if writeturbyaml and 'turbines' in yamldict:
+            inputdict = {}
+            inputdict['turbines'] = yamldict['turbines']
+            outfile = dictdefault(yamldict, 'turbineyamlfile', sys.stdout)
+            print(outfile)
+            writeTurbineYaml(inputdict, outfile)
