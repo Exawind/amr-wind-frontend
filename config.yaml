@@ -1561,6 +1561,30 @@ inputwidgets:
     outputdef:
       AMR-Wind: ABL.wall_shear_stress_type
 
+  - name:       wf_velocity
+    label:      WF velocity
+    frame:      frame_ABLprop
+    inputtype:  [float, float]
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.wf_velocity
+
+  - name:       wf_vmag
+    label:      WF velocity mag
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.wf_vmag
+
+  - name:       wf_theta
+    label:      WF temperature
+    frame:      frame_ABLprop
+    inputtype:  float
+    defaultval: 
+    outputdef:
+      AMR-Wind: ABL.wf_theta
+
   - name:       latitude
     label:      Latitude
     frame:      frame_Coriolis
@@ -1645,6 +1669,24 @@ inputwidgets:
     inputtype:  str
     outputdef:
       AMR-Wind: ABL.temperature_values
+    entryopt:
+      width:    20
+
+  - name:       read_temperature_profile
+    label:      Mean Bouss. read profile
+    frame:      frame_ABLTprof
+    inputtype:  bool
+    default:    False
+    outputdef:
+      AMR-Wind: ABLMeanBoussinesq.read_temperature_profile
+
+  - name:       temperature_profile_filename
+    label:      Mean Bouss. T filename
+    frame:      frame_ABLTprof
+    inputtype:  filename
+    default:    
+    outputdef:
+      AMR-Wind: ABLMeanBoussinesq.temperature_profile_filename
     entryopt:
       width:    20
 
