@@ -2183,6 +2183,8 @@ class MyApp(tkyg.App, object):
                               autoset_MMCForcing=False,
                               autoset_MMCTendencyForcing=False,
                               autoset_ABLMeanBoussinesq=True,
+                              ABLMeanBoussinesqTemperatureFile=None,
+                              autoset_wf_properties=False,
                               autoset_ABLwallshearstresstype=True,
                               checkpointdir=None,
                               verbose=False):
@@ -2334,6 +2336,36 @@ class MyApp(tkyg.App, object):
         if autoset_ABLMeanBoussinesq:
             self.inputvars['ABLMeanBoussinesq'].setval(True)
             if verbose: printverbose('SET','ABLMeanBoussinesq')
+            if ABLMeanBoussinesqTemperatureFile is not None:
+                # Compute and save the mean temperature file
+                abl_ncdat = postpro.loadnetcdffile(ncfile)
+                avgtheta  = postpro.loadProfileData(abl_ncdat, varslist=['theta'], avgt=tavg)
+                with open(ABLMeanBoussinesqTemperatureFile,'w') as f:
+                    f.write('%i \n'%(len(avgtheta['z'])))
+                    for i,z in enumerate(avgtheta['z']):
+                        f.write('%12.8e %12.8e \n'%(z, avgtheta['theta'][i]))
+                self.inputvars['read_temperature_profile'].setval(True, forcechange=True)
+                self.inputvars['temperature_profile_filename'].setval(ABLMeanBoussinesqTemperatureFile, forcechange=True)
+                if verbose:
+                    printverbose('SET', 'read_temperature_profile')
+                    printverbose('SET', 'temperature_profile_filename')
+
+        if autoset_wf_properties:
+            # Compute and save the mean temperature file
+            abl_ncdat = postpro.loadnetcdffile(ncfile)
+            avgwf     = postpro.loadProfileData(abl_ncdat, varslist=['u', 'v', 'theta', 'hvelmag'], avgt=tavg)
+            wf_u      = avgwf['u'][0]
+            wf_v      = avgwf['v'][0]
+            wf_theta  = avgwf['theta'][0]
+            wf_hvelmag= avgwf['hvelmag'][0]
+            self.inputvars['wf_velocity'].setval([wf_u, wf_v], forcechange=True)
+            self.inputvars['wf_vmag'].setval(wf_hvelmag, forcechange=True)
+            self.inputvars['wf_theta'].setval(wf_theta, forcechange=True)
+            #print('wf u = %f v = %f theta = %f hvelmag = %f'%(wf_u, wf_v, wf_theta, wf_hvelmag))
+            if verbose:
+                printverbose('SET', 'wf_velocity')
+                printverbose('SET', 'wf_vmag')
+                printverbose('SET', 'wf_theta')
 
         # Set the ABL mode to local
         if autoset_ABLwallshearstresstype:
