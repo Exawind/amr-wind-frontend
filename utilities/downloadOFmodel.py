@@ -94,7 +94,7 @@ def downloadmodel(modelsource):
     if compilecmd is not None:
         os.system(compilecmd)
 
-    if 'deleteafterdownload' in modelsource:
+    if ('deleteafterdownload' in modelsource) and modelsource['deleteafterdownload']:
         shutil.rmtree(workingdir)
 
     return
@@ -146,6 +146,31 @@ def writeTurbineYaml(inputdict, filename):
     if filename != sys.stdout: 
         outfile.close()
         print("Saved turbine setup to %s"%filename)
+    return
+
+def processModelDict(yamldict):
+    if not yamldict:
+        # Empty dictionary, do nothing
+        raise ValueError('Empty dictionary')
+    
+    # Download the model
+    if 'modelsource' in yamldict:
+        modelsource = yamldict['modelsource']
+        downloadmodel(modelsource)
+
+    # Edit the openfast parameters in the files
+    if 'modelparams' in yamldict:
+        modelparams = yamldict['modelparams']
+        editmodel(modelparams)
+
+    # Write the turbine model yaml file
+    writeturbyaml = dictdefault(yamldict, 'writeturbineyaml', False)
+    if writeturbyaml and 'turbines' in yamldict:
+        inputdict = {}
+        inputdict['turbines'] = yamldict['turbines']
+        outfile = dictdefault(yamldict, 'turbineyamlfile', sys.stdout)
+        print(outfile)
+        writeTurbineYaml(inputdict, outfile)
     return
 
 # ========================================================================
@@ -257,25 +282,4 @@ turbines:
             yamldict = Loader(f, **loaderkwargs)
             #print(yamldict)
 
-        if not yamldict:
-            # Empty dictionary, do nothing
-            raise ValueError('Empty dictionary')
-    
-        # Download the model
-        if 'modelsource' in yamldict:
-            modelsource = yamldict['modelsource']
-            downloadmodel(modelsource)
-
-        # Edit the openfast parameters in the files
-        if 'modelparams' in yamldict:
-            modelparams = yamldict['modelparams']
-            editmodel(modelparams)
-
-        # Write the turbine model yaml file
-        writeturbyaml = dictdefault(yamldict, 'writeturbineyaml', False)
-        if writeturbyaml and 'turbines' in yamldict:
-            inputdict = {}
-            inputdict['turbines'] = yamldict['turbines']
-            outfile = dictdefault(yamldict, 'turbineyamlfile', sys.stdout)
-            print(outfile)
-            writeTurbineYaml(inputdict, outfile)
+        processModelDict(yamldict)
