@@ -122,10 +122,12 @@ windspectra:
             funcname = pointlocfunc.split('.')[1]
             func = getattr(sys.modules[modname], funcname)
             ptlist = func()
+            ptlist2 = [x[::-1] for x in ptlist]
             
             # Extract the spectra outputs
-            favg, Suu_avg, Svv_avg, Sww_avg, avgUlong = avgSpectraNCfile(ncfile, ptlist, group,
+            favg, Suu_avg, Svv_avg, Sww_avg, avgUlong = avgSpectraNCfile(ncfile, ptlist2, group,
                                                                          timeindices, avgbins=[], verbose=verbose)
+            print()
 
             # Save average velocity
             self.avgUlong = avgUlong
@@ -149,9 +151,6 @@ windspectra:
                 self.Svv_save = self.favg_save*self.Svv_save/self.avgUlong**2
                 self.Sww_save = self.favg_save*self.Sww_save/self.avgUlong**2
                 
-            #print(favg)
-            #print(Suu_avg)
-
             # Save data to csv file
             dfcsv = pd.DataFrame()
             dfcsv['f']   = self.favg_save

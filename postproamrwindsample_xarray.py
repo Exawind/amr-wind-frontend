@@ -796,6 +796,89 @@ def getLineXR(ncfile, itimevec, varnames, groupname=None,
                 db[k] = g
     return db
 
+def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
+              verbose=0, includeattr=False, gettimes=False):
+    # make sure input is a list
+    ncfilelist = getFileList(ncfileinput)
+    ncfile=ncfilelist[0]
+    suf='_avg'
+
+    # Create a fresh db dictionary
+    db = {}
+    eps = 1.0E-10
+    t1 = timerange[0]-eps
+    t2 = timerange[1]
+    if gettimes: db['times'] = []
+
+    # Now load the ncfile data
+    if groupname is None:
+        groups= ppsample.getGroups(ppsample.loadDataset(ncfile))
+        group = groups[0]
+    else:
+        group = groupname
+    db['group'] = group
+    Ncount = 0
+    for ncfile in ncfilelist:
+        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+        Ntotal      = len(filtertime[0])
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            if 'x' not in ds:
+                xm = ds['coordinates'].data[:,0]
+                ym = ds['coordinates'].data[:,1]
+                zm = ds['coordinates'].data[:,2]
+                dtime=xr.open_dataset(ncfile)
+                dtime.close()
+                db['x'] = xm
+                db['y'] = ym
+                db['z'] = zm
+            # Set up the initial mean fields
+            zeroarray = np.zeros(len(ds.num_points))
+            for v in varnames:
+                if v+suf not in db:
+                    db[v+suf] = np.full_like(zeroarray, 0.0)
+            if len(extrafuncs)>0:
+                for f in extrafuncs:
+                    if f['name']+suf not in db:
+                        db[f['name']+suf] = np.full_like(zeroarray, 0.0)
+            # Loop through and accumulate
+            for itime, t in enumerate(timevec):
+                if (t1 < t) and (t <= t2):
+                    t1 = t
+                    if verbose: progress(localNcount+1, Ntotal)
+                    if gettimes: db['times'].append(float(t))
+                    vdat = {}
+                    for v in varnames:
+                        vdat[v] = ds[v][itime,:]
+                        db[v+suf] += vdat[v]
+                    if len(extrafuncs)>0:
+                        for f in extrafuncs:
+                            name = f['name']+suf
+                            func = f['func']
+                            db[name] += func(vdat)
+                    Ncount += 1
+                    localNcount += 1
+            print()  # Done with this file
+    # Normalize the result
+    if Ncount > 0:
+        for v in varnames:
+            db[v+suf] /= float(Ncount)
+        if len(extrafuncs)>0:
+            for f in extrafuncs:
+                name = f['name']+suf
+                db[name] /= float(Ncount)
+    if verbose:
+        print("Ncount = %i"%Ncount)
+        print()
+    # include attributes
+    if includeattr:
+        for k, g in ds.attrs.items():
+            db[k] = g
+    return db
+
 def getFullPlaneXR(ncfile, num_time_steps,output_dt, groupname,ordering=["x","z","y"]):
     """
     Read all planes in netcdf file
