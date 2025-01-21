@@ -122,6 +122,13 @@ class wavenumberspectra_executor():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+    wavenumber_spectra:
+        name: Spectra_027
+        ncfile: XYdomain_027_30000.nc
+        group: Farm_XYdomain027
+        csvfile: E_spectra_Z027.csv
+        trange:  [15000, 20000]
+        iplanes: 0 
     """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
@@ -134,25 +141,30 @@ class wavenumberspectra_executor():
 
     def compute_2D_spectra(self,E,kx_vec,ky_vec,num_bins):
 
+        #generate list of 2D waveumber magnitudes
         k_mags = np.sqrt(kx_vec ** 2 + ky_vec ** 2)
         k_min = 0
         k_max = np.max(k_mags)
 
-        bins = np.linspace(k_min, k_max, num_bins + 1)  # Bin edges
-        E_spec     = np.zeros(num_bins)
-        bin_counts = np.zeros(num_bins)
+        #divide into annular rings based on num_bins parameter
+        bins = np.linspace(k_min, k_max, num_bins + 1)  
+
+        E_spec     = np.zeros(num_bins) #hold 2D wavenumber spectra E(|k|)
+        bin_counts = np.zeros(num_bins) #number of wavenumbers per bin
 
         for kxiter , kx in enumerate(kx_vec):
             for kyiter , ky in enumerate(ky_vec):
                 kmag = np.sqrt(kx ** 2 + ky**2)
-                if kmag > 0:
+                if kmag > 0: 
                     bin_index = np.where((bins[:-1] <= kmag) & (kmag < bins[1:]))[0]
-                    E_spec[bin_index] += E[kxiter,kyiter]
-                    bin_counts[bin_index] += 1.0
+                    E_spec[bin_index] += E[kxiter,kyiter] #sum energy in each wavenumber bin 
+                    bin_counts[bin_index] += 1.0 
 
-        kmag_centers = 0.5 * (bins[:-1] + bins[1:])
-        bin_area =  np.pi * bins[1:]**2 - np.pi * bins[:-1]**2
-        E_spec = E_spec * bin_area / bin_counts
+        kmag_centers = 0.5 * (bins[:-1] + bins[1:]) #determine wavenumber centers of each bin
+        bin_area =  np.pi * bins[1:]**2 - np.pi * bins[:-1]**2 #total 2D area of annular region
+
+        #E(|k|) = \circ_int 0.5 * <u_i(k) u*_i(k)>dS \approx \sum_{|k| \in bin} 0.5 * <u_i(k) u*_i(k)> * A/count
+        E_spec = E_spec * bin_area / bin_counts 
         return kmag_centers,E_spec
     
     def execute(self, verbose=False):
@@ -189,14 +201,17 @@ class wavenumberspectra_executor():
                 Ny = len(y)
                 dx = x[2] - x[1] #avoid boundary points for now
                 dy = y[2] - y[1] #avoid boundary points for now
+
                 kx = np.fft.fftfreq(Nx,dx) * 2 * np.pi
                 ky = np.fft.fftfreq(Ny,dy) * 2 * np.pi
 
+                #TODO: Add check for periodicity at sampling plane boundaries and interpolate to uniform mesh in the case of refinement zones
 
                 #Fourier transform in space
                 uhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,0],axis=1),axis=2)
                 vhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,1],axis=1),axis=2)
                 what = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,2],axis=1),axis=2)
+
                 # Compute fourier transform of two-point correlation tensor 
                 Phi_11 = np.mean((np.abs(uhat)**2),axis=0)
                 Phi_22 = np.mean((np.abs(vhat)**2),axis=0)
@@ -239,5 +254,3 @@ class wavenumberspectra_executor():
                     actionitem = action(self, self.yamldictlist[iplane][action.actionname])
                     actionitem.execute()
         return
-
-            

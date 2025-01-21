@@ -14,4 +14,5 @@ The following workflows are available:
 - [reynoldsstress](reynoldsstress.md): Reynolds-Stress average netcdf sample planes
 - [spod](spod.md): Compute SPOD eigenvectors and eigenvalues
 - [wake_meander](wake_meander.md): Compute wake meandering statistics
+- [wavenumber_spectra](wavenumber_spectra.md): Calculates 2D wavenumber spectra in x and y
 - [windspectra](windspectra.md): Calculate the wind spectra in time
