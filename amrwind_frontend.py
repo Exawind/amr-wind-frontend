@@ -2332,6 +2332,7 @@ class MyApp(tkyg.App, object):
                 printverbose('SET','ABL_tendency_forcing')
                 printverbose('SET','ABL_mesoscale_forcing')
                 printverbose('SET','ABLMesoForcingMom')
+                printverbose('SET','ABL_initial_condition_input_file')
                 
         # Set the ABLMeanBoussinesq term
         if autoset_ABLMeanBoussinesq:
