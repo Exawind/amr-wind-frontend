@@ -179,14 +179,16 @@ class Check_Actuator_FST_Aerodyn():
         # Now check for things in the AerodynFile
         if checkaerodyn['result']  == status.PASS:
             # Check WakeMod
-            WakeMod = int(OpenFASTutil.getVarFromFST(AeroFileWPath, 'WakeMod'))
+            WakeMod  = OpenFASTutil.getVarFromFST(AeroFileWPath, 'WakeMod')
+            Wake_Mod = OpenFASTutil.getVarFromFST(AeroFileWPath, 'Wake_Mod')
+            WakeModFinal = int(WakeMod) if WakeMod is not None else int(Wake_Mod)
             checkwakemod = {'subname':subname}  
-            if WakeMod == 0:
+            if WakeModFinal == 0:
                 checkwakemod['result']  = status.PASS
-                checkwakemod['mesg']    = 'WakeMod=%i OK'%WakeMod
+                checkwakemod['mesg']    = 'WakeMod=%i OK'%WakeModFinal
             else:
                 checkwakemod['result']  = status.FAIL
-                checkwakemod['mesg']    = 'WakeMod=%i, should be 0'%WakeMod
+                checkwakemod['mesg']    = 'WakeMod=%i, should be 0'%WakeModFinal
             pass
             allchecks.append(checkwakemod)
 
