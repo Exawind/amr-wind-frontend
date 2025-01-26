@@ -1,0 +1,66 @@
+
+# Download the openfast model from this repo
+modelsource:
+  gitrepo: git@github.com:OpenFAST/r-test.git
+  gitdirs:
+    - glue-codes/openfast/5MW_Baseline
+    - glue-codes/openfast-cpp/5MW_Land_DLL_WTurb_cpp
+  #downloaddir: IEA-15-240-RWT-GIT   # destination for clone (optional)
+  branch: v4.0.0
+  copyaction:                       # copy files out from git repo (optional)
+    source: r-test/glue-codes
+    dest: NREL5MW_v400
+  compilecmd: "cd NREL5MW_v400/openfast/5MW_Baseline/ServoData/DISCON; cmake .; make"
+  deleteafterdownload: True         # Delete the git repo after d/l (optional)
+
+# Edit the model parameters in this section
+modelparams:
+  fstfilename: NREL5MW_v400/openfast-cpp/5MW_Land_DLL_WTurb_cpp/5MW_Land_DLL_WTurb_cpp.fst
+  postconfigcmd: |
+    sed -i -e '/RootFxb1/d' -e '/RootFyb1/d' -e '/RootFzb1/d' -e '/RootMxb1/d' -e '/RootMyb1/d' -e '/RootMzb1/d' -e '/GenSpeed/a "RotThrust"' -e '/BldPitch1/a "BldPitch2"' -e '/BldPitch1/a "BldPitch3"' -e '/END (the word/i  "TDxr"\
+    "TDyr"\
+    "TDzr"' NREL5MW_v400/openfast-cpp/5MW_Land_DLL_WTurb_cpp/NRELOffshrBsline5MW_Onshore_ElastoDyn.dat; sed -i -e '/OutList_Nodal/a  "Alpha"\
+    "Phi"\
+    "Cl"\
+    "Cd"\
+    "Cm"\
+    "Fn"\
+    "Ft"\
+    "Fx"\
+    "Fy"' NREL5MW_v400/openfast-cpp/5MW_Land_DLL_WTurb_cpp/NRELOffshrBsline5MW_Onshore_AeroDyn.dat
+
+  # Specify any changes to OpenFAST parameters below
+  # Possible files to edit are: FSTFile, EDFile, AeroFile, ServoFile, HydroFile, MooringFile, SubFile, DISCONFile
+  FSTFile:
+    DT: 0.0008608815426997245 # Typically 0.005, make smaller for beamdyn
+    DT_Out: 0.0215220385675
+    CompElast:  2  # use beamdyn
+    CompInflow: 2
+    OutFileFmt: 3
+  ServoFile:
+    DLL_FileName: ../../openfast/5MW_Baseline/ServoData/DISCON/DISCON.dll
+  AeroFile:
+    Wake_Mod: 0
+
+# Write the turbine yamlfile
+writeturbineyaml: True
+turbineyamlfile: NREL5MW_v400.yaml
+
+turbines:
+  nre5mwFSI:
+    turbinetype_name:    "NREL5MW_v400_ALM_BD"
+    turbinetype_comment: 
+    Actuator_type:                TurbineFastLine
+    Actuator_openfast_input_file: NREL5MW_v400/openfast-cpp/5MW_Land_DLL_WTurb_cpp/5MW_Land_DLL_WTurb_cpp.fst
+    Actuator_rotor_diameter:      126
+    Actuator_hub_height:          90
+    Actuator_num_points_blade:    64
+    Actuator_num_points_tower:    11
+    Actuator_epsilon:             [4.41, 4.41, 4.41]
+    Actuator_epsilon_tower:       [4.41, 4.41, 4.41]
+    Actuator_openfast_start_time: 0.0
+    Actuator_openfast_stop_time:  2000.0
+    Actuator_nacelle_drag_coeff:  0.0
+    Actuator_nacelle_area:        0.0
+    Actuator_output_frequency:    10
+    turbinetype_filedir: NREL5MW_v400
