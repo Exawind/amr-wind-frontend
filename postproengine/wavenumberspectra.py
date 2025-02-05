@@ -119,6 +119,8 @@ class wavenumberspectra_executor():
 
         {'key':'C_kol',    'required':False,  'default':1.5,'help':'Kolmogorov constant to use for theoretical spectra', },
         {'key':'diss_rate',    'required':False,  'default':1.0,'help':'Dissipation rate for theoretical spectra', },
+        {'key':'remove_endpoint_x','required':False,  'default':False,'help':'Remove one endpoint in x before FFT if periodic signal is sampled twice at endpoints.', },
+        {'key':'remove_endpoint_y','required':False,  'default':False,'help':'Remove one endpoint in y before FFT if periodic signal is sampled twice at endpoints.', },
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
@@ -154,7 +156,7 @@ class wavenumberspectra_executor():
 
         for kxiter , kx in enumerate(kx_vec):
             for kyiter , ky in enumerate(ky_vec):
-                kmag = np.sqrt(kx ** 2 + ky**2)
+                kmag = np.sqrt(kx**2 + ky**2)
                 if kmag > 0: 
                     bin_index = np.where((bins[:-1] <= kmag) & (kmag < bins[1:]))[0]
                     E_spec[bin_index] += E[kxiter,kyiter] #sum energy in each wavenumber bin 
@@ -184,6 +186,8 @@ class wavenumberspectra_executor():
             num_bins = plane['num_bins']
             C_kol = plane['C_kol']
             diss_rate = plane['diss_rate']
+            remove_endpoint_x = plane['remove_endpoint_x']
+            remove_endpoint_y = plane['remove_endpoint_y']
             if not isinstance(type_spec, list): type_spec = [type_spec,]
 
             # Read in the cartesian data
@@ -196,16 +200,23 @@ class wavenumberspectra_executor():
                 udata_mean = np.mean(udata_cart[iplane],axis=0,keepdims=True)
                 udata_fluc = udata_cart[iplane] - udata_mean
 
+                if remove_endpoint_x:
+                    udata_fluc = udata_fluc[:,:-1,:,:]
+                    x = x[:-1]
+
+                if remove_endpoint_y:
+                    udata_fluc = udata_fluc[:,:,:-1,:]
+                    y = y[:-1]
+
+
                 #Compute wavenumbers
                 Nx = len(x)
                 Ny = len(y)
-                dx = x[2] - x[1] #avoid boundary points for now
-                dy = y[2] - y[1] #avoid boundary points for now
+                dx = x[1] - x[0] 
+                dy = y[1] - y[0] 
 
                 kx = np.fft.fftfreq(Nx,dx) * 2 * np.pi
                 ky = np.fft.fftfreq(Ny,dy) * 2 * np.pi
-
-                #TODO: Add check for periodicity at sampling plane boundaries and interpolate to uniform mesh in the case of refinement zones
 
                 #Fourier transform in space
                 uhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,0],axis=1),axis=2)
@@ -213,9 +224,11 @@ class wavenumberspectra_executor():
                 what = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,2],axis=1),axis=2)
 
                 # Compute fourier transform of two-point correlation tensor 
-                Phi_11 = np.mean((np.abs(uhat)**2),axis=0)
-                Phi_22 = np.mean((np.abs(vhat)**2),axis=0)
-                Phi_33 = np.mean((np.abs(what)**2),axis=0)
+                # For 2D wavenumbers, E(|k|) ~ L^3/T^2, \Phi(k) ~ L^4/T^2 
+                dkA = (kx[1]-kx[0]) * (ky[1]-ky[0]) 
+                Phi_11 = np.mean((np.abs(uhat)**2),axis=0)/dkA
+                Phi_22 = np.mean((np.abs(vhat)**2),axis=0)/dkA
+                Phi_33 = np.mean((np.abs(what)**2),axis=0)/dkA
 
                 for spec_type in type_spec:
                     if spec_type == 'energy':
