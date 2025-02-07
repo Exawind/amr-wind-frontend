@@ -163,10 +163,10 @@ class wavenumberspectra_executor():
                     bin_counts[bin_index] += 1.0 
 
         kmag_centers = 0.5 * (bins[:-1] + bins[1:]) #determine wavenumber centers of each bin
-        bin_area =  np.pi * bins[1:]**2 - np.pi * bins[:-1]**2 #total 2D area of annular region
+        bin_circ =  2 * np.pi * kmag_centers
 
-        #E(|k|) = \circ_int 0.5 * <u_i(k) u*_i(k)>dS \approx \sum_{|k| \in bin} 0.5 * <u_i(k) u*_i(k)> * A/count
-        E_spec = E_spec * bin_area / bin_counts 
+        E_spec = E_spec * bin_circ / bin_counts 
+
         return kmag_centers,E_spec
     
     def execute(self, verbose=False):
@@ -235,7 +235,6 @@ class wavenumberspectra_executor():
                 Phi_11 /= dkA
                 Phi_22 /= dkA
                 Phi_33 /= dkA
-
 
                 for spec_type in type_spec:
                     if spec_type == 'energy':
