@@ -228,28 +228,14 @@ class wavenumberspectra_executor():
                 Phi_22 = np.mean((np.abs(vhat)**2),axis=0)
                 Phi_33 = np.mean((np.abs(what)**2),axis=0)
 
-                E_kol = np.zeros_like(Phi_11) #Kolmogorov Spectrum
-
                 # For 2D wavenumbers, E(|k|) ~ L^3/T^2, \Phi(k) ~ L^4/T^2 
                 # \Phi is energy density in 2D wavesapce. 
-
                 # Divide by cell area in wavespace to get L^2 factor
-                # \Phi(k) = <u*(k) u(k) >/(dkx*dky)
-                #dkA = (kx[1]-kx[0]) * (ky[1]-ky[0]) 
-                #Phi_11 /= dkA
-                #Phi_22 /= dkA
-                #Phi_33 /= dkA
+                dkA = (kx[1]-kx[0]) * (ky[1]-ky[0]) 
+                Phi_11 /= dkA
+                Phi_22 /= dkA
+                Phi_33 /= dkA
 
-                # Divide by wavenumber magnitude squared to get L^2 factor
-                # \Phi(k) = <u*(k) u(k) >/|k|^2
-                for kxiter , kx_val in enumerate(kx):
-                    for kyiter , ky_val in enumerate(ky):
-                        kmag = np.sqrt(kx_val ** 2 + ky_val **2)
-                        if kmag > 0:
-                            Phi_11[kxiter,kyiter] = Phi_11[kxiter,kyiter] / (kmag ** 2)
-                            Phi_22[kxiter,kyiter] = Phi_22[kxiter,kyiter] / (kmag ** 2)
-                            Phi_33[kxiter,kyiter] = Phi_33[kxiter,kyiter] / (kmag ** 2)
-                            E_kol[kxiter,kyiter]  = 1.0/(2 * np.pi * kmag) * C_kol * diss_rate ** (2/3) * kmag ** (-5/3) # See Pope 6.193 but derive for 2D
 
                 for spec_type in type_spec:
                     if spec_type == 'energy':
@@ -259,7 +245,12 @@ class wavenumberspectra_executor():
                     elif spec_type == 'vertical':
                         E = 0.5*(Phi_33)
                     elif spec_type == 'kol':
-                        E = E_kol
+                        E = np.zeros_like(Phi_11) #Kolmogorov Spectrum
+                        for kxiter , kx_val in enumerate(kx):
+                            for kyiter , ky_val in enumerate(ky):
+                                kmag = np.sqrt(kx_val ** 2 + ky_val **2)
+                                if kmag > 0:
+                                    E[kxiter,kyiter]  = 1.0/(2 * np.pi * kmag) * C_kol * diss_rate ** (2/3) * kmag ** (-5/3) # See Pope 6.193 but derive for 2D
                     else:
                         print("Error: Unknown spectra type. Exiting")
                         sys.exit()
