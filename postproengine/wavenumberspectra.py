@@ -219,9 +219,9 @@ class wavenumberspectra_executor():
                 ky = np.fft.fftfreq(Ny,dy) * 2 * np.pi
 
                 #Fourier transform in space
-                uhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,0],axis=1),axis=2)
-                vhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,1],axis=1),axis=2)
-                what = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,2],axis=1),axis=2)
+                uhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,0],axis=1),axis=2)/(Nx*Ny)
+                vhat = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,1],axis=1),axis=2)/(Nx*Ny)
+                what = np.fft.fft(np.fft.fft(udata_fluc[:,:,:,2],axis=1),axis=2)/(Nx*Ny)
 
                 # Compute fourier transform of two-point correlation tensor 
                 Phi_11 = np.mean((np.abs(uhat)**2),axis=0)
