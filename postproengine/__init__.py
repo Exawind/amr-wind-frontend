@@ -898,8 +898,8 @@ class contourplottemplate():
                         hubheight = turb['hubheight']
                         turbD     = turb['rotordiameter']
                         nacelledir= turb['nacelledir']
-                        ix        = turb['ix'] if 'ix' in turb else axismapping[self.parent.xaxis]
-                        iy        = turb['iy'] if 'iy' in turb else axismapping[self.parent.yaxis]
+                        ix        = turb['ix'] if 'ix' in turb else axismapping[xaxis]
+                        iy        = turb['iy'] if 'iy' in turb else axismapping[yaxis]
                         lstyle    = turb['linestyle'] if 'linestyle' in turb else defaultlstyle
                         plotfunctions.plotTurbine(ax, basexyz, hubheight, turbD, nacelledir, ix, iy,
                                                   **lstyle)

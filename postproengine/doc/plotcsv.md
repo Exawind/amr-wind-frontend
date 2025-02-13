@@ -8,8 +8,8 @@ Make plots of csv files
   dpi                 : Figure resolution (Optional, Default: 125)
   figsize             : Figure size (inches) (Optional, Default: [12, 3])
   savefile            : Filename to save the picture (Optional, Default: '')
-  xlabel              : Label on the X-axis (Optional, Default: 'Time [s]')
-  ylabel              : Label on the Y-axis (Optional, Default: '')
+  xlabel              : Label on the X-axis (Optional, Default: None)
+  ylabel              : Label on the Y-axis (Optional, Default: None)
   xscale              : Scale on the X-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
   yscale              : Scale on the Y-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
   title               : Title of the plot (Optional, Default: '')
@@ -17,6 +17,7 @@ Make plots of csv files
   postplotfunc        : Function to call after plot is created. Function should have arguments func(fig, ax) (Optional, Default: '')
   figname             : Name/number of figure to create plot in (Optional, Default: None)
   axesnum             : Which subplot axes to create plot in (Optional, Default: None)
+  fontsize            : Fontsize for figure (Optional, Default: 12)
 ```
 
 ## Actions: 

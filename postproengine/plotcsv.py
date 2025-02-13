@@ -44,9 +44,9 @@ class postpro_plotcsv():
          'help':'Figure size (inches)', },
         {'key':'savefile',  'required':False,  'default':'',
          'help':'Filename to save the picture', },
-        {'key':'xlabel',    'required':False,  'default':'Time [s]',
+        {'key':'xlabel',    'required':False,  'default':None,
          'help':'Label on the X-axis', },
-        {'key':'ylabel',    'required':False,  'default':'',
+        {'key':'ylabel',    'required':False,  'default':None,
          'help':'Label on the Y-axis', },
         {'key':'xscale',    'required':False,  'default':'linear',
          'help':'Scale on the X-axis (options: linear/log/symlog/logit)', },
@@ -62,6 +62,8 @@ class postpro_plotcsv():
          'help':'Name/number of figure to create plot in'},
         {'key':'axesnum',    'required':False,  'default':None,
          'help':'Which subplot axes to create plot in'},
+        {'key':'fontsize',    'required':False,  'default':12,
+         'help':'Fontsize for figure'},
 
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -110,6 +112,7 @@ This allows you to provide the function
             legendopts = plotitem['legendopts']
             postplotfunc = plotitem['postplotfunc']
             figname  = plotitem['figname']
+            fontsize = plotitem['fontsize']
             axesnum  = None if plotitem['axesnum'] is None else plotitem['axesnum']
 
             if (figname is not None) and (axesnum is not None):
@@ -148,11 +151,12 @@ This allows you to provide the function
                 ax.plot(xplot, yplot, **lineopts)
 
             # Set up axes and labels
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
+            ax.set_xlabel(xlabel,fontsize=fontsize)
+            ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.set_xscale(xscale)
             ax.set_yscale(yscale)
-            ax.set_title(title)
+            ax.set_title(title,fontsize=fontsize)
+            ax.tick_params(axis='both', which='major', labelsize=fontsize)
             ax.legend(**legendopts)
 
             # Run any post plot functions

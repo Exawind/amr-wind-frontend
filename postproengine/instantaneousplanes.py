@@ -59,6 +59,8 @@ class postpro_instantaneousplanes():
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
          'help':'Variables to extract from the netcdf file',},        
+        {'key':'savepklfile', 'required':False,  'default':'',
+         'help':'Name of pickle file to save results', },
 
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -125,7 +127,8 @@ instantaneousplanes:
             ncfile   = plane['ncfile']
             self.xaxis    = plane['xaxis']
             self.yaxis    = plane['yaxis']
-            
+            savepklfile   = plane['savepklfile']
+
             # Load optional quantities
             times    = plane['times']
             self.trange   = plane['trange']
@@ -152,6 +155,12 @@ instantaneousplanes:
                 iters = self.db['timesteps']
 
             self.iters = iters
+
+            if len(savepklfile)>0:
+                # Write out the picklefile
+                dbfile = open(savepklfile, 'wb')
+                pickle.dump(self.db, dbfile, protocol=2)
+                dbfile.close()
 
             # Do any sub-actions required for this task
             for a in self.actionlist:
