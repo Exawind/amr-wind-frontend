@@ -236,13 +236,13 @@ class postpro_openfast():
             filtered_df = self.parent.df[mask]
 
             if 'mean' in operations:
-                csvfile = output_dir + prefix + "_mean" + extension
+                csvfile = os.path.join(output_dir, prefix + "_mean" + extension)
                 mean_df = pd.DataFrame(columns=self.parent.df.columns)
                 mean_df.loc[0] = filtered_df.mean()
                 mean_df.to_csv(csvfile, index=False,float_format='%.15f')
 
             if 'std' in operations:
-                csvfile = output_dir + prefix + "_std" + extension
+                csvfile = os.path.join(output_dir, prefix + "_std" + extension)
                 std_df = pd.DataFrame(columns=self.parent.df.columns)
                 std_df.loc[0] = filtered_df.std()
                 std_df.to_csv(csvfile, index=False,float_format='%.15f')
@@ -262,7 +262,7 @@ class postpro_openfast():
                             DEL_df[column]=DEL
                         except:
                             print("---> Warning, cannot compute DEL of: ",column, ". Setting to 0")
-                csvfile = output_dir + prefix + "_DEL" + extension
+                csvfile = os.path.join(output_dir, prefix + "_DEL" + extension)
                 DEL_df.to_csv(csvfile, index=False,float_format='%.15f')
 
 
@@ -280,6 +280,6 @@ class postpro_openfast():
                             pwelch_df[column]=Pxx_den
                         except:
                             print("---> Warning, cannot compute pwelch of: ",column, ". Setting to 0")
-                csvfile = output_dir + prefix + "_pwelch" + extension
+                csvfile = os.path.join(output_dir, prefix + "_pwelch" + extension)
                 pwelch_df.to_csv(csvfile, index=True, index_label='Freq',float_format='%.15f')
             return 
