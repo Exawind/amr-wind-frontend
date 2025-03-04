@@ -2327,10 +2327,12 @@ class MyApp(tkyg.App, object):
             self.inputvars['ABL_tendency_forcing'].setval(True)
             self.inputvars['ABL_mesoscale_forcing'].setval(tendencyfile)
             self.inputvars['ABLMesoForcingMom'].setval(True)
+            self.inputvars['ABL_initial_condition_input_file'].setval(None)
             if verbose:
                 printverbose('SET','ABL_tendency_forcing')
                 printverbose('SET','ABL_mesoscale_forcing')
                 printverbose('SET','ABLMesoForcingMom')
+                printverbose('SET','ABL_initial_condition_input_file')
                 
         # Set the ABLMeanBoussinesq term
         if autoset_ABLMeanBoussinesq:

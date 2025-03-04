@@ -17,6 +17,9 @@ import subprocess
 import OpenFASTutil as OpenFAST
 import ast
 
+import urllib.request
+import ssl
+
 try:
     import argcomplete
     has_argcomplete = True
@@ -89,7 +92,19 @@ def downloadmodel(modelsource):
         with open(os.path.join(dest, 'downloadmodel_githash.txt'), 'w') as f:
             f.write(githash)
 
-            
+
+    # Download any files from url sources
+    if 'urlfiles' in modelsource:
+        context = ssl._create_unverified_context()   # Avoid SSL certificate errors
+        for urlf in modelsource['urlfiles']:
+            url      = urlf[0]
+            filedest = urlf[1]
+            with urllib.request.urlopen(url, context=context) as f:
+                print('Downloading '+url)
+                html = f.read().decode('utf-8')
+                with open(filedest, 'w') as outf:
+                    outf.write(html)
+
     # Compile the DISCON library (if necessary)
     if compilecmd is not None:
         os.system(compilecmd)
@@ -100,7 +115,7 @@ def downloadmodel(modelsource):
     return
 
 
-def editmodel(modelparams):
+def editmodel(modelparams, tagedits=True):
     """
     Edit OpenFAST model parameters
     """
@@ -111,16 +126,21 @@ def editmodel(modelparams):
     if 'FSTFile' in modelparams:
         fstparams = modelparams['FSTFile']
         print('Editing '+fstfilename)
-        OpenFAST.editFASTfile(fstfilename, fstparams, tagedits=(not notagedits))
+        OpenFAST.editFASTfile(fstfilename, fstparams, tagedits=tagedits)
 
     # Edit parameters in each of these files
     filelist = ['EDFile', 'AeroFile', 'ServoFile', 'HydroFile', 'MooringFile', 'SubFile']
     for editfile in filelist:
         if editfile in modelparams:
             params = modelparams[editfile]
+            # Search for unallowed values:
+            for k, g in params.items():
+                if g=='PLEASEEDITTHIS':
+                    print('ERROR: PLEASEEDITTHIS not allowed for %s in %s'%(k, editfile))
+                    raise ValueError('Abort')
             OFfile = OpenFAST.getFileFromFST(fstfilename, editfile)
             print('Editing '+OFfile)
-            OpenFAST.editFASTfile(OFfile, params, tagedits=(not notagedits))
+            OpenFAST.editFASTfile(OFfile, params, tagedits=tagedits)
 
     # Edit DISCON parameters
     if 'DISCONFile' in modelparams:
@@ -148,7 +168,7 @@ def writeTurbineYaml(inputdict, filename):
         print("Saved turbine setup to %s"%filename)
     return
 
-def processModelDict(yamldict):
+def processModelDict(yamldict, tagedits=True):
     if not yamldict:
         # Empty dictionary, do nothing
         raise ValueError('Empty dictionary')
@@ -161,7 +181,7 @@ def processModelDict(yamldict):
     # Edit the openfast parameters in the files
     if 'modelparams' in yamldict:
         modelparams = yamldict['modelparams']
-        editmodel(modelparams)
+        editmodel(modelparams, tagedits=tagedits)
 
     # Write the turbine model yaml file
     writeturbyaml = dictdefault(yamldict, 'writeturbineyaml', False)
@@ -282,4 +302,4 @@ turbines:
             yamldict = Loader(f, **loaderkwargs)
             #print(yamldict)
 
-        processModelDict(yamldict)
+        processModelDict(yamldict, tagedits=(not notagedits))

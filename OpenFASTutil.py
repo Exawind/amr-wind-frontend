@@ -212,7 +212,10 @@ def getVarFromFST(fstfile, key, fstdict=None):
     """
     if fstdict is None:
         fstdict=FASTfile2dict(fstfile)
-    return fstdict[key]
+    if key in fstdict:
+        return fstdict[key]
+    else:
+        return None
 
 def loadoutfile(filename):
     """

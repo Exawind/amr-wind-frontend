@@ -13,6 +13,7 @@ Make instantaneous plots from netcdf sample planes
   trange              : Pull a range of times from netcdf file (overrides iters) (Optional, Default: None)
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
+  savepklfile         : Name of pickle file to save results (Optional, Default: '')
 ```
 
 ## Actions: 
