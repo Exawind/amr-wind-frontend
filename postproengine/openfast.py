@@ -265,7 +265,6 @@ class postpro_openfast():
                 csvfile = os.path.join(output_dir, prefix + "_DEL" + extension)
                 DEL_df.to_csv(csvfile, index=False,float_format='%.15f')
 
-
             if 'pwelch' in operations:
                 nperseg = self.actiondict['nperseg']
                 pwelch_df = pd.DataFrame(index=range(int(nperseg/2+1)),columns=self.parent.df.columns)
@@ -282,4 +281,25 @@ class postpro_openfast():
                             print("---> Warning, cannot compute pwelch of: ",column, ". Setting to 0")
                 csvfile = os.path.join(output_dir, prefix + "_pwelch" + extension)
                 pwelch_df.to_csv(csvfile, index=True, index_label='Freq',float_format='%.15f')
-            return 
+
+            if 'running_avg' in operations:
+                running_avg_df = pd.DataFrame(columns=self.parent.df.columns)
+                def running_average(data):
+                    running_avg = 0.0
+                    count = 0
+                    running_avgs = []
+
+                    for value in data:
+                        count += 1
+                        running_avg = running_avg + (value - running_avg) / count
+                        running_avgs.append(running_avg)
+                    return running_avgs
+
+                for column in filtered_df:
+                    if not column  == 'Time':
+                        running_avg_df[column]= running_average(filtered_df[column][mask].values)
+                    else:
+                        running_avg_df[column]= filtered_df[column][mask].values
+
+                csvfile = os.path.join(output_dir, prefix + "_running_avg" + extension)
+                running_avg_df.to_csv(csvfile, index=False,float_format='%.15f')
