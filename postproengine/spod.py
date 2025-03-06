@@ -1305,7 +1305,7 @@ spod:
                     #Azimuthal velocity -- not needed 
                     #self.parent.udata_polar[:,:,titer,2] = -v_vel * np.sin(self.parent.TT) + w_vel * np.cos(self.parent.TT)
             else:
-                    radial_velocity = self.parent.udata_polar[:,:,:,1]
+                radial_velocity = self.parent.udata_polar[:,:,:,1]
 
             NTheta  = len(self.parent.variables['theta'])
             NR      = len(self.parent.variables['r'])
