@@ -398,6 +398,9 @@ def printReport(ncdat, heights, avgt, span,verbose=True):
     avgustar = timeAvgScalar(ncdat, 'ustar', avgt)
     reportvars['ustar'] = avgustar
 
+    avgzi= timeAvgScalar(ncdat, 'zi', avgt)
+    reportvars['zi'] = avgzi 
+
     # Get the profile quantities
     profvars = ['Uhoriz', 'WindDir', 'TI_TKE', 'TI_horiz', 'Alpha', 'Alpha-Fit','ObukhovL','Veer','Veer-Fit']
     # Build the list of all required variables
@@ -432,6 +435,8 @@ def printReport(ncdat, heights, avgt, span,verbose=True):
             sys.stdout.write('\n') 
         sys.stdout.write('\n')
         sys.stdout.write('ustar: %f'%reportvars['ustar'])
+        sys.stdout.write('\n')
+        sys.stdout.write('zi: %f'%reportvars['zi'])
         sys.stdout.write('\n')
     return reportvars
 

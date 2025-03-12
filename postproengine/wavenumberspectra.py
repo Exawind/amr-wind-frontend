@@ -9,7 +9,7 @@ amrwindfedirs = ['../',
                  basepath]
 for x in amrwindfedirs: sys.path.insert(1, x)
 
-from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import registerplugin, mergedicts, registeraction, extract_1d_from_meshgrid
 import windspectra
 import postproamrwindsample_xarray as ppsamplexr
 import numpy as np
@@ -26,17 +26,6 @@ def get_angular_wavenumbers(N,L):
         k[counter] = -2*np.pi/L*(N/2-i) 
         counter += 1
     return k
-
-def extract_1d_from_meshgrid(Z):
-    # Check along axis 0
-    unique_rows = np.unique(Z, axis=0)
-    if unique_rows.shape[0] == 1:
-        return unique_rows[0],1
-
-    # Check along axis 1
-    unique_cols = np.unique(Z, axis=1)
-    if unique_cols.shape[1] == 1:
-        return unique_cols[:, 0],0
 
 def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
     db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
@@ -66,6 +55,7 @@ def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
             heights[iplaneiter] = origina1a2a3[-1] + offsets[iplane]
         else:
             heights[iplaneiter] = db['z'][iplane,0,0]
+
         x,axisx = extract_1d_from_meshgrid(XX[iplane,:,:])
         y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
 
