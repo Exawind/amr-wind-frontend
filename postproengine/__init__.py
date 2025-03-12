@@ -516,8 +516,10 @@ def convert_vel_xyz_to_axis1axis2(db,rot=0):
     return 
 
 def extract_1d_from_meshgrid(Z):
-    unique_rows = np.unique(Z, axis=0)
-    unique_cols = np.unique(Z, axis=1)
+    #unique_rows = np.unique(Z, axis=0)
+    #unique_cols = np.unique(Z, axis=1)
+    unique_rows = np.unique(np.round(Z,6), axis=0)
+    unique_cols = np.unique(np.round(Z,6), axis=1)
 
     if unique_rows.shape[0] == 1 and unique_cols.shape[1] == 1:
         return unique_rows[0][0],-1

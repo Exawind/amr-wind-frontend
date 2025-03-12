@@ -46,6 +46,7 @@ def get_wake_centers(u,YY,ZZ,method='ConstantArea',weighted_center=True,args=Non
     datadict['z'] = np.copy(ZZ[:,:].T)
     datadict['u'] = u[:,:,:,0]
     print("-> y grid center: ",y_grid_center)
+    print("-> y grid bounds: ",datadict['y'][0,0],datadict['y'][-1,0])
 
     wakedata = PlanarData(datadict)
     wake = track(wakedata.sliceI(),method=method,verbose=True)
