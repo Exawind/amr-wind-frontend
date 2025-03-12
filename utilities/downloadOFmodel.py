@@ -129,16 +129,29 @@ def editmodel(modelparams, tagedits=True):
         OpenFAST.editFASTfile(fstfilename, fstparams, tagedits=tagedits)
 
     # Edit parameters in each of these files
-    filelist = ['EDFile', 'AeroFile', 'ServoFile', 'HydroFile', 'MooringFile', 'SubFile']
+    filelist = ['EDFile', 'AeroFile', 'ServoFile', 'HydroFile',
+                'MooringFile', 'SubFile',
+                'BDBldFile(1)',  'BDBldFile(2)', 'BDBldFile(3)',
+                'BDBldFile(1)_BldFile',
+                'BDBldFile(2)_BldFile',
+                'BDBldFile(3)_BldFile',
+                ]
     for editfile in filelist:
         if editfile in modelparams:
+            if '_' in editfile:
+                firstfilekey = editfile.split('_')[0]
+                secfilekey   = editfile.split('_')[1]
+                firstfile  = OpenFAST.getFileFromFST(fstfilename, firstfilekey)
+                OFfile     = OpenFAST.getFileFromFST(firstfile, secfilekey)
+                print('GRABFROMFILE: '+OFfile)
+            else:
+                OFfile = OpenFAST.getFileFromFST(fstfilename, editfile)
             params = modelparams[editfile]
             # Search for unallowed values:
             for k, g in params.items():
                 if g=='PLEASEEDITTHIS':
                     print('ERROR: PLEASEEDITTHIS not allowed for %s in %s'%(k, editfile))
                     raise ValueError('Abort')
-            OFfile = OpenFAST.getFileFromFST(fstfilename, editfile)
             print('Editing '+OFfile)
             OpenFAST.editFASTfile(OFfile, params, tagedits=tagedits)
 
