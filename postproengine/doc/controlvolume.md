@@ -40,6 +40,7 @@ Control volume analysis
 ```
 
 ## Example
+
 ```yaml
 controlvolume:
   name: Streamwise CV
@@ -89,5 +90,5 @@ controlvolume:
 
   plot_contributions:
     savefile: 'test_cv_contributions_a1a2a3.png'
-
 ```
+

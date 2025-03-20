@@ -47,6 +47,7 @@ Compute wake meandering statistics
 ```
 
 ## Example
+
 ```yaml
     wake_meander:
         iplane:
@@ -80,5 +81,5 @@ Compute wake meandering statistics
             anisotropy: True
             compute_uv: True
             pklfile: pcs.pkl
-    
 ```
+    

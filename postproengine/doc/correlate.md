@@ -21,6 +21,7 @@ Calculate the two-point correlation and integral lengthscale
 ```
 
 ## Example
+
 ```yaml
 correlate:
   - name: two-point correlation (AMR-Wind)
@@ -34,8 +35,10 @@ correlate:
     saveprefix: correlation
     integrallengthscale:
       savefile: lengthscale.yaml
-
+```
+    
 Note that in spectrapoints.py, the probelocations function is defined as:
+```python
 def probelocations(s=1):
     import numpy as np
     ds = 10
@@ -45,5 +48,5 @@ def probelocations(s=1):
     yoffset=0
     [[startp.append([x,y+yoffset*iy,0]) for x in startx] for iy, y in enumerate(starty)]
     return startp
-
 ```
+

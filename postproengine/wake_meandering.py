@@ -114,6 +114,7 @@ class postpro_wakemeander():
         'help':'Which axis to use on the ordinate', },
     ]
     example = """
+```yaml
     wake_meander:
         iplane:
             - 5
@@ -146,6 +147,7 @@ class postpro_wakemeander():
             anisotropy: True
             compute_uv: True
             pklfile: pcs.pkl
+```
     """
     actionlist = {}                    # Dictionary for holding sub-actions
 

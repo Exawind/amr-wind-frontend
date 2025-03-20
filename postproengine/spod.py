@@ -665,6 +665,7 @@ class postpro_spod():
         
     ]
     example = """
+```yaml
 spod:
   name: Wake YZ plane
   ncfile: /lustre/orion/cfd162/world-shared/lcheung/ALCC_Frontier_WindFarm/farmruns/LowWS_LowTI/ABL_ALM_10x10/rundir_AWC0/post_processing/rotor_*.nc
@@ -708,6 +709,7 @@ spod:
     savefile: ./eigmode_{iplane}.png
     correlations:
       - U
+```
     """
     actionlist = {}                    # Dictionary for holding sub-actions
 

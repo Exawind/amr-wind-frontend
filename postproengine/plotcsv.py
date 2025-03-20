@@ -68,6 +68,7 @@ class postpro_plotcsv():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 plotcsv:
   - name: plotfiles
     xlabel: 'Time'
@@ -76,15 +77,22 @@ plotcsv:
     legendopts: {'loc':'upper left'}
     csvfiles:
     - {'file':'T0.csv', 'xcol':'Time', 'ycol':'GenPwr', 'lineopts':{'color':'r', 'lw':2, 'label':'T0'}}
+```
 
 Note that the csvfiles dictionary list can also include xscalefunc and yscalefunc lambda functions 
 to manipulate x and y inputs.  For instance,
-   'xscalefunc':'lambda x:x-72.5'
-shifts the x data by 72.5.  Similarly, 
- 'yscalefunc':'lambda y:y*2.0'
+```yaml
+'xscalefunc':'lambda x:x-72.5'
+```
+shifts the x data by 72.5.  Similarly,
+```yaml
+'yscalefunc':'lambda y:y*2.0'
+```
 Multiples y by 2.0.  If ycol is the empty string '', then the lambda function input is the whole dataframe.  
 This allows you to provide the function
- 'yscalefunc':'lambda y:y["BldPitch1"]+["BldPitch1"]'
+```yaml
+'yscalefunc':'lambda y:y["BldPitch1"]+["BldPitch1"]'
+```
     """
 
     # --- Stuff required for main task ---
