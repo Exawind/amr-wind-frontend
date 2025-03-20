@@ -17,6 +17,8 @@ import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import fatpack
 import scipy
+import re
+import linecache
 
 """
 Plugin for postprocessing openfast data
@@ -56,6 +58,18 @@ def approximate_awc_time_interval(AWC,rotspeed,time,windspeed,diam,st,t1,t2):
 
     return t2_temp
 
+def makeSecBladeDF(csvfile, rpts, bladekeysdict):
+    """
+    Make a dictionary with blade sectional loading quantities
+    """
+    df=pd.read_csv(csvfile, comment='#',)
+    bladedf = {}
+    bladedf['rpts'] = rpts
+    for k, bladekeys in bladekeysdict.items():
+        alphadat = [float(df[k][0]) for k in bladekeys]
+        bladedf[k] = alphadat
+    return bladedf
+
 @registerplugin
 class postpro_openfast():
     """
@@ -75,6 +89,9 @@ class postpro_openfast():
          'help':'Variables to extract from the openfast file',},        
         {'key':'extension',  'required':False,  'default':'.csv','help':'The extension to use for the csv files'},
         {'key':'output_dir',  'required':False,  'default':'./','help':'Directory to save results'},
+        {'key':'useregex',  'required':False,  'default':False,
+         'help':'Use regex expansion in vars list'},
+
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
 
@@ -100,7 +117,16 @@ class postpro_openfast():
             if type(entry['filename']) is str:
                 filenames = []
                 filenames.append(entry['filename'])
-            varnames   = list(entry['vars'])
+            if entry['useregex']:
+                allvars=linecache.getline(filenames[0],7).split()
+                searchstr = entry['vars']
+                validvars = []
+                for s in searchstr:
+                    validvars.append([x for x in allvars if bool(re.search(s,x))])
+                # Flatten and make list only have unique entries
+                varnames = list(dict.fromkeys(sum(validvars, [])))
+            else:
+                varnames   = list(entry['vars'])
             self.extension  = entry['extension']
             self.output_dir =  entry['output_dir']
 
@@ -283,3 +309,52 @@ class postpro_openfast():
                 csvfile = os.path.join(output_dir, prefix + "_pwelch" + extension)
                 pwelch_df.to_csv(csvfile, index=True, index_label='Freq',float_format='%.15f')
             return 
+
+    @registeraction(actionlist)
+    class spanwiseloading():
+        actionname = 'spanwiseloading'
+        blurb      = 'Reformats time history csv data to spanwise loading profiles'
+        required   = False
+        actiondefs = [
+            {'key':'bladefile', 'required':True,
+             'help':'AeroDyn blade file',  'default':''},
+            {'key':'bladevars', 'required':True,
+             'help':'List of blade variables to extract, such as Alpha, Cl, Cd, etc.',  'default':[]},
+            {'key':'meancsvfile', 'required':True,
+             'help':'mean csv file (output from above)',  'default':''},
+            {'key':'savecsvfile', 'required':True,
+             'help':'output csv file',  'default':''},
+            {'key':'radialstations', 'required':True,
+             'help':'list of radial blade stations',  'default':[1,2,3]},
+            {'key':'prefix', 'required':False,
+             'help':'Prefix in front of each openfast var', 'default':'AB1N'},
+        ]
+        
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            print('Executing '+self.actionname)
+            bladefile   = self.actiondict['bladefile']
+            bladevars   = self.actiondict['bladevars']
+            meancsvfile = self.actiondict['meancsvfile']
+            savecsvfile = self.actiondict['savecsvfile']
+            rstations   = self.actiondict['radialstations']
+            prefix      = self.actiondict['prefix']
+
+            # Load the blade stations
+            bladedat  = np.genfromtxt(bladefile, skip_header=6, comments='!')
+            rpts = np.array([bladedat[i-1,0] for i in rstations])
+
+            # Get the list of keys that need to be pulled out
+            blistdict  = {}
+            for suffix in bladevars:
+                blistdict[suffix] = [prefix+('%03i'%i)+suffix for i in rstations]
+
+            d = makeSecBladeDF(meancsvfile, rpts, blistdict)
+            pddf = pd.DataFrame(d).to_csv(savecsvfile, index=False,
+                                          float_format='%.15f')
+            return

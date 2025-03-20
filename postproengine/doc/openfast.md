@@ -8,6 +8,7 @@ Postprocessing of openfast variables
   vars                : Variables to extract from the openfast file (Required)
   extension           : The extension to use for the csv files (Optional, Default: '.csv')
   output_dir          : Directory to save results (Optional, Default: './')
+  useregex            : Use regex expansion in vars list (Optional, Default: False)
 ```
 
 ## Actions: 
@@ -23,4 +24,11 @@ Postprocessing of openfast variables
     diam              : Turbine diameter (Optional, Default: 0)
     U_st              : Wind speed to define Strouhal number (Optional, Default: 0)
     nperseg           : Number of samples per segment used in pwelch (Optional, Default: 4096)
+  spanwiseloading     : ACTION: Reformats time history csv data to spanwise loading profiles (Optional)
+    bladefile         : AeroDyn blade file (Required)
+    bladevars         : List of blade variables to extract, such as Alpha, Cl, Cd, etc. (Required)
+    meancsvfile       : mean csv file (output from above) (Required)
+    savecsvfile       : output csv file (Required)
+    radialstations    : list of radial blade stations (Required)
+    prefix            : Prefix in front of each openfast var (Optional, Default: 'AB1N')
 ```
