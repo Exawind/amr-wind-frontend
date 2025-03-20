@@ -69,7 +69,7 @@ windspectra:
 ```
 
 The results can be plotted with this `plotcsv` executor:
-```
+```yaml
 plotcsv:
   - name: plotSuuZ027
     xlabel: 'f [Hz]'
