@@ -343,9 +343,9 @@ def plot_radial(Ur,theta,r,rfact=1.4,cmap='coolwarm',newfig=True,vmin=None,vmax=
     #ax.set_theta_direction(-1)  # theta increasing clockwise
     ax.set_rmax(LR)
     #ax.set_yticks([0, LR/4, LR/2, 3*LR/4,LR])  # less radial ticks
-    ax.set_yticks([0,LR/1.4, LR])  # less radial ticks
+    ax.set_yticks([0,LR/rfact, LR])  # less radial ticks
     #ax.set_rlabel_position(-22.5)  # get radial labels away from plotted line
-    ax.set_yticklabels(["$0$","$R$","1.4$R$"])
+    ax.set_yticklabels(["$0$","$R$",str(rfact) + "$R$"])
     ax.grid(True)
     # skoet the locations of the angular gridlines
     #lines, labels = thetagrids(range(45, 360, 90))
