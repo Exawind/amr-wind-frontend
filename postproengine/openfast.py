@@ -94,7 +94,36 @@ class postpro_openfast():
 
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
-
+    example = """
+openfast:
+- name: NREL5MW_SECLOADS
+  filename: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast-cpp/5MW_Land_DLL_WTurb_cpp/5MW_Land_DLL_WTurb_cpp.out
+  vars: 
+  - Time
+  - '^Rot'
+  - 'AB1N...Alpha'
+  - 'AB1N...Phi'
+  - 'AB1N...Cl'
+  - 'AB1N...Cd'
+  - 'AB1N...Fx'
+  - 'AB1N...Fy'
+  - RotSpeed
+  output_dir: RESULTSDIR
+  useregex: True
+  csv:  # Store information to CSV files
+    individual_files: False
+  operate:
+    operations: 
+    - mean
+    trange: [300, 900]
+  spanwiseloading:
+    bladefile: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast/5MW_Baseline/NRELOffshrBsline5MW_AeroDyn_blade.dat
+    bladevars: [Alpha, Phi, Cl, Cd, Fx, Fy]
+    meancsvfile: RESULTSDIR/NREL5MW_SECLOADS_mean.csv
+    savecsvfile: RESULTSDIR/NREL5MW_SECLOADS_mean_rpts.csv
+    radialstations: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    prefix: AB1N
+"""
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
         self.yamldictlist = []
