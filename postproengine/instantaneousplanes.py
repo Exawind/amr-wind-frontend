@@ -65,6 +65,7 @@ class postpro_instantaneousplanes():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 instantaneousplanes:
   name: Wake YZ plane
   ncfile: ./data_converter/PA_1p25_new2/YZslice_01.00D_456.00s_1556.00s_n1m.nc
@@ -107,6 +108,7 @@ instantaneousplanes:
     xc: 375
     yc: 90
     cbar: True
+```
 """
 
 

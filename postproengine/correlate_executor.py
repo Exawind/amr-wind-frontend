@@ -71,6 +71,7 @@ class correlate_executor():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 correlate:
   - name: two-point correlation (AMR-Wind)
     ncfile: /lustre/orion/cfd162/scratch/lcheung/sampling_80000.nc
@@ -83,8 +84,10 @@ correlate:
     saveprefix: correlation
     integrallengthscale:
       savefile: lengthscale.yaml
-
+```
+    
 Note that in spectrapoints.py, the probelocations function is defined as:
+```python
 def probelocations(s=1):
     import numpy as np
     ds = 10
@@ -94,6 +97,7 @@ def probelocations(s=1):
     yoffset=0
     [[startp.append([x,y+yoffset*iy,0]) for x in startx] for iy, y in enumerate(starty)]
     return startp
+```
 """
 
     # --- Stuff required for main task ---

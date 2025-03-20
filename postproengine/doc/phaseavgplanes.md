@@ -50,6 +50,7 @@ Phase average netcdf sample planes
 ```
 
 ## Example
+
 ```yaml
   phaseavgplanes:
   - name: LowWSLowTI Baseline
@@ -67,5 +68,5 @@ Phase average netcdf sample planes
       yaxis: z         # Which axis to use on the ordinate
       iplane: [0]
       clevels: 'np.linspace(-1, 1, 101)'
-
 ```
+

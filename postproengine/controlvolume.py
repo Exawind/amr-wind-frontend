@@ -76,6 +76,7 @@ class postpro_controlvolume():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 controlvolume:
   name: Streamwise CV
   inflow_velocity_XYZ: [9.03,0,0]
@@ -124,6 +125,7 @@ controlvolume:
 
   plot_contributions:
     savefile: 'test_cv_contributions_a1a2a3.png'
+```
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
