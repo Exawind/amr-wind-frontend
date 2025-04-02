@@ -88,6 +88,7 @@ Average netcdf sample planes
 ```
 
 ## Example
+
 ```yaml
 avgplanes:
   name: Wake YZ plane
@@ -116,5 +117,5 @@ avgplanes:
     yaxis: 'a2'
     avgfunc: "lambda db: db['velocitya3_avg']"
     savefile: test.csv
-
 ```
+

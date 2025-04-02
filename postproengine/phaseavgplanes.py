@@ -75,6 +75,7 @@ class postpro_phaseavgplanes():
     ]
     actionlist = OrderedDict()                    # Dictionary for holding sub-actions    
     example = """
+```yaml
   phaseavgplanes:
   - name: LowWSLowTI Baseline
     ncfile:
@@ -91,6 +92,7 @@ class postpro_phaseavgplanes():
       yaxis: z         # Which axis to use on the ordinate
       iplane: [0]
       clevels: 'np.linspace(-1, 1, 101)'
+```
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):

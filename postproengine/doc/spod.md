@@ -67,6 +67,7 @@ Compute SPOD eigenvectors and eigenvalues
 ```
 
 ## Example
+
 ```yaml
 spod:
   name: Wake YZ plane
@@ -111,5 +112,5 @@ spod:
     savefile: ./eigmode_{iplane}.png
     correlations:
       - U
-    
 ```
+    

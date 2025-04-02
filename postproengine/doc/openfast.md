@@ -33,7 +33,22 @@ Postprocessing of openfast variables
     prefix            : Prefix in front of each openfast var (Optional, Default: 'AB1N')
 ```
 
+## Notes
+
+
+Currently the `openfast` executor is only capable of acting on text
+output from OpenFAST, corresponding to OutFileFmt=1 in the fst input
+file.
+    
+The `useregex` option allows multiple variables in the `vars` list to
+be specified through a regex [regular
+expression](https://en.wikipedia.org/wiki/Regular_expression).  For
+instance, `^Rot` will match any variable that starts with `Rot`, such
+as `RotSpeed` or `RotTorq`.
+    
+
 ## Example
+
 ```yaml
 openfast:
 - name: NREL5MW_SECLOADS
@@ -63,5 +78,5 @@ openfast:
     savecsvfile: RESULTSDIR/NREL5MW_SECLOADS_mean_rpts.csv
     radialstations: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
     prefix: AB1N
-
 ```
+

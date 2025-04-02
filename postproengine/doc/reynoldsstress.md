@@ -83,6 +83,7 @@ Reynolds-Stress average netcdf sample planes
 ```
 
 ## Example
+
 ```yaml
 reynoldsstress:
   name: Example YZ plane
@@ -107,5 +108,5 @@ reynoldsstress:
     xlabel: 'Y [m]'
     ylabel: 'Z [m]'
     iplane: 5
-
 ```
+

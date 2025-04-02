@@ -46,6 +46,7 @@ class postpro_linesampler():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 linesampler:
 - name: metmast_1k
   ncfile: 
@@ -55,6 +56,7 @@ linesampler:
   average:
     tavg: [15000, 16000]
     savefile: ../results/avgmast_1000.csv
+```
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):

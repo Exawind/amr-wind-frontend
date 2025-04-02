@@ -23,6 +23,7 @@ Calculates 2D wavenumber spectra in x and y
 ## Actions: 
 
 ## Example
+
 ```yaml
     wavenumber_spectra:
         name: Spectra_027
@@ -30,6 +31,6 @@ Calculates 2D wavenumber spectra in x and y
         group: Farm_XYdomain027
         csvfile: E_spectra_Z027.csv
         trange:  [15000, 20000]
-        iplanes: 0 
-    
+        iplanes: 0
 ```
+    

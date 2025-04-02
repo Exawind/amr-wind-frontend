@@ -63,6 +63,7 @@ class postpro_averageplanes():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
 avgplanes:
   name: Wake YZ plane
   ncfile:
@@ -90,6 +91,7 @@ avgplanes:
     yaxis: 'a2'
     avgfunc: "lambda db: db['velocitya3_avg']"
     savefile: test.csv
+```
 """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
