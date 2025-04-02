@@ -44,7 +44,7 @@ def stitchtimes(filelist, timesubset=[]):
        ncdat.close()
     return mastertimevec, timeindex
 
-def openNCfile(ncfilename, timevec, ndim=3):
+def openNCfile(ncfilename, timevec, ndim=3, extravars=[]):
     # Write the netcdf file with WRF forcing
     rootgrp = Dataset(ncfilename, "w", format="NETCDF4")
 
@@ -57,6 +57,9 @@ def openNCfile(ncfilename, timevec, ndim=3):
     nc_times     = rootgrp.createVariable("time", "f8", ("num_time_steps",))
     nc_times[:]  = timevec
 
+    for v in extravars:
+        vdat = rootgrp.createVariable(v, "f8", ("num_time_steps",))
+    
     return rootgrp
 
 def getGroups(f):
@@ -65,8 +68,14 @@ def getGroups(f):
     ncdat.close()
     return groups
 
+def getVars(f):
+    ncdat = Dataset(f, 'r')
+    varlist = [k for k, g in ncdat.variables.items()]
+    ncdat.close()
+    return varlist
+
 def addGroup(rootgrp, group, filelist, timeindexlist, 
-             includevars=[], verbose=False, spinner=False):
+             includevars=[], verbose=False, spinner=False, ablstats=False):
     # Get the basic dimensions
     num_time_steps  = rootgrp.dimensions["num_time_steps"].size
     ndim  = rootgrp.dimensions["ndim"].size
@@ -137,13 +146,36 @@ def addGroup(rootgrp, group, filelist, timeindexlist,
             varlist.remove('rotor_hub_pos')        
     # ----------------------------
 
+    if ablstats:
+        # Get the list of variables
+        rootvarlist = [k for k, g in rootgrp.variables.items()]
+        rootvarlist.remove("time")
+        for v in rootvarlist:
+            if verbose: print('Adding '+v)
+            addVar_to_group(v, None, rootgrp, 
+                            ("num_time_steps",),
+                            filelist, filetimeindex, arraysize=1, create=False)
+    
+    if ablstats:
+        Nstring = "nlevels"
+        # Take care of h variable
+        varlist.remove("h")
+        hdat = dest_subgroup.createVariable("h", "f8", (Nstring,))
+        # Loop through all times in filetimeindex
+        src_ncdat = Dataset(filelist[0], 'r')
+        srcvar = src_ncdat[group].variables["h"]
+        hdat[:] = srcvar[:]
+        src_ncdat.close()
+    else:
+        Nstring = "num_points"
+    
     # Add the other variables
     for v in varlist:
         if (not usevar(v, includevars)):
             continue
         if verbose: print("Adding "+v)
         vdat = dest_subgroup.createVariable(v, "f8", 
-                                            ("num_time_steps","num_points",))
+                                            ("num_time_steps", Nstring,))
         for ifile, fname in enumerate(filelist):
             if len(filetimeindex[ifile]) == 0: 
                 continue
@@ -158,18 +190,26 @@ def addGroup(rootgrp, group, filelist, timeindexlist,
     return
 
 def addVar_to_group(varname, groupname, dest_subgroup, dimlist, 
-                    filelist, filetimeindex, arraysize=2):
-    vdat = dest_subgroup.createVariable(varname, "f8", dimlist)
+                    filelist, filetimeindex, arraysize=2, create=True):
+    if create:
+        vdat = dest_subgroup.createVariable(varname, "f8", dimlist)
+    else:
+        vdat = dest_subgroup.variables[varname]
     for ifile, fname in enumerate(filelist):
         if len(filetimeindex[ifile]) == 0: 
             continue
         # Loop through all times in filetimeindex
         src_ncdat = Dataset(fname, 'r')
-        srcvar = src_ncdat[groupname].variables[varname]
+        if groupname is None:
+            srcvar = src_ncdat.variables[varname]
+        else:
+            srcvar = src_ncdat[groupname].variables[varname]
         for entry in filetimeindex[ifile]:
             ilocal  = entry[1]
             iglobal = entry[2]
-            if arraysize==2:
+            if arraysize==1:
+                vdat[iglobal] = srcvar[ilocal]
+            elif arraysize==2:
                 vdat[iglobal,:] = srcvar[ilocal,:]
             elif arraysize==3:
                 vdat[iglobal,:,:] = srcvar[ilocal,:,:]
@@ -227,6 +267,11 @@ if __name__ == "__main__":
         default=False,
         action='store_true')
     parser.add_argument(
+        '--ablstats', 
+        help="NetCDF is an ABL stats file",
+        default=False,
+        action='store_true')
+    parser.add_argument(
         '-v',
         '--verbose', 
         help="Turn on verbose",
@@ -239,6 +284,7 @@ if __name__ == "__main__":
     ncfiles   = args.ncfile
     verbose   = args.verbose
     spinner   = args.spinner
+    ablstats  = args.ablstats
     varlist   = args.varlist
     tlims     = [] if args.tlims is None else args.tlims
     #print(ncfiles)
@@ -249,20 +295,29 @@ if __name__ == "__main__":
     #print(timeindex)
     #print(mastertvec)
     #print(includelist)
-
+    
     # Get the list of groups
     grouplist = getGroups(ncfiles[0])
     includegroups = grouplist if args.groups is None else args.groups
-    #print(includegroups)
+
+    if ablstats:
+        print(includegroups)
+        extravars = getVars(ncfiles[0])
+        extravars.remove("time")
+    else:
+        extravars=[]
+        #print(timeindex)
+        #sys.exit(0)
 
     # Open the netCDF file
-    rootgrp   = openNCfile(outfile, mastertvec)
+    rootgrp   = openNCfile(outfile, mastertvec, extravars=extravars)
 
     # Loop through the groups
     for g in includegroups:
         if verbose: print("Adding group "+g)
         addGroup(rootgrp, g, ncfiles, timeindex, 
-                 includevars=varlist, verbose=verbose, spinner=spinner)
+                 includevars=varlist, verbose=verbose, spinner=spinner,
+                 ablstats=ablstats)
 
     # Close the file
     rootgrp.close()
