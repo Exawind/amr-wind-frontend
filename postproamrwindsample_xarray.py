@@ -238,6 +238,7 @@ def avgPlaneXR(ncfileinput, timerange,
         group = groupname
     db['group'] = group
     Ncount = 0
+    times_processed = []
     for ncfile in ncfilelist:
         timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
         filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
@@ -247,6 +248,8 @@ def avgPlaneXR(ncfileinput, timerange,
             #print("%f %f"%(t1, t2))
         localNcount = 0
         with xr.open_dataset(ncfile, group=group) as ds:
+            if verbose:
+                print("Getting data from ncfile: ",ncfile)
             if 'x' not in ds:
                 reshapeijk = ds.attrs['ijk_dims'][::-1]
                 xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
@@ -273,9 +276,11 @@ def avgPlaneXR(ncfileinput, timerange,
                     if f['name']+suf not in db:
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
-            for itime, t in enumerate(timevec):
-                if (t1 < t) and (t <= t2):
-                    t1 = t
+            for itime, t in enumerate(timevec[filtertime]):
+                if t not in times_processed:
+                    if verbose:
+                        print("--> Processing time: ",t)
+                    times_processed.append(t)
                     if verbose: progress(localNcount+1, Ntotal)
                     db['times'].append(float(t))
                     vdat = {}
@@ -846,7 +851,6 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
             for itime, t in enumerate(timevec):
-                if (t1 < t) and (t <= t2):
                     t1 = t
                     if verbose: progress(localNcount+1, Ntotal)
                     if gettimes: db['times'].append(float(t))
