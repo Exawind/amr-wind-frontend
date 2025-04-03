@@ -18,6 +18,7 @@ Make plots of csv files
   figname             : Name/number of figure to create plot in (Optional, Default: None)
   axesnum             : Which subplot axes to create plot in (Optional, Default: None)
   fontsize            : Fontsize for figure (Optional, Default: 12)
+  stylefile           : Load a custom style file (Optional, Default: None)
 ```
 
 ## Actions: 
