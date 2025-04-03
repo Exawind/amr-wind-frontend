@@ -135,13 +135,19 @@ def print_executor(f, task, docformat='markdown'):
                     extrainfo = '(Optional, Default: %s)'%repr(input['default'])
                 f.write('    %-18s: %s %s\n'%(input['key'], input['help'], extrainfo))
         f.write('```\n')
+    # Write any explanations and notes
+    if hasattr(task, 'notes'):
+        f.write('\n')
+        f.write('## Notes\n')
+        f.write(task.notes)
+        f.write('\n')
+    
     # Write any examples
     if hasattr(task, 'example'):
         f.write('\n')
         f.write('## Example\n')
-        f.write('```yaml')
         f.write(task.example)
-        f.write('\n```\n')
+        f.write('\n')
     return
 
 def makedocs(rootpath=scriptpath, docdir='doc', docformat='markdown'):

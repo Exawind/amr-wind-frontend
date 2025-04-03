@@ -114,13 +114,15 @@ class wavenumberspectra_executor():
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
     example = """
+```yaml
     wavenumber_spectra:
         name: Spectra_027
         ncfile: XYdomain_027_30000.nc
         group: Farm_XYdomain027
         csvfile: E_spectra_Z027.csv
         trange:  [15000, 20000]
-        iplanes: 0 
+        iplanes: 0
+```
     """
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):

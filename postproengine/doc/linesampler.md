@@ -17,6 +17,7 @@ Process line sample files
 ```
 
 ## Example
+
 ```yaml
 linesampler:
 - name: metmast_1k
@@ -27,5 +28,5 @@ linesampler:
   average:
     tavg: [15000, 16000]
     savefile: ../results/avgmast_1000.csv
-
 ```
+

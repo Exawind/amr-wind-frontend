@@ -54,6 +54,7 @@ class postpro_reynoldsstress():
          'help':'Degrees to rotate axis for velocitya1,a2,a3 transformation',},                
     ]
     example = """
+```yaml
 reynoldsstress:
   name: Example YZ plane
   ncfile: YZcoarse_103125.nc
@@ -77,6 +78,7 @@ reynoldsstress:
     xlabel: 'Y [m]'
     ylabel: 'Z [m]'
     iplane: 5
+```
 """    
     actionlist = {}                    # Dictionary for holding sub-actions
 

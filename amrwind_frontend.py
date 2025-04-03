@@ -2187,6 +2187,7 @@ class MyApp(tkyg.App, object):
                               autoset_wf_properties=False,
                               autoset_ABLwallshearstresstype=True,
                               checkpointdir=None,
+                              massinflowBC='mass_inflow',
                               verbose=False):
         """Automatically sets the boundary conditions and parameters required
         to restart using boundary planes.
@@ -2229,7 +2230,7 @@ class MyApp(tkyg.App, object):
         ## Set the inflow mass flow BC
         for face in inflowplanes:
             density = self.inputvars['density'].getval()
-            self.inputvars[face+'_type'].setval('mass_inflow')
+            self.inputvars[face+'_type'].setval(massinflowBC)
             self.inputvars[face+'_density'].setval(density)
             self.inputvars[face+'_temperature'].setval(0.0)
             self.inputvars[face+'_tke'].setval(0.0)

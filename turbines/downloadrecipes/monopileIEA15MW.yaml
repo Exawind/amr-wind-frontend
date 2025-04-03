@@ -1,6 +1,7 @@
 # Download the openfast model from this repo
 modelsource:
   gitrepo: git@github.com:IEAWindTask37/IEA-15-240-RWT.git
+  branch: v1.1.13
   gitdirs:
     - OpenFAST/IEA-15-240-RWT-Monopile
     - OpenFAST/IEA-15-240-RWT
@@ -29,7 +30,7 @@ modelparams:
 
 # Write the turbine yamlfile
 writeturbineyaml: True
-turbineyamlfile: monopileIEA15MW.yaml
+turbineyamlfile: MONOPILE_IEA15MW.yaml
 
 # This will be copied over to turbineyamlfile
 turbines:

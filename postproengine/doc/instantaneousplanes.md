@@ -69,6 +69,7 @@ Make instantaneous plots from netcdf sample planes
 ```
 
 ## Example
+
 ```yaml
 instantaneousplanes:
   name: Wake YZ plane
@@ -112,5 +113,5 @@ instantaneousplanes:
     xc: 375
     yc: 90
     cbar: True
-
 ```
+
