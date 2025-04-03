@@ -239,9 +239,24 @@ def avgPlaneXR(ncfileinput, timerange,
     db['group'] = group
     Ncount = 0
     times_processed = []
-    for ncfile in ncfilelist:
-        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+    mindt = float('inf')
+    times = []
+    for ncfileiter,ncfile in enumerate(ncfilelist):
+        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
+        dt = min(times[ncfileiter][1:]-times[ncfileiter][0:-1])
+        mindt = min(dt,mindt)/2.0
+
+    for ncfileiter, ncfile in enumerate(ncfilelist):
+        timevec     = np.array(times[ncfileiter])
+        filtertime  = np.where((t1-mindt <= timevec) & (timevec <= t2+mindt))
+        #filter according to time range
+        timevec = timevec[filtertime]
+        unique_timevec = np.round(timevec/mindt) * mindt
+
+        #filter for unique times between files 
+        timevec = timevec[~np.isin(unique_timevec,times_processed)]
+        times_processed = np.concatenate((times_processed,unique_timevec))
+
         Ntotal      = len(filtertime[0])
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
@@ -276,24 +291,22 @@ def avgPlaneXR(ncfileinput, timerange,
                     if f['name']+suf not in db:
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
-            for itime, t in enumerate(timevec[filtertime]):
-                if t not in times_processed:
-                    if verbose:
-                        print("--> Processing time: ",t)
-                    times_processed.append(t)
-                    if verbose: progress(localNcount+1, Ntotal)
-                    db['times'].append(float(t))
-                    vdat = {}
-                    for v in varnames:
-                        vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
-                        db[v+suf] += vdat[v]
-                    if len(extrafuncs)>0:
-                        for f in extrafuncs:
-                            name = f['name']+suf
-                            func = f['func']
-                            db[name] += func(vdat)
-                    Ncount += 1
-                    localNcount += 1
+            for itime, t in enumerate(timevec):
+                if verbose:
+                    print("--> Processing time: ",t)
+                if verbose: progress(localNcount+1, Ntotal)
+                db['times'].append(float(t))
+                vdat = {}
+                for v in varnames:
+                    vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
+                    db[v+suf] += vdat[v]
+                if len(extrafuncs)>0:
+                    for f in extrafuncs:
+                        name = f['name']+suf
+                        func = f['func']
+                        db[name] += func(vdat)
+                Ncount += 1
+                localNcount += 1
             print()  # Done with this file
     # Normalize the result
     if Ncount > 0:
