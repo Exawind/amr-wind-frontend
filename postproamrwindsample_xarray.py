@@ -258,7 +258,7 @@ def avgPlaneXR(ncfileinput, timerange,
         timevec = timevec[~np.isin(unique_timevec,times_processed)]
         times_processed = np.concatenate((times_processed,unique_timevec))
 
-        Ntotal      = len(filtertime[0])
+        Ntotal      = len(timevec)
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
             #print("%f %f"%(t1, t2))
@@ -293,8 +293,6 @@ def avgPlaneXR(ncfileinput, timerange,
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
             for itime, t in enumerate(timevec):
-                if verbose:
-                    print("--> Processing time: ",t)
                 if verbose: progress(localNcount+1, Ntotal)
                 db['times'].append(float(t))
                 vdat = {}
@@ -623,13 +621,13 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     for ncfileiter, ncfile in enumerate(ncfilelist):
         timevec     = np.array(times[ncfileiter])
         filtertime  = np.where((t1-mindt <= timevec) & (timevec <= t2+mindt))
-        Ntotal      = len(filtertime[0])
         #filter according to time range
         timevec = timevec[filtertime]
         unique_timevec = np.round(timevec/mindt) * mindt
 
         #filter for unique times between files 
         timevec = timevec[~np.isin(unique_timevec,times_processed)]
+        Ntotal      = len(timevec)
         times_processed = np.concatenate((times_processed,unique_timevec))
 
         if verbose:
@@ -649,9 +647,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
             # Loop through and accumulate
             if verbose: print("Calculating reynolds-stress")
             for itime, t in enumerate(timevec):
-                if verbose: 
-                    print("--> Processing time: ",t)
-                    progress(localNcount+1, Ntotal)
+                if verbose: progress(localNcount+1, Ntotal)
                 vdat = {}
                 for v in ['velocityx','velocityy','velocityz']:
                     vdat[v] = extractvar(ds, v, itime)        
@@ -671,7 +667,10 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         for corr in corrlist:
             name = corr[0]
             db[name] = db[name]/float(Ncount)
-    if verbose: print()
+
+    if verbose:
+        print("Ncount = %i"%Ncount)
+        print()
     if len(savepklfile)>0:
         # Write out the picklefile
         dbfile = open(savepklfile, 'wb')
