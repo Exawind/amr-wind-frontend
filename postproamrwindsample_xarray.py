@@ -238,15 +238,34 @@ def avgPlaneXR(ncfileinput, timerange,
         group = groupname
     db['group'] = group
     Ncount = 0
-    for ncfile in ncfilelist:
-        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+
+    times_processed = []
+    mindt = float('inf')
+    times = []
+    for ncfileiter,ncfile in enumerate(ncfilelist):
+        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
+        dt = min(times[ncfileiter][1:]-times[ncfileiter][0:-1])
+        mindt = min(dt,mindt)/2.0
+
+    for ncfileiter, ncfile in enumerate(ncfilelist):
+        timevec     = np.array(times[ncfileiter])
+        filtertime  = np.where((t1-mindt <= timevec) & (timevec <= t2+mindt))
+        #filter according to time range
+        timevec = timevec[filtertime]
+        unique_timevec = np.round(timevec/mindt) * mindt
+
+        #filter for unique times between files 
+        timevec = timevec[~np.isin(unique_timevec,times_processed)]
+        times_processed = np.concatenate((times_processed,unique_timevec))
+
         Ntotal      = len(filtertime[0])
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
             #print("%f %f"%(t1, t2))
         localNcount = 0
         with xr.open_dataset(ncfile, group=group) as ds:
+            if verbose:
+                print("Getting data from ncfile: ",ncfile)
             if 'x' not in ds:
                 reshapeijk = ds.attrs['ijk_dims'][::-1]
                 xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
@@ -274,21 +293,21 @@ def avgPlaneXR(ncfileinput, timerange,
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
             for itime, t in enumerate(timevec):
-                if (t1 < t) and (t <= t2):
-                    t1 = t
-                    if verbose: progress(localNcount+1, Ntotal)
-                    db['times'].append(float(t))
-                    vdat = {}
-                    for v in varnames:
-                        vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
-                        db[v+suf] += vdat[v]
-                    if len(extrafuncs)>0:
-                        for f in extrafuncs:
-                            name = f['name']+suf
-                            func = f['func']
-                            db[name] += func(vdat)
-                    Ncount += 1
-                    localNcount += 1
+                if verbose:
+                    print("--> Processing time: ",t)
+                if verbose: progress(localNcount+1, Ntotal)
+                db['times'].append(float(t))
+                vdat = {}
+                for v in varnames:
+                    vdat[v] = nonan(extractvar(ds, v, itime), replacenan)
+                    db[v+suf] += vdat[v]
+                if len(extrafuncs)>0:
+                    for f in extrafuncs:
+                        name = f['name']+suf
+                        func = f['func']
+                        db[name] += func(vdat)
+                Ncount += 1
+                localNcount += 1
             print()  # Done with this file
     # Normalize the result
     if Ncount > 0:
@@ -592,10 +611,27 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
 
     group   = db['group']
     Ncount = 0    
-    for ncfile in ncfilelist:
-        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+
+    times_processed = []
+    mindt = float('inf')
+    times = []
+    for ncfileiter,ncfile in enumerate(ncfilelist):
+        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
+        dt = min(times[ncfileiter][1:]-times[ncfileiter][0:-1])
+        mindt = min(dt,mindt)/2.0
+
+    for ncfileiter, ncfile in enumerate(ncfilelist):
+        timevec     = np.array(times[ncfileiter])
+        filtertime  = np.where((t1-mindt <= timevec) & (timevec <= t2+mindt))
         Ntotal      = len(filtertime[0])
+        #filter according to time range
+        timevec = timevec[filtertime]
+        unique_timevec = np.round(timevec/mindt) * mindt
+
+        #filter for unique times between files 
+        timevec = timevec[~np.isin(unique_timevec,times_processed)]
+        times_processed = np.concatenate((times_processed,unique_timevec))
+
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
         localNcount = 0
@@ -613,22 +649,22 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
             # Loop through and accumulate
             if verbose: print("Calculating reynolds-stress")
             for itime, t in enumerate(timevec):
-                if (t1 < t) and (t <= t2):
-                    t1 = t
-                    if verbose: progress(localNcount+1, Ntotal)
-                    vdat = {}
-                    for v in ['velocityx','velocityy','velocityz']:
-                        vdat[v] = extractvar(ds, v, itime)        
-                    if any('velocitya' in v for v in varnames):
-                        vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
-                    for corr in corrlist:
-                        name = corr[0]
-                        v1   = corr[1]
-                        v2   = corr[2]
-                        # Standard dev
-                        db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
-                    Ncount += 1
-                    localNcount += 1
+                if verbose: 
+                    print("--> Processing time: ",t)
+                    progress(localNcount+1, Ntotal)
+                vdat = {}
+                for v in ['velocityx','velocityy','velocityz']:
+                    vdat[v] = extractvar(ds, v, itime)        
+                if any('velocitya' in v for v in varnames):
+                    vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
+                for corr in corrlist:
+                    name = corr[0]
+                    v1   = corr[1]
+                    v2   = corr[2]
+                    # Standard dev
+                    db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
+                Ncount += 1
+                localNcount += 1
             print()  # Done with this file
     # Normalize and sqrt std dev
     if Ncount > 0:
@@ -846,7 +882,6 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
             for itime, t in enumerate(timevec):
-                if (t1 < t) and (t <= t2):
                     t1 = t
                     if verbose: progress(localNcount+1, Ntotal)
                     if gettimes: db['times'].append(float(t))
