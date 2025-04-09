@@ -38,6 +38,86 @@ def getFileList(ncfileinput):
 
     return ncfilelist
 
+def replaceDuplicateTime(ncfile, ttarget, ireplace, fracdt=0.01):
+    """
+    See if there is any time in ncfile which matches ttarget
+
+    matching criteria is if ttarget matches time to within fracdt*dt
+    
+    if ireplace = +1, then replaces time with the next time in sequence
+    if ireplace = -1, then replaces time with the previous time in sequence
+    """
+    alltimes = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:]
+    i0, i1 = find_2nearest(alltimes, ttarget)
+    t0, t1 = alltimes[i0], alltimes[i1]
+    dt = np.abs(t1-t0)
+    newtime = ttarget
+    if np.abs(ttarget-t0) <= fracdt*dt:
+        # Target time matches, need to replace the time
+        newi = i0 + ireplace
+        if (0 <= newi) and (newi < len(alltimes)):
+            newtime = alltimes[newi]
+            #print('%f matches!  need to replace with %f'%(ttarget, newtime))
+        else:
+            # hit an error, tried to replace with something outside
+            raise ValueError(f'Error in replaceDuplicateTime.  newi={newi} is out of bounds')
+    return newtime
+
+def sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles'):
+    """
+    Sorts a list of netcdf files so that it runs in ascending time order
+    Also returns a list of times to extract from each file
+    """
+    # Check to make sure splicepriority is a correct option
+    spliceoptions=['laterfiles','earlierfiles']
+    if not (splicepriority in spliceoptions):
+        raise ValueError(f'option splicepriority={splicepriority} is not one of '+repr(spliceoptions))
+    
+    # First run through the list and get the time extents for each file
+    timebounds = []
+    for ncfile in ncfilelist:
+        alltimes = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:]
+        timebounds.append([alltimes[0], alltimes[-1]])
+    # Now order the files based on the first time in timebounds
+    ziplist = list(zip(ncfilelist, timebounds))
+    sortedlist = sorted(ziplist, key=lambda x: x[1][0])
+    #for x in sortedlist:
+    #    print(x[0].split('/')[-1], x[1])
+
+    sortedfilelist = [x[0] for x in sortedlist]
+        
+    # Now go through and get the extraction times for each file
+    extractbounds = None
+    if splicepriority=='laterfiles':
+        # Go through the list in reverse order
+        for l in sortedlist[::-1]:
+            ltimes = l[1]
+            ncfile = l[0]
+            if extractbounds is None:
+                extractbounds = [ltimes]
+            else:
+                prevbounds = extractbounds[-1]
+                newmaxt = replaceDuplicateTime(ncfile, prevbounds[0], -1)
+                extractbounds.append([ltimes[0], newmaxt])
+        # flip the exactbounds
+        extractbounds = extractbounds[::-1]
+    else:
+        # Run through the list in forward order
+        for l in sortedlist:
+            ltimes = l[1]
+            ncfile = l[0]            
+            if extractbounds is None:
+                extractbounds = [ltimes]
+            else:
+                prevbounds = extractbounds[-1]
+                newmint = replaceDuplicateTime(ncfile, prevbounds[1], +1)
+                extractbounds.append([newmint, ltimes[1]])
+    fullziplist = list(zip(sortedlist, extractbounds))
+    #print()
+    #for x in fullziplist:
+    #    print(x[0][0].split('/')[-1], x[0][1], x[1])
+    return sortedfilelist, extractbounds
+
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                verbose=0, includeattr=False, gettimes=False,timerange=None,axis_rotation=0):
 
