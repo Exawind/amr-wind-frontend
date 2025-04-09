@@ -75,9 +75,12 @@ def sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles'):
     
     # First run through the list and get the time extents for each file
     timebounds = []
+    alltimesdict = {}
     for ncfile in ncfilelist:
         alltimes = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:]
         timebounds.append([alltimes[0], alltimes[-1]])
+        alltimesdict[ncfile] = alltimes
+
     # Now order the files based on the first time in timebounds
     ziplist = list(zip(ncfilelist, timebounds))
     sortedlist = sorted(ziplist, key=lambda x: x[1][0])
@@ -113,10 +116,12 @@ def sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles'):
                 newmint = replaceDuplicateTime(ncfile, prevbounds[1], +1)
                 extractbounds.append([newmint, ltimes[1]])
     fullziplist = list(zip(sortedlist, extractbounds))
-    #print()
-    #for x in fullziplist:
-    #    print(x[0][0].split('/')[-1], x[0][1], x[1])
-    return sortedfilelist, extractbounds
+
+    # Create a list of time vectors from the netcdf files
+    outtimevec = []
+    for f in sortedfilelist:
+        outtimevec.append(alltimesdict[f])
+    return sortedfilelist, extractbounds, outtimevec
 
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                verbose=0, includeattr=False, gettimes=False,timerange=None,axis_rotation=0):
