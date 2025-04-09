@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 #
 # Copyright (c) 2022, Alliance for Sustainable Energy
 #
@@ -18,6 +19,12 @@ sys.path.insert(1, basepath)
 import amrwind_frontend  as amrwind
 import argparse
 import glob
+
+try:
+    import argcomplete
+    has_argcomplete = True
+except:
+    has_argcomplete = False
 
 def getRestartInput(inputfile, outputfile='', verbose=False):
     # Start the AMR-Wind case
@@ -39,9 +46,30 @@ def getRestartInput(inputfile, outputfile='', verbose=False):
         print(newinput)
     return
 
-def getLatestCHKDir(dirlist, criteria='lastmodified'):
-    if criteria == 'lastmodified':
+def getLatestCHKDir(dirlist, criteria='lastiter'):
+    latestdir = None
+    if criteria == 'lastcreated':
+        # Choose the directory with the last creation time
         latestdir = max(dirlist, key=os.path.getctime)
+    elif criteria == 'lastiter':
+        # Choose the directory with the highest iteration number
+        simiter = []
+        for d in dirlist:
+            simiter.append(int(case.readCheckpointHeader(d, linenum=3)))
+        maxindex = simiter.index(max(simiter))
+        latestdir=dirlist[maxindex]
+        #print(dirlist[maxindex], simiter[maxindex])
+    elif criteria == 'lastsimtime':
+        # Choose the directory with the largest simulation time
+        simtimes = []
+        for d in dirlist:
+            simtimes.append(float(case.readCheckpointHeader(d, linenum=4)))
+        maxindex = simtimes.index(max(simtimes))
+        latestdir=dirlist[maxindex]
+        #print(dirlist[maxindex], simtimes[maxindex])
+    # Warn if latestdir contains ".old."
+    if ".old." in latestdir:
+        print("WARNING: %s is a backed-up checkpoint directory.  Make sure this is correct."%latestdir)
     return latestdir
         
 # ========================================================================
@@ -110,8 +138,17 @@ Example usage:
         help="Set which version of amr-wind to use [latest, legacy] (Default: latest)",
         default='latest',
     )
+    parser.add_argument(
+        "--sort-method",
+        dest='sortmethod',
+        help="Choose which method to use when selecting the restart checkpoint",
+        default='lastsimtime',
+        choices=['lastsimtime', 'lastiter','lastcreated']
+    )
 
+    
     # Load the options
+    if has_argcomplete: argcomplete.autocomplete(parser)
     args      = parser.parse_args()
     inputfile = args.inputfile
     outfile   = args.outfile
@@ -121,6 +158,7 @@ Example usage:
     stoptime  = args.stoptime
     maxstep   = args.maxstep
     amrwindver= args.amrwindver
+    sortmethod= args.sortmethod
 
     # Load the input file
     case = amrwind.MyApp.init_nogui()
@@ -135,7 +173,7 @@ Example usage:
         
     #latestdir = max(chkdirlist, key=os.path.getctime)
     #print(latestdir)
-    latestdir = getLatestCHKDir(chkdirlist)
+    latestdir = getLatestCHKDir(chkdirlist, criteria=sortmethod)
 
     # Set the latest check point for restart
     case.setAMRWindInput('restart_file', latestdir)    
