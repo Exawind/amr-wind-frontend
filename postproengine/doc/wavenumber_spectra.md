@@ -24,7 +24,7 @@ Calculates 2D wavenumber spectra in x and y
 
 ## Notes
 
-Specifically, the Fourier transform of the two-point velocity correlation $R_{ij}(\boldsymbol{r},t) = \langle u_i(\boldsymbol{x},t) u_j(\boldsymbol{x}+\boldsymbol{r},t) \rangle$ is computed from the FFT of the sampled AMR-Wind velocity data at a given height, $z$, as
+The Fourier transform of the two-point velocity correlation $R_{ij}(\boldsymbol{r},t) = \langle u_i(\boldsymbol{x},t) u_j(\boldsymbol{x}+\boldsymbol{r},t) \rangle$ is computed from the FFT of the sampled AMR-Wind velocity data at a given height, $z$, as
 
 
 ```math
