@@ -64,6 +64,8 @@ class postpro_plotcsv():
          'help':'Which subplot axes to create plot in'},
         {'key':'fontsize',    'required':False,  'default':12,
          'help':'Fontsize for figure'},
+        {'key':'stylefile',  'required':False,  'default':None,
+         'help':'Load a custom style file'},
 
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
@@ -122,6 +124,10 @@ This allows you to provide the function
             figname  = plotitem['figname']
             fontsize = plotitem['fontsize']
             axesnum  = None if plotitem['axesnum'] is None else plotitem['axesnum']
+            stylefile= plotitem['stylefile']
+
+            if stylefile is not None:
+                plt.style.use(stylefile)
 
             if (figname is not None) and (axesnum is not None):
                 fig     = plt.figure(figname)
