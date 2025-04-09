@@ -141,7 +141,7 @@ Example usage:
     parser.add_argument(
         "--sort-method",
         dest='sortmethod',
-        help="Choose which method to use when selecting the restart checkpoint",
+        help="Choose which method to use when selecting the restart checkpoint (Default: lastsimtime)",
         default='lastsimtime',
         choices=['lastsimtime', 'lastiter','lastcreated']
     )
