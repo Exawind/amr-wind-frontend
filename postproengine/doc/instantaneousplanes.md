@@ -28,6 +28,8 @@ Make instantaneous plots from netcdf sample planes
     cbar_nticks       : Number of ticks to include on colorbar (Optional, Default: None)
     xlabel            : Label on the X-axis (Optional, Default: 'X [m]')
     ylabel            : Label on the Y-axis (Optional, Default: 'Y [m]')
+    xlim              : Axis bounds on the X-axis (Optional, Default: None)
+    ylim              : Axis bounds on the Y-axis (Optional, Default: None)
     dpi               : Figure resolution (Optional, Default: 125)
     figsize           : Figure size (inches) (Optional, Default: [12, 3])
     fontsize          : Fontsize for labels and axis (Optional, Default: 14)
