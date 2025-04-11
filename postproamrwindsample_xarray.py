@@ -38,6 +38,15 @@ def getFileList(ncfileinput):
 
     return ncfilelist
 
+def maskTimeVector(t, extractbounds, tlimits, eps=0.0):
+    """
+    Given extractbounds tA <= t <= tB and 
+          tlimits t1 <= t <= t2
+    Find the times in time vector t which satisfy both limits
+    """
+    tmask = (extractbounds[0]-eps <= t) & (t <= extractbounds[1]+eps) & (tlimits[0]-eps <= t) & (t <= tlimits[1]+eps)
+    return tmask
+
 def replaceDuplicateTime(ncfile, ttarget, ireplace, fracdt=0.01):
     """
     See if there is any time in ncfile which matches ttarget
