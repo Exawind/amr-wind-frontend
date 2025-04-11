@@ -221,7 +221,7 @@ class Check_Actuator_FST_Aerodyn():
                     if DLL_ProcName == "DISCON":
                         DISCONFileWPath = os.path.join(os.path.dirname(fstfile), DLL_InFile)
                         WE_RhoAir = float(OpenFASTutil.getVarFromDISCON(DISCONFileWPath, 'WE_RhoAir'))
-                        print(f'GOT WE_RhoAir = {WE_RhoAir}')
+                        #print(f'GOT WE_RhoAir = {WE_RhoAir}')
                         if abs(WE_RhoAir - AirDens) + abs(WE_RhoAir - incflo_density) > 2.0*eps:
                             checkdensityDISCON['result'] = status.WARN
                             checkdensityDISCON['mesg']   = 'WE_RhoAir=%f in DISCON does not match AirDens=%f and incflo.density=%f'%(WE_RhoAir, AirDens, incflo_density)
