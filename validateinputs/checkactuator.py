@@ -156,6 +156,7 @@ class Check_Actuator_FST_Aerodyn():
 
     @classmethod
     def check(self, app, fstfile, subname=''):
+        eps  = 1.0E-6
         allchecks   = []
 
         checkaerodyn = {'subname':subname}  
@@ -196,7 +197,7 @@ class Check_Actuator_FST_Aerodyn():
             checkdensity = {'subname':subname}
             AirDens  = OpenFASTutil.getDensity(fstfile, verbose=False)
             incflo_density = app.inputvars['density'].getval()
-            if abs(AirDens - incflo_density) > 1.0E-6:
+            if abs(AirDens - incflo_density) > eps:
                 checkdensity['result'] = status.WARN
                 checkdensity['mesg']   = 'AirDens=%f, does not match incflo.density=%f'%(AirDens, incflo_density)
             else:
@@ -204,4 +205,28 @@ class Check_Actuator_FST_Aerodyn():
                 checkdensity['mesg']   = 'AirDens=%f, matches incflo.density=%f'%(AirDens, incflo_density)
             allchecks.append(checkdensity)
 
+            # Check DISCON density (if needed)
+            checkdensityDISCON = {'subname':subname}
+            CompServo  = int(OpenFASTutil.getVarFromFST(fstfile, 'CompServo'))
+            ServoFile  = OpenFASTutil.getVarFromFST(fstfile, 'ServoFile').strip('"')
+            checkdensityDISCON['result'] = status.SKIP
+            checkdensityDISCON['mesg']   = 'Skipping DISCON density check'
+            if (CompServo == 1):
+                # Check the servo file controller
+                ServoFileWPath = os.path.join(os.path.dirname(fstfile), ServoFile)
+                PCMode = int(OpenFASTutil.getVarFromFST(ServoFileWPath, 'PCMode'))
+                if PCMode == 5:
+                    DLL_InFile = OpenFASTutil.getVarFromFST(ServoFileWPath, 'DLL_InFile').strip('"')
+                    DLL_ProcName = OpenFASTutil.getVarFromFST(ServoFileWPath, 'DLL_ProcName').strip('"').upper()
+                    if DLL_ProcName == "DISCON":
+                        DISCONFileWPath = os.path.join(os.path.dirname(fstfile), DLL_InFile)
+                        WE_RhoAir = float(OpenFASTutil.getVarFromDISCON(DISCONFileWPath, 'WE_RhoAir'))
+                        #print(f'GOT WE_RhoAir = {WE_RhoAir}')
+                        if abs(WE_RhoAir - AirDens) + abs(WE_RhoAir - incflo_density) > 2.0*eps:
+                            checkdensityDISCON['result'] = status.WARN
+                            checkdensityDISCON['mesg']   = 'WE_RhoAir=%f in DISCON does not match AirDens=%f and incflo.density=%f'%(WE_RhoAir, AirDens, incflo_density)
+                        else:
+                            checkdensityDISCON['result'] = status.PASS
+                            checkdensityDISCON['mesg']   = 'WE_RhoAir=%f in DISCON matches AirDens=%f and incflo.density=%f'%(WE_RhoAir, AirDens, incflo_density)
+            allchecks.append(checkdensityDISCON)
         return allchecks

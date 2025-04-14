@@ -128,6 +128,25 @@ def editDISCONfile(DISCONfile, replacedict):
         iline += 1
     return
 
+def getVarFromDISCON(disconfile, key):
+    commentchars = ['!']
+    findsubstring = lambda s, start, end: s.split(start)[1].split(end)[0]
+    keystart = '!'
+    keyend   = '-'
+    with open(disconfile) as fp:
+        line=fp.readline()
+        while line:
+            # Look for a keyword in the discon file
+            try:
+                keyword = findsubstring(line, keystart, keyend).strip()
+            except:
+                keyword = None
+            if (keyword is not None) and (keyword == key):
+                return line.split(keystart)[0]
+            line=fp.readline()
+    # Key not found
+    return None
+
 def FASTfile2dict(FASTfile):
     """
     Reads the file FASTfile and returns a dictionary with parameters
