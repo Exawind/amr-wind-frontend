@@ -1801,13 +1801,20 @@ inputwidgets:
     outputdef:
       AMR-Wind: io.outputs
 
-  - name:       KE_int
-    label:      Output KE interval
+  # - name:       KE_int
+  #   label:      Output KE interval
+  #   frame:      frame_IOplotting
+  #   inputtype:  int
+  #   defaultval: -1
+  #   outputdef:
+  #     AMR-Wind: io.KE_int
+
+  - name:       io_derived_outputs
+    label:      Derived outputs
     frame:      frame_IOplotting
-    inputtype:  int
-    defaultval: -1
+    inputtype:  str
     outputdef:
-      AMR-Wind: io.KE_int
+      AMR-Wind: io.derived_outputs
 
   # --- DEPRECATED REMOVE IN FUTURE ---
   - name:       post_processing
