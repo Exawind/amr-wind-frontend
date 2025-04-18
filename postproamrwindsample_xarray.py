@@ -60,7 +60,7 @@ def replaceDuplicateTime(ncfile, ttarget, ireplace, fracdt=0.01):
     i0, i1 = find_2nearest(alltimes, ttarget)
     t0, t1 = alltimes[i0], alltimes[i1]
     dt = np.abs(t1-t0)
-    newtime = ttarget
+    newtime = t0
     if np.abs(ttarget-t0) <= fracdt*dt:
         # Target time matches, need to replace the time
         newi = i0 + ireplace
@@ -111,6 +111,7 @@ def sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles'):
                 prevbounds = extractbounds[-1]
                 newmaxt = replaceDuplicateTime(ncfile, prevbounds[0], -1)
                 extractbounds.append([ltimes[0], newmaxt])
+
         # flip the exactbounds
         extractbounds = extractbounds[::-1]
     else:
@@ -338,7 +339,7 @@ def avgPlaneXR(ncfileinput, timerange,
     mindt = float('inf')
     times = []
 
-    for ncfileiter, ncfile in enumerate(ncfilelist):
+    for ncfileiter, ncfile in enumerate(ncfilelistsorted):
         timevec     = timevecs[ncfileiter]
         tmask       = maskTimeVector(timevec, extracttimes[ncfileiter], timerange, eps=0.0E-16) 
         Ntotal      = sum(tmask)
@@ -656,6 +657,8 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     Calculate the reynolds stresses
     """
     ncfilelist = getFileList(ncfileinput)
+    ncfilelistsorted, extracttimes, timevecs = sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles')
+    ncfile=ncfilelist[0]
 
     print('first ncfilelist ',ncfilelist)
     ncfile=ncfilelist[0]
@@ -698,22 +701,11 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
     times_processed = []
     mindt = float('inf')
     times = []
-    for ncfileiter,ncfile in enumerate(ncfilelist):
-        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
-        dt = min(times[ncfileiter][1:]-times[ncfileiter][0:-1])
-        mindt = min(dt,mindt)/2.0
 
-    for ncfileiter, ncfile in enumerate(ncfilelist):
-        timevec     = np.array(times[ncfileiter])
-        filtertime  = np.where((t1-mindt <= timevec) & (timevec <= t2+mindt))
-        #filter according to time range
-        timevec = timevec[filtertime]
-        unique_timevec = np.round(timevec/mindt) * mindt
-
-        #filter for unique times between files 
-        timevec = timevec[~np.isin(unique_timevec,times_processed)]
-        Ntotal      = len(timevec)
-        times_processed = np.concatenate((times_processed,unique_timevec))
+    for ncfileiter, ncfile in enumerate(ncfilelistsorted):
+        timevec     = timevecs[ncfileiter]
+        tmask       = maskTimeVector(timevec, extracttimes[ncfileiter], timerange, eps=0.0E-16) 
+        Ntotal      = sum(tmask)
 
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
@@ -732,20 +724,21 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
             # Loop through and accumulate
             if verbose: print("Calculating reynolds-stress")
             for itime, t in enumerate(timevec):
-                if verbose: progress(localNcount+1, Ntotal)
-                vdat = {}
-                for v in ['velocityx','velocityy','velocityz']:
-                    vdat[v] = extractvar(ds, v, itime)        
-                if any('velocitya' in v for v in varnames):
-                    vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
-                for corr in corrlist:
-                    name = corr[0]
-                    v1   = corr[1]
-                    v2   = corr[2]
-                    # Standard dev
-                    db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
-                Ncount += 1
-                localNcount += 1
+                if tmask[itime]:
+                    if verbose: progress(localNcount+1, Ntotal)
+                    vdat = {}
+                    for v in ['velocityx','velocityy','velocityz']:
+                        vdat[v] = extractvar(ds, v, itime)        
+                    if any('velocitya' in v for v in varnames):
+                        vdat['velocitya1'],vdat['velocitya2'],vdat['velocitya3'] = apply_coordinate_transform(R,vdat['velocityx'],vdat['velocityy'],vdat['velocityz'])
+                    for corr in corrlist:
+                        name = corr[0]
+                        v1   = corr[1]
+                        v2   = corr[2]
+                        # Standard dev
+                        db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
+                    Ncount += 1
+                    localNcount += 1
             print()  # Done with this file
     # Normalize and sqrt std dev
     if Ncount > 0:
