@@ -201,6 +201,10 @@ instantaneousplanes:
             'help':'Label on the X-axis', },
             {'key':'ylabel',    'required':False,  'default':'Y [m]',
             'help':'Label on the Y-axis', },
+            {'key':'xlim',    'required':False,  'default':None,
+            'help':'Axis bounds on the X-axis', },
+            {'key':'ylim',    'required':False,  'default':None,
+            'help':'Axis bounds on the Y-axis', },
             {'key':'dpi',       'required':False,  'default':125,
             'help':'Figure resolution', },
             {'key':'figsize',   'required':False,  'default':[12,3],
@@ -244,6 +248,8 @@ instantaneousplanes:
             cbar_label = self.actiondict['cbar_label']
             xlabel   = self.actiondict['xlabel']
             ylabel   = self.actiondict['ylabel']
+            xlim     = self.actiondict['xlim']
+            ylim     = self.actiondict['ylim']
             savefile = self.actiondict['savefile']
             dpi      = self.actiondict['dpi']
             figsize  = self.actiondict['figsize']
@@ -304,6 +310,12 @@ instantaneousplanes:
                 ax.set_title(evaltitle,fontsize=fontsize)
                 if axisscale is not None:
                     ax.axis(axisscale)
+
+                if xlim is not None:
+                    ax.set_xlim(xlim[0],xlim[1])
+
+                if ylim is not None:
+                    ax.set_ylim(ylim[0],ylim[1])
 
                 # Plot turbines
                 if plotturbs:
