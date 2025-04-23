@@ -21,6 +21,12 @@ from postproengine import spod
 import re
 import plotfunctions
 
+try:
+    import imageio
+    hasimageio = True
+except:
+    hasimageio = False
+
 """
 Plugin for creating instantaneous planar images
 
@@ -413,6 +419,65 @@ instantaneousplanes:
             video.release()
             return
 
+    @registeraction(actionlist)
+    class makegif():
+        actionname = 'makegif'
+        blurb      = 'Generate an animated gif from static images of planes'
+        required   = False
+        actiondefs = [
+            {'key':'name', 'required':True,  'help':'Name of video', 'default':'output.mp4'},
+            {'key':'fps', 'required':False,  'help':'Frame per second', 'default':1},
+            {'key':'imagefilename', 'required':True,  'help':'savefile name of images', 'default':''},
+            {'key':'times', 'required':False,  'help':'Override parent times for animation', 'default':None},
+        ]
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+
+        def execute(self):
+            if (not hasimageio):
+                print('Cannot execute '+self.actionname)
+                print('import imageio failed')
+                return
+            print('Executing ' + self.actionname)
+            video_name = self.actiondict['name']
+            directory, file_name = os.path.split(video_name)
+            directory += '/'
+            os.makedirs(directory, exist_ok=True)
+            fps = self.actiondict['fps']
+            imagefilename = self.actiondict['imagefilename']
+            try:
+                times = eval(self.actiondict['times'])
+                override_times = True
+            except:
+                times = None
+                override_times = False
+
+            images = []
+            iplane = self.parent.iplane
+            #sort images by time
+            if override_times:
+                iters = range(len(times))
+            else:
+                iters = self.parent.iters
+            for iplot, i in enumerate(iters):
+                if override_times:
+                    time = times[iplot]
+                else:
+                    time  = self.parent.db['times'][iplot]
+                images.append(imagefilename.format(time=time, iplane=iplane))
+
+            # Create an animated GIF from the movie frames
+            imagedat=[]
+            for f in images:
+                img = cv2.imread(f)
+                if img is not None:
+                    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    imagedat.append(img_rgb)
+            imageio.mimsave(video_name, imagedat, fps=fps)
+            return
 
     @registeraction(actionlist)
     class plot_radial():
