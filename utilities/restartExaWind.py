@@ -178,6 +178,15 @@ def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, full_nalu_repla
         #realm0['output']['output_data_base_name'] = newoutname
         setInDict(naluyaml, ['realms', 0, 'output', 'output_data_base_name'], newoutname, verbose=verbose)
 
+        # Incremement the sideset data_base_names
+        for k in range(len(realm0['sideset_writers'])):
+            oldoutname = realm0['sideset_writers'][k]['output_data_base_name']
+            outname    = os.path.basename(oldoutname)
+            oldpath    = os.path.dirname(oldoutname)
+            newpath    = getNewFilename(oldpath)
+            newoutname = os.path.join(newpath, outname)
+            setInDict(naluyaml, ['realms', 0, 'sideset_writers', k, 'output_data_base_name'], newoutname, verbose=verbose)
+
         # Change the openfast time
         dt_FAST = realm0['openfast_fsi']['dt_FAST']
         #realm0['openfast_fsi']['t_start'] = dt_FAST*OF_iter
