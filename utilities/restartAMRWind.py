@@ -47,6 +47,7 @@ def getRestartInput(inputfile, outputfile='', verbose=False):
     return
 
 def getLatestCHKDir(dirlist, criteria='lastiter'):
+    case = amrwind.MyApp.init_nogui()
     latestdir = None
     if criteria == 'lastcreated':
         # Choose the directory with the last creation time
