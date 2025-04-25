@@ -207,10 +207,11 @@ def updateNaluWind(inputfile, outputfile, restart_time, OF_iter, full_nalu_repla
             setInDict(realm0, yamlpath, newchkp, verbose=verbose)
             
             # -- Set force log file --
-            yamlpath = ['post_processing',0,'output_file_name']
-            oldforce = getFromDict(realm0, yamlpath)
-            newforce = getNewFilename(oldforce)
-            setInDict(realm0, yamlpath, newforce, verbose=verbose)
+            for k in range(len(realm0['post_processing'])):
+                yamlpath = ['post_processing',k,'output_file_name']
+                oldforce = getFromDict(realm0, yamlpath)
+                newforce = getNewFilename(oldforce)
+                setInDict(realm0, yamlpath, newforce, verbose=verbose)
             
             # # -- Set output --
             # yamlpath = ['output','output_data_base_name']
