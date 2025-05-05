@@ -775,6 +775,12 @@ class contourplottemplate():
          'help':'Function to scale the x-axis (lambda expression)',},
         {'key':'yscalefunc',  'required':False,  'default':'lambda y: y',
          'help':'Function to scale the y-axis (lambda expression)',},
+        {'key':'xlim',    'required':False,  'default':None,
+         'help':'Axis bounds on the X-axis', },
+        {'key':'ylim',    'required':False,  'default':None,
+         'help':'Axis bounds on the Y-axis', },
+        {'key':'axisscale',    'required':False,  'default':'scaled',
+         'help':'Aspect ratio of figure axes (options:equal,scaled,tight,auto,image,square)'},
         {'key':'postplotfunc', 'required':False,  'default':'',
          'help':'Function to call after plot is created. Function should have arguments func(fig, ax)',},
         {'key':'fontsize',    'required':False,  'default':14,
@@ -833,7 +839,9 @@ class contourplottemplate():
             figname  = actiondict['figname']
             axesnumf = None if actiondict['axesnumfunc'] is None else eval(actiondict['axesnumfunc'])
             plotturbs= actiondict['plotturbines']
-
+            xlim     = actiondict['xlim']
+            ylim     = actiondict['ylim']
+            axisscale= actiondict['axisscale']
             if not isinstance(iplanes, list): iplanes = [iplanes,]
 
             # Convert to native axis1/axis2 coordinates if necessary
@@ -896,6 +904,15 @@ class contourplottemplate():
                 ax.set_title(evaltitle,fontsize=fontsize)
 
                 ax.tick_params(axis='both', which='major', labelsize=fontsize) 
+
+                if axisscale is not None:
+                    ax.axis(axisscale)
+
+                if xlim is not None:
+                    ax.set_xlim(xlim[0],xlim[1])
+
+                if ylim is not None:
+                    ax.set_ylim(ylim[0],ylim[1])
 
                 # Plot turbines
                 if plotturbs:
