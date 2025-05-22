@@ -146,16 +146,11 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
 
     find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
 
-
     #Apply transformation after computing cartesian average
     transform=False
     if varnames == ['velocitya1','velocitya2','velocitya3']:
         transform = True
         varnames = ['velocityx','velocityy','velocityz']
-
-    #overwrite itimevec if specifying times or time range
-    if times is not None or timerange is not None:
-        itimevec = []
 
     all_timevecs = np.concatenate(timevecs)
     if times is not None:
@@ -206,6 +201,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                     local_ind = np.argmin( np.abs(time-timevec))
                     if verbose>0:
                         print("extracting iter "+repr(itime))
+                    print("extracting iter "+repr(itime),time)
                     db['timesteps'].append(itime)
                     if gettimes:
                         db['times'].append(float(all_timevecs[itime]))

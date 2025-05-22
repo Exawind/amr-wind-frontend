@@ -5,12 +5,12 @@ Make instantaneous plots from netcdf sample planes
 ```
   name                : An arbitrary name (Required)
   ncfile              : NetCDF sampling file (Required)
-  iters               : Which iterations to pull from netcdf file (Required)
+  iters               : Which iterations to pull from netcdf file (Optional, Default: [])
+  times               : Which times to pull from netcdf file (Optional, Default: None)
+  trange              : Pull a range of times from netcdf file (Optional, Default: None)
   xaxis               : Which axis to use on the abscissa (Required)
   yaxis               : Which axis to use on the ordinate (Required)
   iplane              : Which plane to pull from netcdf file (Required)
-  times               : Which times to pull from netcdf file (overrides iters) (Optional, Default: None)
-  trange              : Pull a range of times from netcdf file (overrides iters) (Optional, Default: None)
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
   savepklfile         : Name of pickle file to save results (Optional, Default: '')
@@ -81,8 +81,9 @@ Make instantaneous plots from netcdf sample planes
 instantaneousplanes:
   name: Wake YZ plane
   ncfile: ./data_converter/PA_1p25_new2/YZslice_01.00D_456.00s_1556.00s_n1m.nc
-  iters: [0,]
-  #trange: [456,457]
+  iters: [0,10,20]
+  trange: [456,1056]
+  times: [1100,1200,1300]
   xaxis: 'y'
   yaxis: 'z'
   varnames: ['velocityx','velocityy','velocityz']
@@ -90,7 +91,7 @@ instantaneousplanes:
 
   plot:
     plotfunc: "lambda db, i: db['velocityx'][i]"
-    savefile: 'inst_figs_n1m/inst_test_{time}.png'
+    savefile: 'inst_figs_n1m/inst_test_{iter}.png'
     figsize: [8,5]
     dpi: 125
     xlabel: 'Y [m]'
@@ -102,7 +103,7 @@ instantaneousplanes:
   animate:
     name: 'output.mp4'
     fps: 20
-    imagefilename: './inst_figs_n1m/inst_test_{time}.png'
+    imagefilename: './inst_figs_n1m/inst_test_{iter}.png'
     #times: 'np.arange(456,1556.5,0.5)'
 
   plot_radial:

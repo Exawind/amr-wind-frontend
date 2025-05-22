@@ -48,8 +48,12 @@ class postpro_instantaneousplanes():
          'help':'An arbitrary name',},
         {'key':'ncfile',   'required':True,  'default':'',
         'help':'NetCDF sampling file', },
-        {'key':'iters',    'required':True,  'default':2,
+        {'key':'iters',    'required':False,  'default':[],
         'help':'Which iterations to pull from netcdf file', },
+        {'key':'times',    'required':False,  'default':None,
+         'help':'Which times to pull from netcdf file', },        
+        {'key':'trange',    'required':False,  'default':None,
+         'help':'Pull a range of times from netcdf file', },        
         {'key':'xaxis',    'required':True,  'default':'x',
         'help':'Which axis to use on the abscissa', },
         {'key':'yaxis',    'required':True,  'default':'y',
@@ -57,10 +61,6 @@ class postpro_instantaneousplanes():
         {'key':'iplane',   'required':True,  'default':0,
          'help':'Which plane to pull from netcdf file', },
         # --- optional parameters ---
-        {'key':'times',    'required':False,  'default':None,
-         'help':'Which times to pull from netcdf file (overrides iters)', },        
-        {'key':'trange',    'required':False,  'default':None,
-         'help':'Pull a range of times from netcdf file (overrides iters)', },        
         {'key':'group',   'required':False,  'default':None,
          'help':'Which group to pull from netcdf file', },
         {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
@@ -75,8 +75,9 @@ class postpro_instantaneousplanes():
 instantaneousplanes:
   name: Wake YZ plane
   ncfile: ./data_converter/PA_1p25_new2/YZslice_01.00D_456.00s_1556.00s_n1m.nc
-  iters: [0,]
-  #trange: [456,457]
+  iters: [0,10,20]
+  trange: [456,1056]
+  times: [1100,1200,1300]
   xaxis: 'y'
   yaxis: 'z'
   varnames: ['velocityx','velocityy','velocityz']
@@ -84,7 +85,7 @@ instantaneousplanes:
 
   plot:
     plotfunc: "lambda db, i: db['velocityx'][i]"
-    savefile: 'inst_figs_n1m/inst_test_{time}.png'
+    savefile: 'inst_figs_n1m/inst_test_{iter}.png'
     figsize: [8,5]
     dpi: 125
     xlabel: 'Y [m]'
@@ -96,7 +97,7 @@ instantaneousplanes:
   animate:
     name: 'output.mp4'
     fps: 20
-    imagefilename: './inst_figs_n1m/inst_test_{time}.png'
+    imagefilename: './inst_figs_n1m/inst_test_{iter}.png'
     #times: 'np.arange(456,1556.5,0.5)'
 
   plot_radial:
