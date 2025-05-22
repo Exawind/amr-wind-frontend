@@ -57,7 +57,7 @@ class postpro_instantaneousplanes():
         {'key':'iplane',   'required':True,  'default':0,
          'help':'Which plane to pull from netcdf file', },
         # --- optional parameters ---
-        {'key':'times',    'required':False,  'default':[],
+        {'key':'times',    'required':False,  'default':None,
          'help':'Which times to pull from netcdf file (overrides iters)', },        
         {'key':'trange',    'required':False,  'default':None,
          'help':'Pull a range of times from netcdf file (overrides iters)', },        
@@ -138,20 +138,14 @@ instantaneousplanes:
             savepklfile   = plane['savepklfile']
 
             # Load optional quantities
-            times    = plane['times']
+            self.times    = plane['times']
             self.trange   = plane['trange']
             group    = plane['group']
             varnames = plane['varnames']
             self.iplane = plane['iplane']
 
-            # Get the times instead
-            if len(times)>0:
-                timevec = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-                find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-                iters = [find_nearest(timevec, t) for t in times]
-
             # Load the plane
-            self.db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True, includeattr=True,timerange=self.trange)
+            self.db  = ppsamplexr.getPlaneXR(ncfile, iters, varnames, groupname=group, verbose=verbose, gettimes=True, includeattr=True,timerange=self.trange,times=self.times)
 
             # Convert to native axis1/axis2 coordinates if necessary
             if ('a1' in [self.xaxis, self.yaxis]) or \
@@ -346,7 +340,7 @@ instantaneousplanes:
                     func(fig, ax)
 
                 if len(savefile)>0:
-                    savefname = savefile.format(time=time, iplane=iplane)
+                    savefname = savefile.format(time=time, iplane=iplane, iter=i)
                     directory, file_name = os.path.split(savefname)
                     directory += '/'
                     os.makedirs(directory, exist_ok=True)
@@ -389,27 +383,13 @@ instantaneousplanes:
             os.makedirs(directory, exist_ok=True)
             fps = self.actiondict['fps']
             imagefilename = self.actiondict['imagefilename']
-            try:
-                times = eval(self.actiondict['times'])
-                override_times = True
-            except:
-                times = None
-                override_times = False
-
             images = []
             iplane = self.parent.iplane
             #sort images by time
-            if override_times:
-                iters = range(len(times))
-            else:
-                iters = self.parent.iters
+            iters = self.parent.iters
             for iplot, i in enumerate(iters):
-                if override_times:
-                    time = times[iplot]
-                else:
-                    time  = self.parent.db['times'][iplot]
-
-                images.append(imagefilename.format(time=time, iplane=iplane))
+                time  = self.parent.db['times'][iplot]
+                images.append(imagefilename.format(time=time, iplane=iplane,iter=i))
             frame = cv2.imread(os.path.join(images[0]))
             height, width, layers = frame.shape
             video = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))

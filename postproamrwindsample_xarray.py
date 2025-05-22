@@ -134,14 +134,18 @@ def sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles'):
     return sortedfilelist, extractbounds, outtimevec
 
 def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
-               verbose=0, includeattr=False, gettimes=False,timerange=None,axis_rotation=0):
+               verbose=0, includeattr=False, gettimes=False,timerange=None,times=None, axis_rotation=0):
 
     ncfilelist = getFileList(ncfileinput)
+    ncfilelistsorted, extracttimes, timevecs = sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles')
 
     # Create a fresh db dictionary
     db = {}
     for v in varnames: db[v] = {}
     db['timesteps'] = []
+
+    find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
+
 
     #Apply transformation after computing cartesian average
     transform=False
@@ -149,23 +153,24 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
         transform = True
         varnames = ['velocityx','velocityy','velocityz']
 
-    timevec = []
-    times   = []
-    for ncfileiter,ncfile in enumerate(ncfilelist):
-        times.append(ppsample.getVar(ppsample.loadDataset(ncfile), 'time')[:])
-        timevec = np.concatenate((timevec, times[ncfileiter]))               
-        timevec = np.unique(timevec)
+    #overwrite itimevec if specifying times or time range
+    if times is not None or timerange is not None:
+        itimevec = []
+
+    all_timevecs = np.concatenate(timevecs)
+    if times is not None:
+        for time in times:
+            itimevec.append(np.argmin( np.abs( all_timevecs - time ) ))
 
     if timerange is not None:
-        if len(timerange) != 2:
-            print("Error: timerange must be an array of length 2, e.g., [t_start,t_end]. Exiting")
-            sys.exit()
-        find_nearest = lambda a, a0: np.abs(np.array(a) - a0).argmin()
-        itimevec = [find_nearest(timevec, t) for t in timerange]
-        itimevec = np.arange(itimevec[0],itimevec[1]+1)
+        for itime, time in enumerate(all_timevecs):
+            if time >= timerange[0] and time <= timerange[1]:
+                itimevec.append(itime)
 
     itime_processed = []
-    for ncfileiter,ncfile in enumerate(ncfilelist):
+    for ncfileiter,ncfile in enumerate(ncfilelistsorted):
+        timevec     = timevecs[ncfileiter]
+        extracttime = extracttimes[ncfileiter]
         if gettimes:
             if ncfileiter == 0:
                 db['times'] = []
@@ -196,13 +201,14 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                     db['axis3'] = ds.attrs['axis3']
                 R=get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=axis_rotation)
             for itime in itimevec:
-                local_ind = np.where(np.isin(times[ncfileiter], timevec[itime]))[0]
-                if itime not in itime_processed and len(local_ind)==1:
+                time = all_timevecs[itime]
+                if itime not in itime_processed and time >= extracttime[0] and time <= extracttime[1]:
+                    local_ind = np.argmin( np.abs(time-timevec))
                     if verbose>0:
                         print("extracting iter "+repr(itime))
                     db['timesteps'].append(itime)
                     if gettimes:
-                        db['times'].append(float(timevec[itime]))
+                        db['times'].append(float(all_timevecs[itime]))
                     if not transform:
                         for v in varnames:
                             vvar = extractvar(ds, v, local_ind)
@@ -212,9 +218,6 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                         vvary = extractvar(ds, varnames[1], local_ind)
                         vvarz = extractvar(ds, varnames[2], local_ind)
                         db['velocitya1'][itime],db['velocitya2'][itime],db['velocitya3'][itime] = apply_coordinate_transform(R,vvarx,vvary,vvarz)
-                    #vx = extractvar(ds, vxvar, itime)
-                    #vy = extractvar(ds, vyvar, itime)
-                    #vz = extractvar(ds, vzvar, itime)
                     itime_processed.append(itime)
                 else:
                     if verbose>0:
@@ -334,10 +337,6 @@ def avgPlaneXR(ncfileinput, timerange,
         group = groupname
     db['group'] = group
     Ncount = 0
-
-    times_processed = []
-    mindt = float('inf')
-    times = []
 
     for ncfileiter, ncfile in enumerate(ncfilelistsorted):
         timevec     = timevecs[ncfileiter]

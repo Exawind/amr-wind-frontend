@@ -9,7 +9,7 @@ Make instantaneous plots from netcdf sample planes
   xaxis               : Which axis to use on the abscissa (Required)
   yaxis               : Which axis to use on the ordinate (Required)
   iplane              : Which plane to pull from netcdf file (Required)
-  times               : Which times to pull from netcdf file (overrides iters) (Optional, Default: [])
+  times               : Which times to pull from netcdf file (overrides iters) (Optional, Default: None)
   trange              : Pull a range of times from netcdf file (overrides iters) (Optional, Default: None)
   group               : Which group to pull from netcdf file (Optional, Default: None)
   varnames            : Variables to extract from the netcdf file (Optional, Default: ['velocityx', 'velocityy', 'velocityz'])
