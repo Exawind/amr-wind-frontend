@@ -8,6 +8,7 @@ amrwindfedirs = ['../',
 for x in amrwindfedirs: sys.path.insert(1, x)
 
 from postproengine import registerplugin, mergedicts, registeraction
+from postproengine import compute_axis1axis2_coords, get_mapping_xyz_to_axis1axis2, extract_1d_from_meshgrid
 import postproamrwindsample_xarray as ppsamplexr
 import postproamrwindsample as ppsample
 import numpy as np
@@ -23,7 +24,7 @@ from scipy.interpolate import RegularGridInterpolator
 import gzip
 
 """
-Plugin for creating instantaneous planar images
+Plugin for converting AMR-Wind data to/from other formats
 
 See README.md for details on the structure of classes here
 """
@@ -60,7 +61,7 @@ def readheader(filename):
 @registerplugin
 class postpro_dataconverts():
     """
-    Convert AMR-Wind planes to different file types 
+    Convert AMR-Wind planes to/from different file types 
     """
     # Name of task (this is same as the name in the yaml)
     name      = "convert"
@@ -77,6 +78,26 @@ class postpro_dataconverts():
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
+    example = """
+```yaml
+convert:
+name: plane2bts
+filelist: /gpfs/lcheung/HFM/exawind-benchmarks/NREL5MW_ALM_BD_noturb/post_processing/rotorplaneDN_30000.nc
+trange: [15000.0,15600.0]
+bts:
+    #iplane            : [0,1,2,3,4] #comment out to use all iplanes
+    #xc                : 1797.5 #use midplane
+    yc                : 90.0
+    btsfile           : test_{iplane}.bts
+    ID                : 8
+    turbine_height    : 90.0
+    group             : T0_rotorplaneDN
+    diam              : 127.0
+    xaxis             : 'a1'
+    yaxis             : 'a2'
+    varnames: ['velocitya1','velocitya2','velocitya3']
+```
+"""
 
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
@@ -115,15 +136,19 @@ class postpro_dataconverts():
         blurb      = 'Converts data to bts files'
         required   = False
         actiondefs = [
-            {'key':'iplane',   'required':True,  'help':'Index of x location to read',  'default':0},
-            {'key':'yhh',       'required':True,  'help':'Location in flow to use as hub height location in y',  'default':None},
-            {'key':'zhh',       'required':True,  'help':'Location in flow to use as hub height location in z',  'default':None},
+            {'key':'iplane',   'required':False,  'help':'Index of x location to read',  'default':None},
+            {'key':'xc',       'required':False,  'help':'Location in flow to center plane on in the abscissa.',  'default':None},
+            {'key':'yc',       'required':False,  'help':'Location to center plane on in the ordinate.',  'default':None},
             {'key':'btsfile',   'required':True,  'default':None,'help':'bts file name to save results'},
             {'key':'ID',        'required':False, 'default':8,'help':'bts file ID. 8="periodic", 7="non-periodic"'},
-            {'key':'turbine_height','required':False,  'help':'Height of the turbine (if different than zc)',  'default':None},
+            {'key':'turbine_height','required':True,  'help':'Height of the turbine.',  'default':None},
             {'key':'group',   'required':False,  'default':None,
             'help':'Which group to pull from netcdf file', },
-            {'key':'diam','required':False, 'default':None,'help':'Diameter for computing rotor averaged velocity'},
+            {'key':'diam','required':True, 'default':None,'help':'Diameter for computing rotor averaged velocity'},
+            {'key':'xaxis',    'required':False,  'default':'y','help':'Which axis to use on the abscissa', },
+            {'key':'yaxis',    'required':False,  'default':'z','help':'Which axis to use on the ordinate', },
+            {'key':'varnames',  'required':False,  'default':['velocityx', 'velocityy', 'velocityz'],
+            'help':'Variables to extract from the netcdf file',},        
         ]
         
         def __init__(self, parent, inputs):
@@ -133,6 +158,64 @@ class postpro_dataconverts():
             return
 
         def execute(self):
+
+            def get_plane_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
+                db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+                if iplanes == None: 
+                    if isinstance(db['offsets'], np.ndarray):
+                        iplanes = list(range(len(db['offsets'])))
+                    else:
+                        iplanes = [0,]
+
+                if not isinstance(iplanes, list): iplanes = [iplanes,]
+
+                if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
+                    compute_axis1axis2_coords(db,rot=0)
+                    R = get_mapping_xyz_to_axis1axis2(db['axis1'],db['axis2'],db['axis3'],rot=0)
+                    origin = db['origin']
+                    origina1a2a3 = R@db['origin']
+                    offsets = db['offsets']
+                    offsets = [offsets] if (not isinstance(offsets, list)) and (not isinstance(offsets,np.ndarray)) else offsets
+
+                xc = np.zeros(len(iplanes))
+                YY = np.array(db[xaxis])
+                ZZ = np.array(db[yaxis])
+
+                t = np.asarray(np.array(db['times']).data)
+                udata = {}
+                for iplaneiter, iplane in enumerate(iplanes):
+                    if ('a1' in [xaxis, yaxis]) or ('a2' in [xaxis, yaxis]) or ('a3' in [xaxis, yaxis]):
+                        xc[iplaneiter] = origina1a2a3[-1] + offsets[iplane]
+                    else:
+                        xc[iplaneiter] = db['x'][iplane,0,0]
+                    y,axisy = extract_1d_from_meshgrid(YY[iplane,:,:])
+                    z,axisz = extract_1d_from_meshgrid(ZZ[iplane,:,:])
+                    permutation = [0,axisy+1,axisz+1]
+                    udata[iplane] = np.zeros((len(t),len(y),len(z),3))
+                    for i,tstep in enumerate(db['timesteps']):
+                        if ('velocitya' in varnames[0]) or ('velocitya' in varnames[1]) or ('velocitya' in varnames[2]):
+                            ordered_data = np.transpose(np.array(db['velocitya3'][tstep]),permutation)
+                            udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
+
+                            ordered_data = np.transpose(np.array(db['velocity'+xaxis][tstep]),permutation)
+                            udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
+
+                            ordered_data = np.transpose(np.array(db['velocity'+yaxis][tstep]),permutation)
+                            udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
+                        else:
+                            ordered_data = np.transpose(np.array(db['velocityx'][tstep]),permutation)
+                            udata[iplane][i,:,:,0] = ordered_data[iplane,:,:]
+
+                            ordered_data = np.transpose(np.array(db['velocityy'][tstep]),permutation)
+                            udata[iplane][i,:,:,1] = ordered_data[iplane,:,:]
+
+                            ordered_data = np.transpose(np.array(db['velocityz'][tstep]),permutation)
+                            udata[iplane][i,:,:,2] = ordered_data[iplane,:,:]
+
+                return udata , xc, y , z , t, iplanes 
+
+
+
             def bts_write(btsdict, filename):
                 """
                 Write to bts file based on openfast-toolbox
@@ -194,9 +277,8 @@ class postpro_dataconverts():
                             f.write(outTwr[:,it,:].tostring(order='F'))
 
             print('Executing '+self.actionname)
-            ts = {}
-            yloc   = self.actiondict['yhh']
-            zloc   = self.actiondict['zhh']
+            ycenter   = self.actiondict['xc']
+            zcenter   = self.actiondict['yc']
             diam   = self.actiondict['diam']
             turbine_height = self.actiondict['turbine_height']
             if turbine_height == None: turbine_height = zloc
@@ -204,51 +286,24 @@ class postpro_dataconverts():
             btsfile = self.actiondict['btsfile']
             group    = self.actiondict['group']
             ID  = self.actiondict['ID']
-
-            varnames = ['velocityx', 'velocityy', 'velocityz']
+            xaxis    = self.actiondict['xaxis']
+            yaxis    = self.actiondict['yaxis']
+            varnames = self.actiondict['varnames']
 
             # Load the plane
-            self.db = ppsamplexr.getPlaneXR(self.parent.filelist, [0,1], varnames, groupname=group, verbose=False,includeattr=True,gettimes=True,timerange=self.parent.times)
-            XX = np.array(self.db['x'])
-            YY = np.array(self.db['y'])
-            ZZ = np.array(self.db['z'])
+            udata,xcs,y,z,times,iplanes = get_plane_data(self.parent.filelist,varnames,group,self.parent.times,iplane,xaxis,yaxis)
 
-            flow_index  = -np.ones(3)
-            for i in range(0,3):
-                if (sum(self.db['axis'+str(i+1)]) != 0):
-                    flow_index[i] = np.nonzero(self.db['axis'+str(i+1)])[0][0]
-            for i in range(0,3):
-                if flow_index[i] == -1:
-                    flow_index[i] = 3 - (flow_index[i-1] + flow_index[i-2])
+            #use midplane value if not specified
+            if ycenter == None:
+                ycenter = (y[-1]+y[0])/2.0
 
-            streamwise_index = 2-np.where(flow_index == 0)[0][0]
-            lateral_index = 2-np.where(flow_index == 1)[0][0]
-            vertical_index = 2-np.where(flow_index == 2)[0][0]
+            if zcenter == None:
+                zcenter = (z[-1]+z[0])/2.0
 
-            slices = [slice(None)] * 3
-            slices[lateral_index] = 0
-            slices[vertical_index] = 0
-            x = XX[tuple(slices)]
-
-            slices = [slice(None)] * 3
-            slices[streamwise_index] = 0
-            slices[vertical_index] = 0
-            y = YY[tuple(slices)]
-
-            slices = [slice(None)] * 3
-            slices[streamwise_index] = 0
-            slices[lateral_index] = 0
-            z = ZZ[tuple(slices)]
-
-            xloc = x[iplane]
-            xind = np.where(x == xloc)[0]
-            yind = np.where(y == yloc)[0]
-            zind = np.where(z == zloc)[0]
-
-            y0_dist = abs(yloc-y[0])
-            y1_dist = abs(yloc-y[-1])
+            #allow for lateral offsets in center of turbsim planes
+            y0_dist = abs(ycenter-y[0])
+            y1_dist = abs(ycenter-y[-1])
             y_box_size = 2*min(y0_dist,y1_dist)
-
             if y0_dist == min(y0_dist,y1_dist): 
                 y_box_ind = np.argmin(abs(y - y_box_size - y[0]))
                 y = y[0:y_box_ind+1] 
@@ -256,51 +311,52 @@ class postpro_dataconverts():
                 y_box_ind = np.argmin(abs(y - (y[-1] - y_box_size)))
                 y = y[y_box_ind:] 
 
-
-            bot_ind = np.argmin(abs(z-(zloc - turbine_height)))
+            bot_ind = np.argmin(abs(z-(zcenter - turbine_height)))
             z = z[bot_ind:]
-            nt = len(self.db['times'])
+            nt = len(times)
             ny = len(y)
             nz = len(z)
-            ts["u"]          = np.ndarray((3,nt,ny,nz)) 
-            permutation = [streamwise_index, lateral_index, vertical_index]
-            t = np.array(self.db['times'])
-            tsteps = np.array(self.db['timesteps'])
-            uRef = np.ndarray(nt)
-            for titer , tval in enumerate(tsteps):
-                if y0_dist == y1_dist: 
-                    ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,:,bot_ind:]
-                    ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,:,bot_ind:]
-                    ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,:,bot_ind:]
-                elif y0_dist == min(y0_dist,y1_dist): 
-                    ts['u'][0,titer,:,:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
-                    ts['u'][1,titer,:,:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
-                    ts['u'][2,titer,:,:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,0:y_box_ind+1,bot_ind:]
-                else:
-                    ts['u'][0,titer,y_box_ind:,bot_ind:] = np.transpose(np.array(self.db['velocityx'][tval]),permutation)[iplane,y_box_ind:,bot_ind:]
-                    ts['u'][1,titer,y_box_ind:,bot_ind:] = np.transpose(np.array(self.db['velocityy'][tval]),permutation)[iplane,y_box_ind:,bot_ind:]
-                    ts['u'][2,titer,y_box_ind:,bot_ind:] = np.transpose(np.array(self.db['velocityz'][tval]),permutation)[iplane,y_box_ind:,bot_ind:]
+            t = np.array(times)
 
-                interpolator = RegularGridInterpolator((y, z), ts['u'][0,titer, :, :])
-                uRef[titer]  = interpolator((yloc, zloc))
+            for iplane in iplanes:
+                ts = {}
+                ts["u"] = np.ndarray((3,nt,ny,nz)) 
+                uRef = np.ndarray(nt)
+                for titer , tval in enumerate(t):
+                    if y0_dist == y1_dist: 
+                        ts['u'][0,titer,:,:] = udata[iplane][titer,:,bot_ind:,0]
+                        ts['u'][1,titer,:,:] = udata[iplane][titer,:,bot_ind:,1]
+                        ts['u'][2,titer,:,:] = udata[iplane][titer,:,bot_ind:,2]
+                    elif y0_dist == min(y0_dist,y1_dist): 
+                        ts['u'][0,titer,:,:] = udata[iplane][titer,0:y_box_ind+1,bot_ind:,0]
+                        ts['u'][1,titer,:,:] = udata[iplane][titer,0:y_box_ind+1,bot_ind:,1]
+                        ts['u'][2,titer,:,:] = udata[iplane][titer,0:y_box_ind+1,bot_ind:,2]
+                    else:
+                        ts['u'][0,titer,y_box_ind:,bot_ind:] = udata[iplane][titer,y_box_ind:,bot_ind:,0]
+                        ts['u'][1,titer,y_box_ind:,bot_ind:] = udata[iplane][titer,y_box_ind:,bot_ind:,1]
+                        ts['u'][2,titer,y_box_ind:,bot_ind:] = udata[iplane][titer,y_box_ind:,bot_ind:,2]
 
-            Radius = diam/2.0
-            YY,ZZ = np.meshgrid(y,z,indexing='ij')
-            Routside = ((YY-yloc)**2 + (ZZ-zloc)**2) > Radius**2
-            vel_avg = np.mean(ts['u'][0,:,:,:],axis=0)
-            masked_vel = np.ma.array(vel_avg,mask=Routside)
-            print("Rotor averged velocity: ",masked_vel.mean())
-            ts['t']  = np.round(t,decimals=7)
-            ts['y']  = y - np.mean(y) # y always centered on 0
-            ts['z']  = z
-            ts['ID'] = ID
-            ts['zRef'] = zloc
-            #ts['uRef'] = float(np.mean(ts['u'][0,:,yind,zind]))
-            ts['uRef'] = float(np.mean(uRef))
-            print("Reference velocity: ",ts['uRef'])
+                    interpolator = RegularGridInterpolator((y, z), ts['u'][0,titer, :, :])
+                    uRef[titer]  = interpolator((ycenter, zcenter))
 
-            print("Writing to bts file: ",btsfile)
-            bts_write(ts,btsfile)
+                Radius = diam/2.0
+                YY,ZZ = np.meshgrid(y,z,indexing='ij')
+                Routside = ((YY-ycenter)**2 + (ZZ-zcenter)**2) > Radius**2
+                vel_avg = np.mean(ts['u'][0,:,:,:],axis=0)
+                masked_vel = np.ma.array(vel_avg,mask=Routside)
+                print("Rotor Average Velocity at x = ",xcs[iplane],": ",masked_vel.mean())
+                ts['t']  = np.round(t,decimals=7)
+                ts['y']  = y - np.mean(y) # y always centered on 0
+                ts['z']  = z
+                ts['ID'] = ID
+                ts['zRef'] = zcenter
+                ts['uRef'] = float(np.mean(uRef))
+                print("Reference velocity: ",ts['uRef'], " at lateral and vertical locations: ",ycenter," and ",zcenter)
+
+                savefname = btsfile.format(iplane=iplane)
+                print("Writing to bts file: ",savefname)
+                bts_write(ts,savefname)
+                print()
 
             return 
 
