@@ -27,3 +27,25 @@ Converts netcdf sample planes to different file formats
     coordfile         : Nalu-Wind coordinate file (Optional, Default: None)
     groupname         : netCDF group name (Optional, Default: 'plane')
 ```
+
+## Example
+
+```yaml
+convert:
+name: plane2bts
+filelist: /gpfs/lcheung/HFM/exawind-benchmarks/NREL5MW_ALM_BD_noturb/post_processing/rotorplaneDN_30000.nc
+trange: [15000.0,15600.0]
+bts:
+    #iplane            : [0,1,2,3,4] #comment out to use all iplanes
+    #xc                : 1797.5 #use midplane
+    yc                : 90.0
+    btsfile           : test_{iplane}.bts
+    ID                : 8
+    turbine_height    : 90.0
+    group             : T0_rotorplaneDN
+    diam              : 127.0
+    xaxis             : 'a1'
+    yaxis             : 'a2'
+    varnames: ['velocitya1','velocitya2','velocitya3']
+```
+

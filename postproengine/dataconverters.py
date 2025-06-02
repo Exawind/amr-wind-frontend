@@ -24,7 +24,7 @@ from scipy.interpolate import RegularGridInterpolator
 import gzip
 
 """
-Plugin for creating instantaneous planar images
+Plugin for converting AMR-Wind data to/from other formats
 
 See README.md for details on the structure of classes here
 """
@@ -61,7 +61,7 @@ def readheader(filename):
 @registerplugin
 class postpro_dataconverts():
     """
-    Convert AMR-Wind planes to different file types 
+    Convert AMR-Wind planes to/from different file types 
     """
     # Name of task (this is same as the name in the yaml)
     name      = "convert"
@@ -78,6 +78,26 @@ class postpro_dataconverts():
         
     ]
     actionlist = {}                    # Dictionary for holding sub-actions
+    example = """
+```yaml
+convert:
+name: plane2bts
+filelist: /gpfs/lcheung/HFM/exawind-benchmarks/NREL5MW_ALM_BD_noturb/post_processing/rotorplaneDN_30000.nc
+trange: [15000.0,15600.0]
+bts:
+    #iplane            : [0,1,2,3,4] #comment out to use all iplanes
+    #xc                : 1797.5 #use midplane
+    yc                : 90.0
+    btsfile           : test_{iplane}.bts
+    ID                : 8
+    turbine_height    : 90.0
+    group             : T0_rotorplaneDN
+    diam              : 127.0
+    xaxis             : 'a1'
+    yaxis             : 'a2'
+    varnames: ['velocitya1','velocitya2','velocitya3']
+```
+"""
 
     # --- Stuff required for main task ---
     def __init__(self, inputs, verbose=False):
