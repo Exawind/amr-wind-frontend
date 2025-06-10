@@ -201,7 +201,6 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                     local_ind = np.argmin( np.abs(time-timevec))
                     if verbose>0:
                         print("extracting iter "+repr(itime))
-                    print("extracting iter "+repr(itime),time)
                     db['timesteps'].append(itime)
                     if gettimes:
                         db['times'].append(float(all_timevecs[itime]))
