@@ -152,7 +152,15 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
         transform = True
         varnames = ['velocityx','velocityy','velocityz']
 
-    all_timevecs = np.concatenate(timevecs)
+    #concatenate timevecs in order without duplicates 
+    all_timevecs = []
+    for ncfileiter,ncfile in enumerate(ncfilelistsorted):
+        timevec     = timevecs[ncfileiter]
+        extracttime = extracttimes[ncfileiter]
+        for time in timevec:
+            if time >= extracttime[0] and time <= extracttime[1]:
+                all_timevecs.append(time)
+
     if times is not None:
         for time in times:
             itimevec.append(np.argmin( np.abs( all_timevecs - time ) ))
@@ -178,6 +186,8 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
             group = groupname
 
         with xr.open_dataset(ncfile, group=group) as ds:
+            if verbose>0:
+                print("Extracting from ncfile: ",ncfile,ncfileiter)
             if ncfileiter == 0:
                 reshapeijk = ds.attrs['ijk_dims'][::-1]
                 xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
@@ -198,7 +208,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
             for itime in itimevec:
                 time = all_timevecs[itime]
                 if itime not in itime_processed and time >= extracttime[0] and time <= extracttime[1]:
-                    local_ind = np.argmin( np.abs(time-timevec))
+                    local_ind = np.argmin(np.abs(time-timevec))
                     if verbose>0:
                         print("extracting iter "+repr(itime))
                     db['timesteps'].append(itime)

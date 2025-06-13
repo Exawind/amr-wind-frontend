@@ -28,7 +28,7 @@ def get_angular_wavenumbers(N,L):
     return k
 
 def read_cart_data(ncfile,varnames,group,trange,iplanes,xaxis,yaxis):
-    db = ppsamplexr.getPlaneXR(ncfile,[0,1],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+    db = ppsamplexr.getPlaneXR(ncfile,[],varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
     if iplanes == None: 
         if isinstance(db['offsets'], np.ndarray):
             iplanes = list(range(len(db['offsets'])))
