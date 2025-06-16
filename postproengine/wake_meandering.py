@@ -203,7 +203,7 @@ class postpro_wakemeander():
 
             udata = {}
             xc = {}
-            self.db = ppsamplexr.getPlaneXR(ncfile,[0,1],self.varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
+            self.db = ppsamplexr.getPlaneXR(ncfile,[],self.varnames,groupname=group,verbose=0,includeattr=True,gettimes=True,timerange=trange)
 
             if iplanes == None: 
                 try:
