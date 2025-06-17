@@ -113,6 +113,10 @@ openfast:
   filename: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast-cpp/5MW_Land_DLL_WTurb_cpp/5MW_Land_DLL_WTurb_cpp.out
   vars: 
   - Time
+  - BldPitch1
+  - BldPitch2
+  - BldPitch3
+  - GenPwr
   - '^Rot'
   - 'AB1N...Alpha'
   - 'AB1N...Phi'
@@ -129,6 +133,7 @@ openfast:
     operations: 
     - mean
     trange: [300, 900]
+    pitch_travel: True
   spanwiseloading:
     bladefile: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast/5MW_Baseline/NRELOffshrBsline5MW_AeroDyn_blade.dat
     bladevars: [Alpha, Phi, Cl, Cd, Fx, Fy]
@@ -259,7 +264,7 @@ openfast:
         blurb      = 'Operates on the openfast data and saves to a csv file'
         required   = False
         actiondefs = [
-            {'key':'operations',  'required':True,  'default':['mean','std','DEL','pwelch'],'help':'List of operations to perform (mean,std,DEL,pwelch)'},
+            {'key':'operations',  'required':True,  'default':['mean','std','DEL','pwelch','running_avg'],'help':'List of operations to perform (mean,std,DEL,pwelch,running_avg)'},
             {'key':'trange',    'required':False,  'default':[],'help':'Times to apply operation over'}, 
             {'key':'awc_period', 'required':False,  'default':False,'help':'Average over equal periods for AWC forcing'},
             {'key':'awc',  'required':False,  'default':'baseline','help':'AWC case name [baseline,n0,n1p,n1m,n1p1m_cl00,n1p1m_cl90]'},
@@ -267,6 +272,7 @@ openfast:
             {'key':'diam',  'required':False,  'default':0,'help':'Turbine diameter'},
             {'key':'U_st',  'required':False,  'default':0,'help':'Wind speed to define Strouhal number'},
             {'key':'nperseg',  'required':False,  'default':4096, 'help':'Number of samples per segment used in pwelch'},
+            {'key':'pitch_travel',    'required':False,  'default':False,'help':'Option to compute the pitch travel'}, 
         ]
         
         def __init__(self, parent, inputs):
@@ -282,6 +288,7 @@ openfast:
             extension = self.parent.extension
             trange     =  self.actiondict['trange']
             awc_period =  self.actiondict['awc_period']
+            pitch_travel = self.actiondict['pitch_travel']
             output_dir=  self.parent.output_dir
             prefix = self.parent.name
 
@@ -372,6 +379,19 @@ openfast:
 
                 csvfile = os.path.join(output_dir, prefix + "_running_avg" + extension)
                 running_avg_df.to_csv(csvfile, index=False,float_format='%.15f')
+
+            if 'pitch_travel':
+                pitch_travel_columns  = filtered_df.filter(regex='Pitch',axis=1).columns
+                if pitch_travel_columns.empty:
+                    print("No variables found containing 'Pitch'. Add to array of vars.")
+                else:
+                    pitch_travel_df = pd.DataFrame(0,index=range(1),columns=pitch_travel_columns)
+                    for column in pitch_travel_columns:
+                        pitch_travel = np.sum(np.abs(np.asarray(filtered_df[column][mask].values)))
+                        pitch_travel_df[column] = pitch_travel
+                    csvfile = os.path.join(output_dir, prefix + "_pitch_travel" + extension)
+                    pitch_travel_df.to_csv(csvfile, index=False,float_format='%.15f')
+
             return 
 
     @registeraction(actionlist)
