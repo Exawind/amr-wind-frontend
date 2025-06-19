@@ -380,7 +380,7 @@ openfast:
                 csvfile = os.path.join(output_dir, prefix + "_running_avg" + extension)
                 running_avg_df.to_csv(csvfile, index=False,float_format='%.15f')
 
-            if 'pitch_travel':
+            if pitch_travel:
                 pitch_travel_columns  = filtered_df.filter(regex='Pitch',axis=1).columns
                 if pitch_travel_columns.empty:
                     print("No variables found containing 'Pitch'. Add to array of vars.")
