@@ -160,6 +160,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
         for time in timevec:
             if time >= extracttime[0] and time <= extracttime[1]:
                 all_timevecs.append(time)
+    all_timevecs = np.asarray(all_timevecs)
 
     if times is not None:
         for time in times:
