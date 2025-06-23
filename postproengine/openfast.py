@@ -387,7 +387,7 @@ openfast:
                 else:
                     pitch_travel_df = pd.DataFrame(0,index=range(1),columns=pitch_travel_columns)
                     for column in pitch_travel_columns:
-                        pitch_travel = np.sum(np.abs(np.asarray(filtered_df[column][mask].values)))
+                        pitch_travel = np.sum(np.abs(np.asarray(np.diff(filtered_df[column][mask].values))))
                         pitch_travel_df[column] = pitch_travel
                     csvfile = os.path.join(output_dir, prefix + "_pitch_travel" + extension)
                     pitch_travel_df.to_csv(csvfile, index=False,float_format='%.15f')
