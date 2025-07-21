@@ -16,7 +16,7 @@ Postprocessing of openfast variables
   csv                 : ACTION: Writes the openfast variables to a csv file (Optional)
     individual_files  : Write each variable to a separate csv file (Optional, Default: True)
   operate             : ACTION: Operates on the openfast data and saves to a csv file (Optional)
-    operations        : List of operations to perform (mean,std,DEL,pwelch) (Required)
+    operations        : List of operations to perform (mean,std,DEL,pwelch,running_avg) (Required)
     trange            : Times to apply operation over (Optional, Default: [])
     awc_period        : Average over equal periods for AWC forcing (Optional, Default: False)
     awc               : AWC case name [baseline,n0,n1p,n1m,n1p1m_cl00,n1p1m_cl90] (Optional, Default: 'baseline')
@@ -24,6 +24,7 @@ Postprocessing of openfast variables
     diam              : Turbine diameter (Optional, Default: 0)
     U_st              : Wind speed to define Strouhal number (Optional, Default: 0)
     nperseg           : Number of samples per segment used in pwelch (Optional, Default: 4096)
+    pitch_travel      : Option to compute the pitch travel (Optional, Default: False)
   spanwiseloading     : ACTION: Reformats time history csv data to spanwise loading profiles (Optional)
     bladefile         : AeroDyn blade file (Required)
     bladevars         : List of blade variables to extract, such as Alpha, Cl, Cd, etc. (Required)
@@ -55,6 +56,10 @@ openfast:
   filename: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast-cpp/5MW_Land_DLL_WTurb_cpp/5MW_Land_DLL_WTurb_cpp.out
   vars: 
   - Time
+  - BldPitch1
+  - BldPitch2
+  - BldPitch3
+  - GenPwr
   - '^Rot'
   - 'AB1N...Alpha'
   - 'AB1N...Phi'
@@ -71,6 +76,7 @@ openfast:
     operations: 
     - mean
     trange: [300, 900]
+    pitch_travel: True
   spanwiseloading:
     bladefile: RUNDIR/T0_NREL5MW_v402_ROSCO/openfast/5MW_Baseline/NRELOffshrBsline5MW_AeroDyn_blade.dat
     bladevars: [Alpha, Phi, Cl, Cd, Fx, Fy]
