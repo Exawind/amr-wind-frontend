@@ -915,6 +915,7 @@ def getLineXR(ncfile, itimevec, varnames, groupname=None,
     return db
 
 def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
+              savepklfile='',
               verbose=0, includeattr=False, gettimes=False):
     # make sure input is a list
     ncfilelist = getFileList(ncfileinput)
@@ -937,10 +938,6 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
         group = groupname
     db['group'] = group
     Ncount = 0
-    #for ncfile in ncfilelist:
-    #    timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-    #    filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
-    #    Ntotal      = len(filtertime[0])
     for ncfileiter, ncfile in enumerate(ncfilelistsorted):
         timevec     = timevecs[ncfileiter]
         tmask       = maskTimeVector(timevec, extracttimes[ncfileiter], timerange, eps=0.0E-16) 
@@ -1001,6 +998,107 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
     if includeattr:
         for k, g in ds.attrs.items():
             db[k] = g
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
+    return db
+
+def ReynoldsStress_LineXR(ncfileinput, timerange, varnames,
+                          extrafuncs=[], groupname=None,
+                          savepklfile='', avgdb=None,
+                          verbose=0, includeattr=False):
+    """
+    Calculate the reynolds stresses
+    """
+    ncfilelist = getFileList(ncfileinput)
+    ncfilelistsorted, extracttimes, timevecs = sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles')
+    ncfile=ncfilelist[0]
+
+    print('first ncfilelist ',ncfilelist)
+    ncfile=ncfilelist[0]
+    eps     = 1.0E-10
+    t1      = timerange[0]-eps
+    t2      = timerange[1]    
+    savg = '_avg'
+
+    corr_mapping = {
+        'velocityx': 'u',
+        'velocityy': 'v',
+        'velocityz': 'w',
+    }
+
+    combinations = itertools.combinations_with_replacement(varnames, 2)
+    
+    corrlist = [
+        [f"{corr_mapping[var1]}{corr_mapping[var2]}_avg", var1, var2]
+        for var1, var2 in combinations
+    ]
+
+    db = {}
+    if avgdb is None:
+        if verbose: print("Calculating averages")
+        orig_varnames = varnames[:]
+        db = avgLineXR(ncfilelist, timerange, varnames,
+                       extrafuncs=extrafuncs, groupname=groupname,
+                       verbose=verbose, includeattr=includeattr)
+    else:
+        db.update(avgdb)
+
+    group   = db['group']
+    Ncount = 0    
+
+    times_processed = []
+    mindt = float('inf')
+    times = []
+
+    for ncfileiter, ncfile in enumerate(ncfilelistsorted):
+        timevec     = timevecs[ncfileiter]
+        tmask       = maskTimeVector(timevec, extracttimes[ncfileiter], timerange, eps=0.0E-16) 
+        Ntotal      = sum(tmask)
+
+        if verbose:
+            print("%s %i"%(ncfile, Ntotal))
+        localNcount = 0
+        with xr.open_dataset(ncfile, group=group) as ds:
+            zeroarray = np.zeros(len(ds.num_points))
+            # Set up the initial mean fields
+            for corr in corrlist:
+                suff = corr[0]
+                if suff not in db:
+                    db[suff] =  np.full_like(zeroarray, 0.0)
+            # Loop through and accumulate
+            if verbose: print("Calculating reynolds-stress")
+            for itime, t in enumerate(timevec):
+                if tmask[itime]:
+                    if verbose: progress(localNcount+1, Ntotal)
+                    vdat = {}
+                    for v in ['velocityx','velocityy','velocityz']:
+                        vdat[v] = ds[v][itime,:]
+                    for corr in corrlist:
+                        name = corr[0]
+                        v1   = corr[1]
+                        v2   = corr[2]
+                        # Standard dev
+                        db[name] += (vdat[v1]-db[v1+savg])*(vdat[v2]-db[v2+savg])
+                    Ncount += 1
+                    localNcount += 1
+            print()  # Done with this file
+    # Normalize and sqrt std dev
+    if Ncount > 0:
+        for corr in corrlist:
+            name = corr[0]
+            db[name] = db[name]/float(Ncount)
+
+    if verbose:
+        print("Ncount = %i"%Ncount)
+        print()
+    if len(savepklfile)>0:
+        # Write out the picklefile
+        dbfile = open(savepklfile, 'wb')
+        pickle.dump(db, dbfile, protocol=2)
+        dbfile.close()
     return db
 
 def getFullPlaneXR(ncfile, num_time_steps,output_dt, groupname,ordering=["x","z","y"]):

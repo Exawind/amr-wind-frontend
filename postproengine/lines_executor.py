@@ -96,7 +96,7 @@ linesampler:
         required   = False
         actiondefs = [
             {'key':'savefile',  'required':True,  'default':'',
-             'help':'Filename to save the radial profiles', },
+             'help':'Filename to save the averages', },
             {'key':'tavg',       'required':False,  'default':[],  'help':'Times to average over', },
         ]
         
@@ -118,6 +118,49 @@ linesampler:
                                         groupname=group,
                                         verbose=self.parent.verbose,
                                         includeattr=False, gettimes=False)
+            
+            # Save data to csv file
+            ds.pop('group')     # Remove the group from being written
+            dfcsv = pd.DataFrame()
+            for k, g in ds.items():
+                dfcsv[k] = g
+                
+            output_dir =  os.path.dirname(os.path.abspath(savefile))
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            dfcsv.to_csv(savefile,index=False,sep=',')
+
+            return
+        
+    @registeraction(actionlist)
+    class reynoldsstress():
+        actionname = 'reynoldsstress'
+        blurb      = 'Calculate the Reynolds stress average of the line'
+        required   = False
+        actiondefs = [
+            {'key':'savefile',  'required':True,  'default':'',
+             'help':'Filename to save the averages', },
+            {'key':'tavg',       'required':False,  'default':[],  'help':'Times to average over', },
+        ]
+        
+        def __init__(self, parent, inputs):
+            self.actiondict = mergedicts(inputs, self.actiondefs)
+            self.parent = parent
+            print('Initialized '+self.actionname+' inside '+parent.name)
+            return
+        
+        def execute(self):
+            print('Executing '+self.actionname)
+            tavg     = self.actiondict['tavg']
+            savefile = self.actiondict['savefile']
+            ncfile   = self.parent.ncfile
+            varnames = self.parent.varnames
+            group    = self.parent.group
+
+            ds   = ppsamplexr.ReynoldsStress_LineXR(ncfile, tavg, varnames,
+                                                    groupname=group,
+                                                    verbose=self.parent.verbose,
+                                                    includeattr=False)
             
             # Save data to csv file
             ds.pop('group')     # Remove the group from being written

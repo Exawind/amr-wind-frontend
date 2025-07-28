@@ -12,7 +12,10 @@ Process line sample files
 ## Actions: 
 ```
   average             : ACTION: Time average the line (Optional)
-    savefile          : Filename to save the radial profiles (Required)
+    savefile          : Filename to save the averages (Required)
+    tavg              : Times to average over (Optional, Default: [])
+  reynoldsstress      : ACTION: Calculate the Reynolds stress average of the line (Optional)
+    savefile          : Filename to save the averages (Required)
     tavg              : Times to average over (Optional, Default: [])
 ```
 
