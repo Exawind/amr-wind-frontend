@@ -124,6 +124,10 @@ linesampler:
             dfcsv = pd.DataFrame()
             for k, g in ds.items():
                 dfcsv[k] = g
+                
+            output_dir =  os.path.dirname(os.path.abspath(savefile))
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
             dfcsv.to_csv(savefile,index=False,sep=',')
 
             return

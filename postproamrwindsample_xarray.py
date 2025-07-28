@@ -164,7 +164,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
 
     if times is not None:
         for time in times:
-            itimevec.append(np.argmin( np.abs( all_timevecs - time ) ))
+            itimevec.append(np.argmin( np.abs( np.array(all_timevecs) - time ) ))
 
     if timerange is not None:
         for itime, time in enumerate(all_timevecs):
@@ -918,6 +918,7 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
               verbose=0, includeattr=False, gettimes=False):
     # make sure input is a list
     ncfilelist = getFileList(ncfileinput)
+    ncfilelistsorted, extracttimes, timevecs = sortAndSpliceFileList(ncfilelist, splicepriority='laterfiles')
     ncfile=ncfilelist[0]
     suf='_avg'
 
@@ -936,10 +937,15 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
         group = groupname
     db['group'] = group
     Ncount = 0
-    for ncfile in ncfilelist:
-        timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
-        filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
-        Ntotal      = len(filtertime[0])
+    #for ncfile in ncfilelist:
+    #    timevec     = ppsample.getVar(ppsample.loadDataset(ncfile), 'time')
+    #    filtertime  = np.where((t1 <= np.array(timevec)) & (np.array(timevec) <= t2))
+    #    Ntotal      = len(filtertime[0])
+    for ncfileiter, ncfile in enumerate(ncfilelistsorted):
+        timevec     = timevecs[ncfileiter]
+        tmask       = maskTimeVector(timevec, extracttimes[ncfileiter], timerange, eps=0.0E-16) 
+        Ntotal      = sum(tmask)
+
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
         localNcount = 0
@@ -964,7 +970,8 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
                         db[f['name']+suf] = np.full_like(zeroarray, 0.0)
             # Loop through and accumulate
             for itime, t in enumerate(timevec):
-                    t1 = t
+                if tmask[itime]:
+                    #t1 = t
                     if verbose: progress(localNcount+1, Ntotal)
                     if gettimes: db['times'].append(float(t))
                     vdat = {}
