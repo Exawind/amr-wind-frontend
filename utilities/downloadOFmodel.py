@@ -121,7 +121,12 @@ def editmodel(modelparams, tagedits=True):
     """
     fstfilename = modelparams['fstfilename']
     postconfigcmd = dictdefault(modelparams, 'postconfigcmd', None)
+    preconfigcmd  = dictdefault(modelparams, 'preconfigcmd', None)
 
+    # run any pre configuration commands
+    if preconfigcmd is not None:
+        os.system(preconfigcmd)    
+    
     # Edit fst parameters
     if 'FSTFile' in modelparams:
         fstparams = modelparams['FSTFile']
@@ -136,6 +141,10 @@ def editmodel(modelparams, tagedits=True):
                 'BDBldFile(2)_BldFile',
                 'BDBldFile(3)_BldFile',
                 ]
+    filelist = list(modelparams.keys())
+    delkeys = ['FSTFile', 'fstfilename', 'postconfigcmd', 'preconfigcmd', 'DISCONFile']
+    filelist = [x for x in filelist if x not in delkeys]
+    print(filelist)
     for editfile in filelist:
         if editfile in modelparams:
             if '_' in editfile:

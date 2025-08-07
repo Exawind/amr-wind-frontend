@@ -10,6 +10,8 @@ Make plots of csv files
   savefile            : Filename to save the picture (Optional, Default: '')
   xlabel              : Label on the X-axis (Optional, Default: None)
   ylabel              : Label on the Y-axis (Optional, Default: None)
+  xlim                : Limits on the X-axis (e.g., [0, 1]) (Optional, Default: None)
+  ylim                : Limits on the Y-axis (e.g., [0, 1]) (Optional, Default: None)
   xscale              : Scale on the X-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
   yscale              : Scale on the Y-axis (options: linear/log/symlog/logit) (Optional, Default: 'linear')
   title               : Title of the plot (Optional, Default: '')

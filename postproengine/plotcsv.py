@@ -48,6 +48,10 @@ class postpro_plotcsv():
          'help':'Label on the X-axis', },
         {'key':'ylabel',    'required':False,  'default':None,
          'help':'Label on the Y-axis', },
+        {'key':'xlim',      'required':False,  'default':None,
+         'help':'Limits on the X-axis (e.g., [0, 1])', },
+        {'key':'ylim',    'required':False,     'default':None,
+         'help':'Limits on the Y-axis (e.g., [0, 1])', },
         {'key':'xscale',    'required':False,  'default':'linear',
          'help':'Scale on the X-axis (options: linear/log/symlog/logit)', },
         {'key':'yscale',    'required':False,  'default':'linear',
@@ -116,6 +120,8 @@ This allows you to provide the function
             figsize  = plotitem['figsize']
             xlabel   = plotitem['xlabel']
             ylabel   = plotitem['ylabel']
+            xlim     = plotitem['xlim']
+            ylim     = plotitem['ylim']
             xscale   = plotitem['xscale']
             yscale   = plotitem['yscale']
             title    = plotitem['title']
@@ -169,6 +175,8 @@ This allows you to provide the function
             ax.set_ylabel(ylabel,fontsize=fontsize)
             ax.set_xscale(xscale)
             ax.set_yscale(yscale)
+            if xlim is not None: ax.set_xlim(xlim)
+            if ylim is not None: ax.set_ylim(ylim)
             ax.set_title(title,fontsize=fontsize)
             ax.tick_params(axis='both', which='major', labelsize=fontsize)
             ax.legend(**legendopts)
