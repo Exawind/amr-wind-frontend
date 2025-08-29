@@ -52,7 +52,7 @@ class Check_restart_dir():
         checkstatus['subname']     = ''   # Additional name info
 
         restartdir = app.inputvars['restart_file'].getval()
-        if restartdir is None:
+        if (restartdir is None) or (len(restartdir.strip())==0):
             setcheckstatus(checkstatus, status.SKIP, 'No restart file specified')
         else:
             # Check to make sure that the restart dir exists
