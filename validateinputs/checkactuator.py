@@ -206,6 +206,32 @@ class Check_Actuator_FST_Aerodyn():
             allchecks.append(checkdensity)
 
             # Check DISCON density (if needed)
+            checkDLLDISCON = {'subname':subname}
+            CompServo  = int(OpenFASTutil.getVarFromFST(fstfile, 'CompServo'))
+            ServoFile  = OpenFASTutil.getVarFromFST(fstfile, 'ServoFile').strip('"')
+            checkDLLDISCON['result'] = status.SKIP
+            checkDLLDISCON['mesg']   = 'Skipping DISCON DLL check'
+            if (CompServo == 1):
+                # Check the servo file controller
+                ServoFileWPath = os.path.join(os.path.dirname(fstfile), ServoFile)
+                PCMode = int(OpenFASTutil.getVarFromFST(ServoFileWPath, 'PCMode'))
+                if PCMode == 5:
+                    DLL_FileName = OpenFASTutil.getVarFromFST(ServoFileWPath, 'DLL_FileName').strip('"')
+                    if not DLL_FileName.startswith('/'):
+                        DLL_WPath = os.path.join(os.path.dirname(fstfile), DLL_FileName)
+                    else:
+                        DLL_WPath = DLL_FileName
+
+                    if os.path.isfile(DLL_WPath):
+                        checkDLLDISCON['result']  = status.PASS
+                        checkDLLDISCON['mesg']    = '[%s] exists'%DLL_WPath
+                    else:
+                        checkDLLDISCON['result']  = status.FAIL
+                        checkDLLDISCON['mesg']    = \
+                            'DLL_FileName=[%s] does not exist'%DLL_WPath
+            allchecks.append(checkDLLDISCON)
+
+            # Check DISCON density (if needed)
             checkdensityDISCON = {'subname':subname}
             CompServo  = int(OpenFASTutil.getVarFromFST(fstfile, 'CompServo'))
             ServoFile  = OpenFASTutil.getVarFromFST(fstfile, 'ServoFile').strip('"')
