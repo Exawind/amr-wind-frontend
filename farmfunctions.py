@@ -755,6 +755,13 @@ def turbines_createAllTurbines(self):
                 HDfile   = OpenFAST.getFileFromFST(fstfile,'HydroFile')
                 OpenFAST.editFASTfile(HDfile, HDoptions)
 
+            # Make any edits to SeaState
+            SSoptions = extractkeystartingwith(options, 'SSparam_', removeprefix=True)
+            if bool(SSoptions):
+                print(SSoptions)
+                SSfile   = OpenFAST.getFileFromFST(fstfile,'SeaStFile')
+                OpenFAST.editFASTfile(SSfile, SSoptions)
+
             # Make any edits to MoorDyn
             MDoptions = extractkeystartingwith(options, 'MDparam_', removeprefix=True)
             if bool(MDoptions):

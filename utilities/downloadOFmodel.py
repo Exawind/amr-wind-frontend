@@ -135,7 +135,7 @@ def editmodel(modelparams, tagedits=True):
 
     # Edit parameters in each of these files
     filelist = ['EDFile', 'AeroFile', 'ServoFile', 'HydroFile',
-                'MooringFile', 'SubFile',
+                'MooringFile', 'SubFile', 'SeaStFile',
                 'BDBldFile(1)',  'BDBldFile(2)', 'BDBldFile(3)',
                 'BDBldFile(1)_BldFile',
                 'BDBldFile(2)_BldFile',
