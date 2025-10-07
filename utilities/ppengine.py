@@ -98,8 +98,7 @@ if __name__ == "__main__":
         print("ERROR: %s does not exist"%inputfile)
         raise Exception('File does not exist')
     # Load the file
-    with open(inputfile, 'r') as fp:
-        yamldict = Loader(fp, **loaderkwargs)
+    yamldict = ppeng.loadyamlfile(inputfile)
 
     # Run the driver
     ppeng.driver(yamldict, verbose=verbose)

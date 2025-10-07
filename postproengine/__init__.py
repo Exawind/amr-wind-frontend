@@ -23,6 +23,21 @@ except:
     import imp
     useimp = True
 
+# Load ruamel or pyyaml as needed
+try:
+    import ruamel.yaml
+    yaml = ruamel.yaml.YAML(typ='rt')
+    useruamel=True
+    loaderkwargs = {}
+    dumperkwargs = {}
+    Loader=yaml.load
+except:
+    import yaml as yaml
+    useruamel=False
+    loaderkwargs = {}
+    dumperkwargs = {'default_flow_style':False }
+    Loader=yaml.safe_load
+
 # See https://gist.github.com/dorneanu/cce1cd6711969d581873a88e0257e312
 # for more information
 
@@ -50,6 +65,15 @@ def registeraction(alist):
         alist[f.actionname]=f
     return inner
 
+def stringReplaceDict(s, dreplace):
+    """
+    Replace strings in s with items in dreplace
+    """
+    outstr = str(s)
+    for k, g in dreplace.items():
+        s = '' if g is None else str(g)
+        outstr=outstr.replace(k, s)
+    return outstr
 
 def mergedicts(inputdict, inputdefs):
     """
@@ -1045,8 +1069,27 @@ class doubleintegraltemplate():
 
 
 # =====================================================
+def loadyamlstring(s):
+    f = io.StringIO(s) 
+    yamldicttemp = Loader(f, **loaderkwargs)
+    if '__replacestrings__' in yamldicttemp:
+        replacedict = yamldicttemp['__replacestrings__']
+        sclean   = s.replace('__replacestrings__:', '#replacestrings')
+        for k, g in replacedict.items():
+            sclean = sclean.replace(k+':', '#REPLACED')
+        newstr   = stringReplaceDict(sclean, replacedict)
+        f2       = io.StringIO(newstr)
+        yamldict = Loader(f2, **loaderkwargs)
+    else:
+        yamldict = yamldicttemp
+    return yamldict
 
-    
+def loadyamlfile(f):
+    with open(f, 'r') as file:
+        s= file.read()
+        return loadyamlstring(s)
+    return
+
 def runtaskdict(taskdict, plist, looptasks, verbose):
     for task in looptasks:
         if task in taskdict:
