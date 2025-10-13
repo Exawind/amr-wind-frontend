@@ -1072,6 +1072,7 @@ class doubleintegraltemplate():
 def loadyamlstring(s):
     f = io.StringIO(s) 
     yamldicttemp = Loader(f, **loaderkwargs)
+    # Do any direct string replacements
     if '__replacestrings__' in yamldicttemp:
         replacedict = yamldicttemp['__replacestrings__']
         sclean   = s.replace('__replacestrings__:', '#replacestrings')
@@ -1079,10 +1080,26 @@ def loadyamlstring(s):
             sclean = sclean.replace(k+':', '#REPLACED')
         newstr   = stringReplaceDict(sclean, replacedict)
         f2       = io.StringIO(newstr)
-        yamldict = Loader(f2, **loaderkwargs)
+        yamldict1 = Loader(f2, **loaderkwargs)
     else:
-        yamldict = yamldicttemp
-    return yamldict
+        newstr   = s
+        yamldict1 = yamldicttemp
+        
+    # Do any evaluated string replacements
+    if '__replaceevalstrings__' in yamldicttemp:
+        replacedict = yamldicttemp['__replaceevalstrings__']
+        sclean   = newstr.replace('__replaceevalstrings__:', '#replaceevalstrings')
+        for k, g in replacedict.items():
+            sclean = sclean.replace(k+':', '#EVALUATED')
+            replacedict[k] = eval(g)
+        newstr2  = stringReplaceDict(sclean, replacedict)
+        #print(newstr2)
+        f3       = io.StringIO(newstr2)
+        yamldict2 = Loader(f3, **loaderkwargs)
+    else:
+        yamldict2 = yamldict1
+        
+    return yamldict2
 
 def loadyamlfile(f):
     with open(f, 'r') as file:
