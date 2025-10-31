@@ -140,6 +140,7 @@ def editmodel(modelparams, tagedits=True):
                 'BDBldFile(1)_BldFile',
                 'BDBldFile(2)_BldFile',
                 'BDBldFile(3)_BldFile',
+                'InflowFile',
                 ]
     filelist = list(modelparams.keys())
     delkeys = ['FSTFile', 'fstfilename', 'postconfigcmd', 'preconfigcmd', 'DISCONFile']
