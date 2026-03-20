@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022, Alliance for Sustainable Energy
+# Copyright (c) 2022, Alliance for Energy Innovation
 #
 # This software is released under the BSD 3-clause license. See LICENSE file
 # for more details.
