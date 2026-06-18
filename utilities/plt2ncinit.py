@@ -7,6 +7,27 @@ import sys
 import yt
 import argparse
 import time
+import copy
+from scipy.interpolate import RegularGridInterpolator
+
+def makeNewGrid(n, prob_lo, prob_hi,  verbose=False):
+    getdx = lambda phi, plo, n: (np.array(phi)-np.array(plo))/n
+    # Define empty arrays
+    x     = np.zeros((n[0], n[1], n[2]))
+    y     = np.zeros((n[0], n[1], n[2]))
+    z     = np.zeros((n[0], n[1], n[2]))
+    # Get the dx
+    dx    = getdx(prob_hi, prob_lo, n)
+    for i in range(n[0]):
+        for j in range(n[1]):
+            for k in range(n[2]):
+                if verbose:
+                    count = k+1 + j*n[2] + i*n[1]*n[2] 
+                    progress(count, n[0]*n[1]*n[2])
+                x[i,j,k] = prob_lo[0] + (i+0.5)*dx[0] 
+                y[i,j,k] = prob_lo[1] + (j+0.5)*dx[1]
+                z[i,j,k] = prob_lo[2] + (k+0.5)*dx[2]
+    return x,y,z
 
 def loadplt(pltdir):
     ds = yt.load(pltdir, 
@@ -67,6 +88,50 @@ def writeUVW_NC(ncfilename, Nx, Ny, Nz, Ux, Uy, Uz, ndim=3):
     rootgrp.close()
     return
 
+
+def interpVar2Grid(olddat, x, y, z, v):
+    """
+    """
+    interp = RegularGridInterpolator(
+        (olddat['x'][:,0,0], olddat['y'][0,:,0], olddat['z'][0,0,:]),
+        olddat[v],
+        bounds_error=False,
+        fill_value=None,
+        )
+    interpvar = interp((x, y, z))
+    return interpvar
+    
+
+def interpPlt2Grid(pltdir, n, problo, probhi, varlist,
+                   input_ds=None,
+                   ncfilename=None,
+                   velvars = ['x_velocity', 'y_velocity', 'z_velocity']):
+    if input_ds is None:
+        ds = loadplt(pltdir)
+    else:
+        ds = input_ds
+    fullvars = copy.deepcopy(varlist)
+    if 'x' not in fullvars: fullvars.append('x')
+    if 'y' not in fullvars: fullvars.append('y')
+    if 'z' not in fullvars: fullvars.append('z')    
+    dim     = ds.domain_dimensions
+    erfv    = get_coveringgrid_vars(ds, fullvars, maxlevel=0)
+
+    newdat = {}
+    newdat['x'], newdat['y'], newdat['z'] = makeNewGrid(n, problo, probhi)
+    for v in varlist:
+        if v not in ['x', 'y','z']:
+            newdat[v] = interpVar2Grid(erfv,
+                                       newdat['x'], newdat['y'], newdat['z'],
+                                       v)
+    if ncfilename is not None:
+        writeUVW_NC(ncfilename, n[0], n[1], n[2],
+                    newdat[velvars[0]],
+                    newdat[velvars[1]],
+                    newdat[velvars[2]],
+                    )
+    return newdat
+
 def erfplt2nc(pltdir, ncfile,
               varlist = ['x_velocity', 'y_velocity', 'z_velocity'],
               input_ds=None):
@@ -85,6 +150,15 @@ def erfplt2nc(pltdir, ncfile,
                 #erfv['z_velocity'],
     )
     return ds
+
+def avgtempgrid(zgrid, Tdat):
+    zvec = zgrid[0,0,:]
+    avgTvec = []
+    for i in range(len(zvec)):
+        avgT = np.mean(Tdat[:,:,i])
+        avgTvec.append(avgT)
+    return zvec, avgTvec    
+    
 
 def avgtemp(pltdir, Tvar, input_ds=None):
     if input_ds is None:
@@ -130,6 +204,24 @@ if __name__ == "__main__":
         help="horizontally average temperature variable",
         default=False,
         action='store_true')
+    parser.add_argument(
+        '--ncells', 
+        help="Number of cells",
+        nargs=3,
+        required=False,
+        default=None)
+    parser.add_argument(
+        '--problo', 
+        help="Probe lo",
+        nargs=3,
+        required=False,
+        default=None)
+    parser.add_argument(
+        '--probhi', 
+        help="Probe hi",
+        nargs=3,
+        required=False,
+        default=None)
 
     erfvels = ['x_velocity', 'y_velocity', 'z_velocity']
     amrvels = ['velocityx',  'velocityy',  'velocityz']
@@ -143,6 +235,10 @@ if __name__ == "__main__":
     ncfile    = args.ncfile
     erfnames  = args.erfnames
     avgT      = args.avgT
+    ncells    = [int(x) for x in args.ncells]
+    problo    = [float(x) for x in args.problo]
+    probhi    = [float(x) for x in args.probhi]
+    
 
     if erfnames:
         vvars = erfvels
@@ -151,10 +247,22 @@ if __name__ == "__main__":
         vvars = amrvels
         Tvar  = amrT
 
-    # Write the netcdf file
-    ds = erfplt2nc(pltdir, ncfile, varlist=vvars)
+    if (ncells is not None) or (problo is not None) or (probhi is not None):
+        print('Using interpolation')
+        newdat=interpPlt2Grid(pltdir, ncells, problo, probhi, vvars + [Tvar],
+                              input_ds=None,
+                              ncfilename=ncfile,
+                              velvars = vvars)
+        if avgT:
+            zvec, avgTvec = avgtempgrid(newdat['z'], newdat[Tvar])
+
+    else:
+        # Write the netcdf file
+        ds = erfplt2nc(pltdir, ncfile, varlist=vvars)
+        if avgT:
+            zvec, avgTvec, _ = avgtemp(pltdir, Tvar, input_ds=ds)
+
     if avgT:
-        zvec, avgTvec, _ = avgtemp(pltdir, Tvar, input_ds=ds)
         # print out the vectors
         print()
         print('ABL.temperature_heights = ' + ' '.join([str(z) for z in zvec]))
