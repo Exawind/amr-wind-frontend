@@ -72,11 +72,12 @@ class Constant:
 class FromBP:
     """Do stuff from another boundary plane"""
 
-    def __init__(self, bpfile, ncomp):
+    def __init__(self, bpfile, ncomp, bpsavefile=None):
         #self.constant = 0.0
         self.ncomp    = ncomp
         self.plt = AmrexPlotFile(bpfile)
         self.mfs = self.plt()
+        self.bpsavefile=bpsavefile
         #print(self.plt.prob_lo, self.plt.prob_hi)
         #print(self.plt.coordinates(0, 0))
         #print(self.plt.spacedim)
@@ -90,16 +91,19 @@ class FromBP:
         #return self.constant * np.ones(xg.shape)
         interpdat = interpolateBP(self.plt, xg, yg, zg, self.ncomp)
         #print(interpdat.shape, xg.shape)
+        if self.bpsavefile is not None:
+            print(f'Saving {self.bpsavefile}')
+            np.savez(self.bpsavefile, xg=xg, yg=yg, zg=zg, interpdat=interpdat)
         return interpdat
 
 
 def ncomp_from_field(field):
     return 3 if field == "velocity" else 1
 
-def makeBPfromfile(field, ncomp, ori, odir, fname, step, time, bpfile):
+def makeBPfromfile(field, ncomp, ori, odir, fname, step, time, bpfile, bpsavefile=None):
     functor_dict = {}
     if ncomp == 1:
-        functor_dict[field] = FromBP(bpfile,0)
+        functor_dict[field] = FromBP(bpfile,0, bpsavefile=bpsavefile)
     elif ncomp == 3:
         functor_dict[field+"x"] = FromBP(bpfile,0)
         functor_dict[field+"y"] = FromBP(bpfile,1)
@@ -154,6 +158,25 @@ def main():
         type=str,
     )
     parser.add_argument(
+        "--stride",
+        help="sample every N of the time.dat file",
+        required=False,
+        default=1,
+        type=int,
+    )
+    parser.add_argument(
+        "--maxN",
+        help="maximum number of samples",
+        required=False,
+        default=-1,
+        type=int,
+    )
+    parser.add_argument(
+        "--storeNPZ",
+        help="store BP data as NPZ",
+        action="store_true",
+    )
+    parser.add_argument(
         "-o",
         "--overwrite",
         action="store_true",
@@ -163,6 +186,9 @@ def main():
 
     amr.initialize([])
 
+    stride = args.stride
+    maxN   = args.maxN
+    storeNPZ = args.storeNPZ
     timefile = 'time.dat'
     srcdir = pathlib.Path(args.srcdir)
     
@@ -181,8 +207,8 @@ def main():
     src_timedat = np.loadtxt(srcdir/timefile)
     #print(src_timedat)
     nsteps = len(src_timedat)
-    steps = [int(x) for x in src_timedat[:,0]]
-    times = src_timedat[:,1]
+    steps = [int(x) for x in src_timedat[:maxN:stride,0]]
+    times = src_timedat[:maxN:stride,1]
     #print(steps, times)
     #raise ValueError('stop here')
 
@@ -199,8 +225,12 @@ def main():
     surf_ori = [xlo_ori, xhi_ori, ylo_ori, yhi_ori]
 
     makebpfile = lambda sdir, step, ori, v: sdir/f'bndry_output{step:05d}'/f'Header_{ori}_{v}'
+    makeNPZfile = lambda odir, step, ori, v: odir/f'NPZ_{ori}_{v}.npz'
     #src_bp = srcdir/f'bndry_output{step:05d}'/f'Header_{xlo_ori}_velocity'
-    
+
+    bdir.mkdir(parents=True, exist_ok=True)
+    np.savetxt(bdir / "time.dat", np.c_[steps, times], fmt="%.17g")
+
     for step, time in zip(steps, times):
         odir = bdir / f"bndry_output{step:05d}"
         print(f"Generating {odir} at time {time}: ", end='')
@@ -211,9 +241,15 @@ def main():
             print(f'{bpvar}[', end='')
             for surf in surf_ori:
                 print(f'{surf} ',end='')
+                if storeNPZ:
+                    NPZfile = makeNPZfile(odir, step, surf, bpvar)
+                    print(NPZfile)
+                else:
+                    NPZfile = None
                 makeBPfromfile(bpvar, ncomp, surf,
                                odir, args.iname, step, time,
-                               makebpfile(srcdir, step, surf, bpvar))
+                               makebpfile(srcdir, step, surf, bpvar),
+                               bpsavefile=NPZfile)
             print(f'] ',end='')
         # Go through any const vars
         for bpvar in constvars:
@@ -227,7 +263,7 @@ def main():
             print(f'] ',end='')
         print()
                 
-    np.savetxt(bdir / "time.dat", np.c_[steps, times], fmt="%.17g")
+    #np.savetxt(bdir / "time.dat", np.c_[steps, times], fmt="%.17g")
 
 
 if __name__ == "__main__":

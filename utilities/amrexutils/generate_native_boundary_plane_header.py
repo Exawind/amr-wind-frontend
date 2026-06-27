@@ -43,6 +43,25 @@ def main():
         action="store_true",
         help="Force overwrite of existing header files",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Turn on verbose",
+    )
+    parser.add_argument(
+        "-p",
+        "--prefix",
+        required=False,
+        default='bndry_output',
+        help="Prefix for files",
+    )
+    parser.add_argument(
+        "--globprefix",
+        required=False,
+        default='',
+        help="Prefix in front of glob pattern",
+    )
     args = parser.parse_args()
 
     amr.initialize([])
@@ -52,10 +71,12 @@ def main():
     tname = "time.dat"
     time_file = spath / tname
     times = pd.read_csv(time_file, sep="\\s+", names=["step", "time"], header=None)
-    pfx = "bndry_output"
+    #pfx = "bndry_output"
+    pfx = args.prefix
     lvl_pfx = "Level_"
+    verbose=args.verbose
 
-    for fname in sorted(glob.glob(f"{args.fdir}/{pfx}" + "*")):
+    for fname in sorted(glob.glob(f"{args.fdir}/{pfx}" +f"{args.globprefix}" + "*")):
         print(f"Generating Header files for data in {fname}")
         fpath = pathlib.Path(fname)
         step = int(fpath.name.replace(pfx, ""))
@@ -76,7 +97,7 @@ def main():
         for field, ori in itertools.product(fields, oris):
             hname = fpath / f"Header_{ori}_{field}"
             if hname.exists() and not args.overwrite:
-                print(f"{hname} exists already. Skipping.")
+                if verbose: print(f"{hname} exists already. Skipping.")
                 continue
 
             mfs = []
@@ -84,7 +105,7 @@ def main():
                 mf_h_name = fpath / f"{lvl_pfx}{ilev}" / f"{field}_{ori}_H"
                 mfs.append(amr.VisMF.Read(str(mf_h_name).replace("_H", "")))
             ncomp = mfs[0].num_comp
-            print(f"{hname} ncomp = {ncomp}")
+            if verbose: print(f"{hname} ncomp = {ncomp}")
 
             bp = nbp.NativeBoundaryPlane(field, ncomp, ori, fpath)
             bp.define_from_mfs(args.iname, step, time, mfs)
