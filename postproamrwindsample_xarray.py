@@ -11,6 +11,12 @@ from postproengine import get_mapping_xyz_to_axis1axis2
 from postproengine import apply_coordinate_transform
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+try:
+    import pooch
+    usepooch = True
+except:
+    usepooch = False
+
 extractvar = lambda xrds, var, i : xrds[var][i,:].data.reshape(tuple(xrds.attrs['ijk_dims'][::-1]))
 nonan = lambda x, doreplace: np.nan_to_num(x) if doreplace else x
 
@@ -21,8 +27,34 @@ def find_2nearest(a, a0):
 def interpfields(t1, t2, v1, v2):
     return (v2-v1)/(t2-t1)+v1
 
+def hasurl(ncfileinput):
+    if isinstance(ncfileinput, str):
+        return ppsample.uri_validator(ncfileinput)
+    else:
+        isurl = [ppsample.uri_validator(x) for x in ncfileinput]
+        return any(isurl)
+    return
+
+def poochfilewrapper(fname):
+    if usepooch and ppsample.uri_validator(fname):
+        return ppsample.poochfilename(fname, 'POOCH_CACHE_DIR')
+        # return pooch.retrieve(url=fname,
+        #                       known_hash=None,
+        #                       )
+    else:
+        return fname
+            
+
 def getFileList(ncfileinput):
     ncfilelist = []
+    # Check for any urls in ncfileinput, if so, bypass glob
+    if hasurl(ncfileinput):
+        if isinstance(ncfileinput, str):
+            return [ncfileinput]
+        else:
+            return ncfileinput
+
+    # Run through and glob any patterns in list
     if isinstance(ncfileinput, str):
         ncfilelist=list(sorted(glob.glob(ncfileinput)))
     elif not isinstance(ncfileinput, list):
@@ -186,7 +218,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
         else:
             group = groupname
 
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             if verbose>0:
                 print("Extracting from ncfile: ",ncfile,ncfileiter)
             if ncfileiter == 0:
@@ -194,7 +226,7 @@ def getPlaneXR(ncfileinput, itimevec, varnames, groupname=None,
                 xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
                 ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
                 zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
-                dtime=xr.open_dataset(ncfile)
+                dtime=xr.open_dataset(poochfilewrapper(ncfile))
                 dtime.close()
                 db['x'] = xm
                 db['y'] = ym
@@ -273,12 +305,12 @@ def getPlanePtsXR(ncfile, itimevec, ptlist,
         group = groups[0]
     else:
         group = groupname
-    with xr.open_dataset(ncfile, group=group) as ds:
+    with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
         reshapeijk = ds.attrs['ijk_dims'][::-1]
         xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
         ym = ds['coordinates'].data[:,1].reshape(tuple(reshapeijk))
         zm = ds['coordinates'].data[:,2].reshape(tuple(reshapeijk))
-        dtime=xr.open_dataset(ncfile)
+        dtime=xr.open_dataset(poochfilewrapper(ncfile))
         dtime.close()
         db['x'] = xm
         db['y'] = ym
@@ -353,7 +385,7 @@ def avgPlaneXR(ncfileinput, timerange,
             print("%s %i"%(ncfile, Ntotal))
             #print("%f %f"%(t1, t2))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             if verbose:
                 print("Getting data from ncfile: ",ncfile)
             if 'x' not in ds:
@@ -478,7 +510,7 @@ def phaseAvgPlaneXR(ncfileinput, tstart, tend, tperiod,
             print("%s %i"%(ncfile, Ntotal))
             #print("%f %f"%(t1, t2))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             if 'x' not in ds:
                 reshapeijk = ds.attrs['ijk_dims'][::-1]
                 xm = ds['coordinates'].data[:,0].reshape(tuple(reshapeijk))
@@ -590,7 +622,7 @@ def MinMaxStd_PlaneXR(ncfile, timerange,
     t1 = timerange[0]
     t2 = timerange[1]
     Ntotal=len(db['times'])
-    with xr.open_dataset(ncfile, group=group) as ds:
+    with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
         reshapeijk = ds.attrs['ijk_dims'][::-1]
         zeroarray = extractvar(ds, varnames[0], 0)
         # Set up the initial mean fields
@@ -715,7 +747,7 @@ def ReynoldsStress_PlaneXR(ncfileinput, timerange,
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             reshapeijk = ds.attrs['ijk_dims'][::-1]
             zeroarray = extractvar(ds, 'velocityx', 0)
             # Set up the initial mean fields
@@ -815,7 +847,7 @@ def phaseAvgReynoldsStress1_PlaneXR(ncfileinput, tstart, tend, tperiod,
             print("%s %i"%(ncfile, Ntotal))
             #print("%f %f"%(t1, t2))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             reshapeijk = ds.attrs['ijk_dims'][::-1]
             zeroarray = extractvar(ds, 'velocityx', 0)
             # Set up the initial mean fields
@@ -886,12 +918,12 @@ def getLineXR(ncfile, itimevec, varnames, groupname=None,
         group = groups[0]
     else:
         group = groupname
-    with xr.open_dataset(ncfile, group=group) as ds:
+    with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
         #reshapeijk = ds.attrs['ijk_dims'][::-1]
         xm = ds['coordinates'].data[:,0] #.reshape(tuple(reshapeijk))
         ym = ds['coordinates'].data[:,1] #.reshape(tuple(reshapeijk))
         zm = ds['coordinates'].data[:,2] #.reshape(tuple(reshapeijk))
-        dtime=xr.open_dataset(ncfile)
+        dtime=xr.open_dataset(poochfilewrapper(ncfile))
         dtime.close()
         db['x'] = xm
         db['y'] = ym
@@ -946,12 +978,12 @@ def avgLineXR(ncfileinput, timerange, varnames, extrafuncs=[], groupname=None,
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             if 'x' not in ds:
                 xm = ds['coordinates'].data[:,0]
                 ym = ds['coordinates'].data[:,1]
                 zm = ds['coordinates'].data[:,2]
-                dtime=xr.open_dataset(ncfile)
+                dtime=xr.open_dataset(poochfilewrapper(ncfile))
                 dtime.close()
                 db['x'] = xm
                 db['y'] = ym
@@ -1061,7 +1093,7 @@ def ReynoldsStress_LineXR(ncfileinput, timerange, varnames,
         if verbose:
             print("%s %i"%(ncfile, Ntotal))
         localNcount = 0
-        with xr.open_dataset(ncfile, group=group) as ds:
+        with xr.open_dataset(poochfilewrapper(ncfile), group=group) as ds:
             zeroarray = np.zeros(len(ds.num_points))
             # Set up the initial mean fields
             for corr in corrlist:
@@ -1108,7 +1140,7 @@ def getFullPlaneXR(ncfile, num_time_steps,output_dt, groupname,ordering=["x","z"
     Modified from openfast-toolbox
 
     """
-    ds = xr.open_dataset(ncfile,group=groupname)    
+    ds = xr.open_dataset(poochfilewrapper(ncfile),group=groupname)    
     coordinates = {"x":(0,"axial"), "y":(1,"lateral"),"z":(2,"vertical")}
     c           = {}
     for coordinate,(i,desc) in coordinates.items():
