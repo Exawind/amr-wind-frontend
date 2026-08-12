@@ -182,6 +182,13 @@ def main():
         action="store_true",
         help="Force overwrite of existing files",
     )
+    parser.add_argument(
+        "--tkeval",
+        help="Default value of TKE to use",
+        required=False,
+        default=0.1,
+        type=float,
+    )
     args = parser.parse_args()
 
     amr.initialize([])
@@ -191,6 +198,9 @@ def main():
     storeNPZ = args.storeNPZ
     timefile = 'time.dat'
     srcdir = pathlib.Path(args.srcdir)
+
+    constvaldict = {}
+    constvaldict['tke'] = args.tkeval
     
     #bdir = pathlib.Path("bndry_file")
     bdir   = pathlib.Path(args.destdir)
@@ -220,7 +230,7 @@ def main():
               #'tke',
               'temperature',]
     constvars = ['tke']
-    constval = 0.0
+    #constval = 0.0
     
     surf_ori = [xlo_ori, xhi_ori, ylo_ori, yhi_ori]
 
@@ -259,7 +269,7 @@ def main():
                 print(f'{surf} ',end='')
                 makeBPconst(bpvar, ncomp, surf,
                                odir, args.iname, step, time,
-                               constval)
+                               constvaldict[bpvar])
             print(f'] ',end='')
         print()
                 
