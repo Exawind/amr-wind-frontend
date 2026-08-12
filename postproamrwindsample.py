@@ -13,8 +13,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 from netCDF4 import Dataset
 import mmap
+import os
 
-def loadDataset(filename, usemmap=False):
+try:
+    # python2
+    from urlparse import urlparse
+except ModuleNotFoundError:
+    # python3
+    from urllib.parse import urlparse
+
+try:
+    import pooch
+    usepooch = True
+except:
+    usepooch = False
+
+def uri_validator(x):
+    try:
+        result = urlparse(x)
+        return all([result.scheme, result.netloc])
+    except AttributeError:
+        return False
+
+def poochfilename(urlfilename, envvar):
+    baseurl = urlfilename.rpartition('/')[0]
+    filename = urlfilename.rpartition('/')[2]
+    if envvar in os.environ:
+        registry={}
+        registry[filename]= None
+        odie = pooch.create(path=pooch.os_cache("plumbus"),
+                            base_url=baseurl,
+                            registry=registry,
+                            env="POOCH_CACHE_DIR")
+        return odie.fetch(filename, progressbar=True)
+    else:
+        return pooch.retrieve(url=urlfilename, known_hash=None, )
+        
+def loadDataset(infilename, usemmap=False):
+    filename=infilename
+    if usepooch and uri_validator(infilename):
+        filename = poochfilename(infilename, 'POOCH_CACHE_DIR')
     if usemmap:
         print("Loading entire file into memory...")
         with open(filename, 'rb') as f:

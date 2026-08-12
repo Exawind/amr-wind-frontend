@@ -15,6 +15,12 @@ import plotfunctions
 
 scriptpath = os.path.dirname(os.path.realpath(__file__))
 
+try:
+    import pooch
+    usepooch = True
+except:
+    usepooch = False
+
 # Load imp or importlib depending on what's available
 try:
     from importlib import util
@@ -22,6 +28,7 @@ try:
 except:
     import imp
     useimp = True
+    
 
 # Load ruamel or pyyaml as needed
 try:
@@ -1129,6 +1136,11 @@ def driver(yamldict, plist=pluginlist, verbose=None):
     # Override with verbose if necessary
     verbosity = verbose if verbose is not None else verbose_attr
 
+    # Set any pooch variables
+    if 'pooch' in globattr and usepooch:
+        if 'cachedir' in globattr['pooch']:
+            os.environ["POOCH_CACHE_DIR"] = globattr['pooch']['cachedir']
+            
     # Load any user defined modules
     if 'udfmodules' in globattr:
         udfmodules = globattr['udfmodules']
