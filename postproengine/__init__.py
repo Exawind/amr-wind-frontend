@@ -1120,7 +1120,16 @@ def runtaskdict(taskdict, plist, looptasks, verbose):
             taskitem = plist[task](taskdict[task], verbose=verbose)
             taskitem.execute(verbose=verbose)
     return
-    
+
+def execute(taskname, params,
+            plist=pluginlist,
+            verbose=False):
+    """
+    Run the single executor given by taskname
+    """
+    taskitem = plist[taskname](params, verbose=verbose)
+    return taskitem.execute(verbose=verbose)
+
 def driver(yamldict, plist=pluginlist, verbose=None):
     """
     Run through and execute all tasks
