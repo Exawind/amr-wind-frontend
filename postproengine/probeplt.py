@@ -68,7 +68,7 @@ def makeNewGrid(origin, axis1, axis2, axis3, n):
     for i in range(n[0]):
         for j in range(n[1]):
             for k in range(n[2]):
-                pt = origin + i*dx1 + j*dx2 + k*dx3
+                pt = np.array(origin) + i*dx1 + j*dx2 + k*dx3
                 x[i,j,k] = pt[0]
                 y[i,j,k] = pt[1]
                 z[i,j,k] = pt[2]
